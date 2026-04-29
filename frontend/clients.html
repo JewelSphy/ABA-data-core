@@ -714,11 +714,26 @@ async function createClient () {
       var res = await clientJvmCreate (row);
       if (!res.ok) { clientToast ('Save failed: ' + await readJvmErrorResponse (res)); return; }
       var created = await res.json();
-      createdClientId = Array.isArray(created) && created.length ? created[0].id : null;
+      if (Array.isArray(created) && created.length) createdClientId = created[0].id || null;
+      else if (created && typeof created === 'object') createdClientId = created.id || null;
     } else {
-      var r = await window.supabaseClient.from ('clients').insert (row);
+      var r = await window.supabaseClient.from ('clients').insert (row).select ('id').single ();
       if (r.error) { clientToast ('Save failed: ' + r.error.message); return; }
-      createdClientId = (r.data && r.data[0] && r.data[0].id) ? r.data[0].id : null;
+      createdClientId = r.data && r.data.id ? r.data.id : null;
+    }
+
+    // Defensive fallback: if API did not return id, fetch newest matching client in org.
+    if (!createdClientId && window.supabaseClient && org && org.id) {
+      var lookup = await window.supabaseClient
+        .from ('clients')
+        .select ('id')
+        .eq ('org_id', org.id)
+        .eq ('first_name', row.first_name)
+        .eq ('last_name', row.last_name)
+        .order ('created_at', { ascending: false })
+        .limit (1)
+        .maybeSingle ();
+      if (!lookup.error && lookup.data && lookup.data.id) createdClientId = lookup.data.id;
     }
 
     var cgName = (document.getElementById ('addCgName').value || '').trim ();
@@ -734,12 +749,19 @@ async function createClient () {
         email: (document.getElementById('addCgEmail').value || '').trim() || null,
         status: 'active'
       };
-      var cgRes = await jvmFetch('/api/caregivers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cgPayload)
-      });
-      if (!cgRes.ok) clientToast ('Client saved, but caregiver did not save.');
+      if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+        var cgRes = await jvmFetch('/api/caregivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cgPayload)
+        });
+        if (!cgRes.ok) clientToast ('Client saved, but caregiver did not save.');
+      } else if (window.supabaseClient) {
+        var cgInsert = await window.supabaseClient.from('caregivers').insert(cgPayload);
+        if (cgInsert.error) clientToast ('Client saved, but caregiver did not save.');
+      }
+    } else if (cgName && !createdClientId) {
+      clientToast ('Client saved, but caregiver could not be linked. Open client and retry caregiver add.');
     }
     closeModal ('addClientModal');
     clientToast ('Client added successfully');
