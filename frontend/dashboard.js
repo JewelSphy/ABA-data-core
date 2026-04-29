@@ -605,24 +605,93 @@ function maybeSetupToast() {
    DASHBOARD STATS — routes through Java bridge when available,
    falls back to direct Supabase JS client
    ============================================================ */
-function applyDocumentComplianceBanner(stats) {
-  const el = document.getElementById("docComplianceBanner");
-  if (!el) return;
-  const n =
-    typeof stats?.missing_client_documents === "number" ? stats.missing_client_documents : 0;
-  if (n <= 0) {
-    el.style.display = "none";
-    el.innerHTML = "";
+function clampStat(v) {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+}
+
+/**
+ * Documents: expired → missing initial uploads → expiring soon. Other actions: revisions (low tier).
+ */
+function applyActionRequiredDashboard(stats) {
+  const docEx = clampStat(stats.documents_required_expired);
+  const docMissing = clampStat(stats.missing_client_documents);
+  const docSoon = clampStat(stats.documents_required_expiring_soon);
+  const revPending = clampStat(stats.pending_revisions);
+
+  const setCount = (id, n) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(n);
+  };
+  const setEmpty = (id, n, htmlOk, htmlWarn) => {
+    const em = document.getElementById(id);
+    if (!em) return;
+    em.innerHTML = n <= 0 ? htmlOk : htmlWarn;
+  };
+
+  setCount("urgencyCountExpired", docEx);
+  setEmpty(
+    "urgencyEmptyExpired",
+    docEx,
+    "<span style=\"color:#9eb3a8;\">No expired required paperwork</span>",
+    "<span style=\"color:#431407;\"><strong>" +
+      docEx +
+      "</strong> expired file(s). </span><a href=\"documents.html\">Open Documents</a>"
+  );
+
+  setCount("urgencyCountHigh", docMissing);
+  setEmpty(
+    "urgencyEmptyHigh",
+    docMissing,
+    "<span style=\"color:#9eb3a8;\">All active clients have initial uploads recorded</span>",
+    "<span style=\"color:#431407;\"><strong>" +
+      docMissing +
+      "</strong> required slot(s) missing content (active clients). </span><a href=\"documents.html\">Upload / edit</a>"
+  );
+
+  setCount("urgencyCountMedium", docSoon);
+  setEmpty(
+    "urgencyEmptyMedium",
+    docSoon,
+    "<span style=\"color:#9eb3a8;\">Nothing expiring within 45 days</span>",
+    "<span style=\"color:#92400e;\"><strong>" +
+      docSoon +
+      "</strong> renew soon (45 days). </span><a href=\"documents.html\">Review</a>"
+  );
+
+  setCount("urgencyCountLow", revPending);
+  setEmpty(
+    "urgencyEmptyLow",
+    revPending,
+    "<span style=\"color:#9eb3a8;\">No notes awaiting review</span>",
+    "<span style=\"color:#154733;\"><strong>" +
+      revPending +
+      '</strong> session(s) need review. </span><a href="revisions.html">Revisions</a>'
+  );
+
+  const banner = document.getElementById("docComplianceBanner");
+  if (!banner) return;
+  const docTotal = docEx + docMissing + docSoon;
+  if (docTotal <= 0) {
+    banner.style.display = "none";
+    banner.innerHTML = "";
     return;
   }
-  el.style.display = "block";
-  el.innerHTML =
-    "<strong>Client document gaps</strong> — " +
-    n +
-    " required document slot" +
-    (n === 1 ? " is" : "s are") +
-    " still missing an upload. " +
-    "<a href=\"documents.html\" style=\"color:inherit;font-weight:700;text-decoration:underline;\">Review Documents</a>";
+  banner.style.display = "block";
+  banner.className = "notice notice-warn";
+  banner.innerHTML =
+    "<strong>Document compliance (active clients)</strong> — Expired: " +
+    docEx +
+    ". Missing upload: " +
+    docMissing +
+    ". Expiring ≤45 days: " +
+    docSoon +
+    ". <a href=\"documents.html\" style=\"color:inherit;font-weight:700;text-decoration:underline;\">Documents</a>";
+}
+
+/** @deprecated Use applyActionRequiredDashboard — kept for safety if older HTML omits urgency grid */
+function applyDocumentComplianceBanner(stats) {
+  applyActionRequiredDashboard(stats);
 }
 
 async function loadDashboardStats() {
@@ -650,7 +719,7 @@ async function loadDashboardStats() {
       set("statSessionsToday",    clamp(stats.sessions_today));
       set("statPendingRevisions", clamp(stats.pending_revisions));
       set("statSessionsWeek",     clamp(stats.sessions_week));
-      applyDocumentComplianceBanner(stats);
+      applyActionRequiredDashboard(stats);
       return;
     } catch (e) {
       console.warn("loadDashboardStats bridge error, falling back:", e);

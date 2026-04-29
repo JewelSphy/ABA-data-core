@@ -349,6 +349,25 @@
   </div>
 </div>
 
+<!-- Intake documents prompt after new active client -->
+<div class="modal-overlay" id="intakeDocPromptModal" onclick="if(event.target===this)closeModal('intakeDocPromptModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Submit intake documents</h3>
+      <button class="modal-close" onclick="closeModal('intakeDocPromptModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:#2d4a3e;line-height:1.5;"><strong id="intakePromptClientName">—</strong> — a HIPAA-aligned healthcare intake checklist was created automatically (Consent, ROI, HIPAA, insurance, emergencies, policies, …).</p>
+      <p style="font-size:13px;color:#597568;margin-top:10px;line-height:1.45;">Documents are listed <strong>in priority order</strong> on the Documents page. Upload or paste details for each item—click any row or use <strong>Upload now</strong>.</p>
+      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">Uses the Java API (MySQL) so placeholders appear immediately after save. Pure-Supabase mode may rely on syncing your stack.</div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="small-btn" onclick="closeModal('intakeDocPromptModal')">Later</button>
+      <button type="button" class="add-btn" onclick="gotoIntakeDocumentsFromPrompt()">Open Documents · upload now</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── View Client Modal ──────────────────────────────────────────────────── -->
 <div class="modal-overlay" id="viewClientModal" onclick="if(event.target===this)closeModal('viewClientModal')">
   <div class="modal-box client-pop">
@@ -519,6 +538,19 @@ var _caregiverByClientId = {}; // one linked caregiver (first active) per client
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function openModal  (id) { document.getElementById (id).classList.add    ('open'); }
 function closeModal (id) { document.getElementById (id).classList.remove ('open'); }
+
+function showIntakeDocumentPrompt (clientId, displayName) {
+  window._intakePromptClientId = clientId || '';
+  var nm = document.getElementById ('intakePromptClientName');
+  if (nm) nm.textContent = displayName || 'This client';
+  openModal ('intakeDocPromptModal');
+}
+
+function gotoIntakeDocumentsFromPrompt () {
+  var id = window._intakePromptClientId || '';
+  closeModal ('intakeDocPromptModal');
+  goToPage ('documents.html?client_id=' + encodeURIComponent (id) + '&focus=intake');
+}
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function clientToast (msg) {
@@ -822,6 +854,9 @@ async function createClient () {
     closeModal ('addClientModal');
     clientToast ('Client added successfully');
     await loadClientsTable ();
+    if (createdClientId) {
+      showIntakeDocumentPrompt (createdClientId, (row.first_name + ' ' + row.last_name).trim ());
+    }
   } catch (err) {
     clientToast ('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
   } finally {

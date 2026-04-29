@@ -61,12 +61,24 @@ public final class StatsHandler {
         long missingClientDocs = count ( c,
             "SELECT COUNT(*) FROM documents WHERE org_id = ? AND client_id IS NOT NULL AND requirement_key IS NOT NULL AND status = 'missing'",
             orgId );
+        long docsReqExpired = count ( c,
+            "SELECT COUNT(*) FROM documents WHERE org_id = ? AND client_id IS NOT NULL AND requirement_key IS NOT NULL"
+            + " AND ((expiry_date IS NOT NULL AND expiry_date < CURDATE()) OR LOWER(COALESCE(status,'')) = 'expired')",
+            orgId );
+        long docsReqExpiringSoon = count ( c,
+            "SELECT COUNT(*) FROM documents WHERE org_id = ? AND client_id IS NOT NULL AND requirement_key IS NOT NULL"
+            + " AND expiry_date IS NOT NULL AND expiry_date >= CURDATE()"
+            + " AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL 45 DAY)"
+            + " AND LOWER(COALESCE(status,'')) <> 'missing'",
+            orgId );
         HttpUtil.json ( ex, 200, "{"
             + "\"active_clients\":" + activeClients + ","
             + "\"sessions_today\":" + sessionsToday + ","
             + "\"pending_revisions\":" + pendingRevisions + ","
             + "\"sessions_week\":" + sessionsWeek + ","
-            + "\"missing_client_documents\":" + missingClientDocs
+            + "\"missing_client_documents\":" + missingClientDocs + ","
+            + "\"documents_required_expired\":" + docsReqExpired + ","
+            + "\"documents_required_expiring_soon\":" + docsReqExpiringSoon
             + "}" );
       } catch ( Exception e ) {
         HttpUtil.err ( ex, 500, "Failed to load dashboard stats" );

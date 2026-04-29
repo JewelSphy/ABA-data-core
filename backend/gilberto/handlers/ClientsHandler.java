@@ -102,9 +102,12 @@ public final class ClientsHandler implements HttpHandler {
       ps.setString ( 11, JsonUtil.field ( b, "phone" ) );
       ps.setString ( 12, safeOrDefault ( JsonUtil.field ( b, "auth_status" ), "active" ) );
       ps.setString ( 13, JsonUtil.field ( b, "notes" ) );
-      ps.setString ( 14, safeOrDefault ( JsonUtil.field ( b, "status" ), "active" ) );
+      String rowStatus = safeOrDefault ( JsonUtil.field ( b, "status" ), "active" );
+      ps.setString ( 14, rowStatus );
       ps.executeUpdate ();
-      RequiredClientDocuments.seedForClient ( c, org, id, first, last );
+      if ( rowStatus != null && "active".equalsIgnoreCase ( rowStatus.trim () ) ) {
+        RequiredClientDocuments.seedForClient ( c, org, id, first, last );
+      }
       Audit.log ( ex, "create", "clients", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );
     } catch ( Exception e ) {
@@ -135,6 +138,24 @@ public final class ClientsHandler implements HttpHandler {
       ps.setString ( 12, JsonUtil.field ( b, "status" ) );
       ps.setString ( 13, id );
       ps.executeUpdate ();
+      try ( PreparedStatement qs = c.prepareStatement (
+          "SELECT org_id, first_name, last_name, status FROM clients WHERE id = ?" ) ) {
+        qs.setString ( 1, id );
+        try ( ResultSet rs = qs.executeQuery () ) {
+          if ( rs.next () ) {
+            String st = rs.getString ( "status" );
+            if ( st != null && "active".equalsIgnoreCase ( st.trim () ) ) {
+              RequiredClientDocuments.seedForClient (
+                  c,
+                  rs.getString ( "org_id" ),
+                  id,
+                  rs.getString ( "first_name" ),
+                  rs.getString ( "last_name" )
+              );
+            }
+          }
+        }
+      }
       Audit.log ( ex, "update", "clients", id, "success" );
       ex.sendResponseHeaders ( 204, -1 );
     } catch ( Exception e ) {

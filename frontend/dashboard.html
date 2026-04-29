@@ -146,7 +146,12 @@
     <!-- URGENCY TIERS -->
     <div class="urgency-header">
       <h2>Action Required</h2>
-      <p>Items are grouped by urgency. Address high priority and expired items first.</p>
+      <p>
+        <strong>Expired</strong> required paperwork (red column) →
+        <strong>High</strong> = missing initial uploads for active clients →
+        <strong>Medium</strong> = renewing within 45 days →
+        <strong>Low</strong> = session notes pending review.
+      </p>
     </div>
 
     <section class="urgency-grid">
@@ -161,34 +166,34 @@
         <div class="urgency-empty" id="urgencyEmptyExpired" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No expired items</div>
       </div>
 
-      <!-- HIGH PRIORITY -->
+      <!-- MISSING UPLOADS (initial required files for active clients) -->
       <div class="urgency-col high">
         <div class="urgency-title">
           <span class="urgency-dot"></span>
-          High Priority
+          Missing uploads
           <span class="urgency-count" id="urgencyCountHigh">0</span>
         </div>
-        <div class="urgency-empty" id="urgencyEmptyHigh" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No high priority items</div>
+        <div class="urgency-empty" id="urgencyEmptyHigh" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No missing slots</div>
       </div>
 
-      <!-- MEDIUM PRIORITY -->
+      <!-- EXPIRING SOON (45 days) -->
       <div class="urgency-col medium">
         <div class="urgency-title">
           <span class="urgency-dot"></span>
-          Medium Priority
+          Expiring soon
           <span class="urgency-count" id="urgencyCountMedium">0</span>
         </div>
-        <div class="urgency-empty" id="urgencyEmptyMedium" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No medium priority items</div>
+        <div class="urgency-empty" id="urgencyEmptyMedium" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">Nothing due soon</div>
       </div>
 
-      <!-- LOW PRIORITY -->
+      <!-- SESSION NOTE REVIEW -->
       <div class="urgency-col low">
         <div class="urgency-title">
           <span class="urgency-dot"></span>
-          Low Priority
+          Revisions pending
           <span class="urgency-count" id="urgencyCountLow">0</span>
         </div>
-        <div class="urgency-empty" id="urgencyEmptyLow" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No low priority items</div>
+        <div class="urgency-empty" id="urgencyEmptyLow" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No notes waiting</div>
       </div>
 
     </section>

@@ -6,17 +6,20 @@ import java.sql.ResultSet;
 import java.util.UUID;
 
 /**
- * Standard required client document slots (one row each, seeded when a client is created).
- * Keys align with frontend documentRequirements.js and documents upload types.
+ * HIPAA- and healthcare-style intake placeholders (submission order preserved).
+ * Keys are stable identifiers; labels match the Documents page type picker.
  */
 public final class RequiredClientDocuments {
 
   public static final String[][] SEEDS = new String[][] {
-    { "consent_form",       "Consent Form" },
-    { "authorization",     "Authorization" },
-    { "service_agreement",   "Service Agreement" },
-    { "evaluation",         "Evaluation" },
-    { "certification",      "Certification" }
+    { "01_hipaa_notice",          "HIPAA Notice acknowledgment" },
+    { "02_roi",                   "Authorization for use/disclosure (ROI)" },
+    { "03_consent_treatment",     "Consent for treatment and services" },
+    { "04_npp_financial",         "Notice of Privacy Practices · financial acknowledgement" },
+    { "05_rights_grievance",       "Client rights · grievances acknowledgment" },
+    { "06_insurance",             "Insurance card · eligibility verification" },
+    { "07_service_agreement",     "Service agreement · office policies" },
+    { "08_emergency",             "Emergency contact · urgent care authorization" }
   };
 
   public static String linkedDisplayName ( String first, String last ) {

@@ -16,6 +16,9 @@
     .doc-section-head { margin: 18px 0 8px; }
     .doc-section-head h2 { font-size: 15px; color: #1f2d26; margin: 0 0 4px; }
     .doc-section-head p { font-size: 12px; color: #597568; margin: 0; line-height: 1.45; }
+    .doc-row-click { cursor: pointer; }
+    .doc-row-click:hover td { background: rgba(107,158,126,.06); }
+    .intake-modal-hint { font-size: 12px; color: #597568; margin: 0 0 12px; line-height: 1.45; border-left: 3px solid #6b9e7e; padding-left: 10px; background: #f9fcfb; border-radius: 4px; }
   </style>
 </head>
 <body class="ui-colorful">
@@ -66,7 +69,7 @@
     <header class="topbar">
       <div>
         <h1>Documents</h1>
-        <p>Required client paperwork, uploads, expirations, and organizational files</p>
+        <p>Expired (high), missing uploads (medium), and renewal windows (low) — active clients must complete initial files</p>
       </div>
       <div class="top-actions">
         <button class="add-btn" type="button" onclick="openNewDocument()">+ Upload Document</button>
@@ -84,6 +87,9 @@
           <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expiring')">Expiring Soon</button>
           <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expired')">Expired</button>
           <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'active')">Active only</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-expired')">Pri: High · Expired</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-missing')">Pri: Medium · Missing</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-soon')">Pri: Low · Soon</button>
         </div>
         <div class="table-search">
           <input class="search-input" id="docSearch" type="text" placeholder="Search documents..." oninput="filterDocTables()"/>
@@ -92,11 +98,12 @@
 
       <div class="doc-section-head">
         <h2>Required client documentation</h2>
-        <p>New clients automatically get five placeholders (Consent, Authorization, Service Agreement, Evaluation, Certification). Upload content or paste text to clear each requirement.</p>
+        <p><strong>Active clients</strong> automatically get eight HIPAA-aligned healthcare placeholders when created or activated — listed in checklist order below. Rows sort first by urgency (expired → missing uploads → expiring ≤45 days), then by checklist order.</p>
       </div>
       <table class="data-table">
         <thead>
           <tr>
+            <th>Priority</th>
             <th>Document Name</th>
             <th>Type</th>
             <th>Client</th>
@@ -106,7 +113,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="docBodyRequired"><tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
+        <tbody id="docBodyRequired"><tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
       </table>
 
       <div class="doc-section-head">
@@ -116,6 +123,7 @@
       <table class="data-table">
         <thead>
           <tr>
+            <th>Priority</th>
             <th>Document Name</th>
             <th>Type</th>
             <th>Linked To</th>
@@ -125,7 +133,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="docBodyOther"><tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
+        <tbody id="docBodyOther"><tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -140,6 +148,8 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="editDocId" value=""/>
+      <div class="intake-modal-hint" id="intakeHintBlock">
+        Complete each item before service where required. Labels match HIPAA notice, ROI/consent practice, payer rules, and your practice policies.</div>
       <div class="form-row">
         <div class="form-group">
           <label>Document Name</label>
@@ -148,11 +158,18 @@
         <div class="form-group">
           <label>Type</label>
           <select id="docTypeInput">
+            <option>HIPAA Notice acknowledgment</option>
+            <option>Authorization for use/disclosure (ROI)</option>
+            <option>Consent for treatment and services</option>
+            <option>Notice of Privacy Practices · financial acknowledgement</option>
+            <option>Client rights · grievances acknowledgment</option>
+            <option>Insurance card · eligibility verification</option>
+            <option>Service agreement · office policies</option>
+            <option>Emergency contact · urgent care authorization</option>
             <option>Consent Form</option>
             <option>Evaluation</option>
             <option>Certification</option>
             <option>Authorization</option>
-            <option>Service Agreement</option>
             <option>Session Report</option>
           </select>
         </div>
@@ -174,8 +191,15 @@
         </div>
       </div>
       <div class="form-group">
+        <label>Attach file reference (optional)</label>
+        <input type="file" id="docFileInput" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg"/>
+        <div style="font-size:11px;color:#597568;margin-top:6px;line-height:1.4;">
+          HIPAA tip: pasted text plus date is fully stored. For binaries, summarize key terms here—store signed PDFs according to your org’s policy outside this CRM if needed.
+        </div>
+      </div>
+      <div class="form-group">
         <label>Document Content</label>
-        <textarea id="docContentInput" rows="4" placeholder="Paste or type document content here so it is stored and viewable. Required slots clear when you save with text or an upload date."></textarea>
+        <textarea id="docContentInput" rows="4" placeholder="Paste acknowledgment text, key dates, signer names, or notes from uploads. Required slots clear when you save with text or an upload date."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -234,8 +258,28 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+/** Must match gilberto.RequiredClientDocuments.SEEDS declaration order */
+var REQUIREMENT_ORDER = [
+  '01_hipaa_notice',
+  '02_roi',
+  '03_consent_treatment',
+  '04_npp_financial',
+  '05_rights_grievance',
+  '06_insurance',
+  '07_service_agreement',
+  '08_emergency'
+];
+
 let docsData = [];
 let pendingDeleteDocId = null;
+window.__docFilterMode = 'all';
+window.__focusClientId = null;
+
+function requirementKeyOrder(d) {
+  var k = (d.requirement_key || '').trim();
+  var i = REQUIREMENT_ORDER.indexOf(k);
+  return i >= 0 ? i : 999;
+}
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function showToast(msg) {
@@ -258,6 +302,38 @@ function statusFor(expiry) {
   return 'active';
 }
 function normStatus(s) { return String(s || '').toLowerCase(); }
+/** Derive lifecycle from DB status + expiry date (same rules as save). */
+function effectiveStatus(d) {
+  if (!d) return 'active';
+  const sd = normStatus(d.status);
+  if (sd === 'missing') return 'missing';
+  if (!d.expiry_date) {
+    if (sd === 'expired' || sd === 'expiring') return sd;
+    return 'active';
+  }
+  return statusFor(d.expiry_date);
+}
+
+function documentActionTier(d) {
+  const eff = effectiveStatus(d);
+  if (eff === 'expired') return 'expired';
+  if (eff === 'missing') return 'missing';
+  if (eff === 'expiring') return 'soon';
+  return 'ok';
+}
+
+function priorityBadge(tier) {
+  if (tier === 'expired') return '<span class="badge badge-expired">High — Expired</span>';
+  if (tier === 'missing') return '<span class="badge badge-pending">Medium — Missing</span>';
+  if (tier === 'soon') return '<span class="badge badge-expiring">Low — Soon</span>';
+  return '<span class="badge badge-active">—</span>';
+}
+
+function tierRank(tier) {
+  const o = { expired: 0, missing: 1, soon: 2, ok: 9 };
+  return o[tier] !== undefined ? o[tier] : 9;
+}
+
 function statusBadge(s) {
   const v = normStatus(s);
   if (v === 'missing') return '<span class="badge badge-pending">Awaiting upload</span>';
@@ -281,49 +357,88 @@ function splitAndSort(rows) {
     if (c === 'required') req.push(d);
     else other.push(d);
   });
-  req.sort((a, b) => {
-    const ma = normStatus(a.status) === 'missing' ? 0 : 1;
-    const mb = normStatus(b.status) === 'missing' ? 0 : 1;
-    if (ma !== mb) return ma - mb;
-    const ln = (x) => String(x.linked_name || '');
-    const co = ln(a).localeCompare(ln(b));
+  const sortBlock = (a, b) => {
+    const ta = documentActionTier(a);
+    const tb = documentActionTier(b);
+    if (tierRank(ta) !== tierRank(tb)) return tierRank(ta) - tierRank(tb);
+    const ro = requirementKeyOrder(a) - requirementKeyOrder(b);
+    if (ro !== 0) return ro;
+    var ln = function (x) { return String(x.linked_name || ''); };
+    var co = ln(a).localeCompare(ln(b));
     if (co !== 0) return co;
     return String(a.doc_type || '').localeCompare(String(b.doc_type || ''));
-  });
-  other.sort((a, b) => String(a.doc_name || '').localeCompare(String(b.doc_name || '')));
+  };
+  req.sort(sortBlock);
+  other.sort(sortBlock);
   return { req, other };
 }
 
+function documentRowClick(ev, docId) {
+  if (ev.target.closest && ev.target.closest('button')) return;
+  openEditDoc(docId);
+}
+
 function rowHtml(d) {
-  const st = normStatus(d.status) || 'active';
-  const del = `<button type="button" class="tbl-btn danger" onclick="openDeleteDoc('${esc(d.id)}')">Delete</button>`;
-  const edit = `<button type="button" class="tbl-btn" onclick="openEditDoc('${esc(d.id)}')">Upload / Edit</button>`;
-  return `<tr class="doc-filter-row" data-status="${esc(st)}">
-    <td>${esc(d.doc_name || '—')}</td>
-    <td>${esc(d.doc_type || '—')}</td>
-    <td>${esc(d.linked_name || '—')}</td>
-    <td>${fmtDate(d.upload_date)}</td>
-    <td>${fmtDate(d.expiry_date)}</td>
-    <td>${statusBadge(d.status)}</td>
-    <td>
-      <button type="button" class="tbl-btn" onclick="openViewDoc('${esc(d.id)}')">View</button>
-      ${edit}
-      ${del}
-    </td>
-  </tr>`;
+  var id = String(d.id || '');
+  var cid = String(d.client_id || '');
+  const effSt = effectiveStatus(d);
+  const st = normStatus(effSt) || 'active';
+  const tier = documentActionTier(d);
+  var vid = id.replace(/'/g, "\\'");
+  var btnView = '<button type="button" class="tbl-btn" onclick="event.stopPropagation();openViewDoc(\'' + vid + '\')">View</button>';
+  var btnUp = '<button type="button" class="tbl-btn add-btn" style="margin-right:6px;font-weight:700;padding:6px 12px;border-radius:8px;" onclick="event.stopPropagation();openEditDoc(\'' + vid + '\')">Upload now</button>';
+  var btnDel = '<button type="button" class="tbl-btn danger" onclick="event.stopPropagation();openDeleteDoc(\'' + vid + '\')">Delete</button>';
+  return '<tr class="doc-filter-row doc-row-click"'
+    + ' data-doc-id="' + esc(id) + '"'
+    + ' data-client-id="' + esc(cid) + '"'
+    + ' data-status="' + esc(st) + '"'
+    + ' data-priority="' + esc(tier) + '"'
+    + ' onclick="documentRowClick(event,\'' + vid + '\')"'
+    + ' title="Click row to upload or edit"'
+    + '>'
+    + '<td>' + priorityBadge(tier) + '</td>'
+    + '<td>' + esc(d.doc_name || '—') + '</td>'
+    + '<td>' + esc(d.doc_type || '—') + '</td>'
+    + '<td>' + esc(d.linked_name || '—') + '</td>'
+    + '<td>' + fmtDate(d.upload_date) + '</td>'
+    + '<td>' + fmtDate(d.expiry_date) + '</td>'
+    + '<td>' + statusBadge(effSt) + '</td>'
+    + '<td>'
+    + btnView + btnUp + btnDel
+    + '</td>'
+    + '</tr>';
 }
 
 function updateComplianceBanner() {
   const top = document.getElementById('docComplianceTop');
   if (!top) return;
-  const n = (docsData || []).filter((d) => normStatus(d.status) === 'missing' && d.requirement_key).length;
-  if (n <= 0) {
+  const req = (docsData || []).filter(function (d) { return classifyDoc(d) === 'required'; });
+  let hi = 0;
+  let med = 0;
+  let lo = 0;
+  req.forEach(function (d) {
+    const t = documentActionTier(d);
+    if (t === 'expired') hi += 1;
+    else if (t === 'missing') med += 1;
+    else if (t === 'soon') lo += 1;
+  });
+  const sum = hi + med + lo;
+  if (sum <= 0) {
     top.style.display = 'none';
     top.innerHTML = '';
     return;
   }
   top.style.display = 'block';
-  top.innerHTML = '<strong>Action needed</strong> — ' + n + ' required document slot' + (n === 1 ? ' is' : 's are') + ' still missing an upload. Use <strong>Upload / Edit</strong> on each row to add content or an upload date.';
+  top.className = 'notice notice-warn';
+  top.innerHTML =
+    '<strong>Action priorities</strong> — ' +
+    '<span style="white-space:normal;">High (expired): ' +
+    hi +
+    '. Medium (missing upload): ' +
+    med +
+    '. Low (expiring ≤45 days): ' +
+    lo +
+    '. Use filters or row click / <strong>Upload now</strong>.</span>';
 }
 
 function renderDocTables() {
@@ -331,12 +446,12 @@ function renderDocTables() {
   const bodyOth = document.getElementById('docBodyOther');
   const { req, other } = splitAndSort(docsData);
   if (!req.length) {
-    bodyReq.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No client requirement rows yet. Add a client or run sync (opens automatically when the API loads).</td></tr>';
+    bodyReq.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No client requirement rows yet. Add a client or run sync (opens automatically when the API loads).</td></tr>';
   } else {
     bodyReq.innerHTML = req.map(rowHtml).join('');
   }
   if (!other.length) {
-    bodyOth.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No other documents yet. Use <strong>Upload Document</strong> for staff or org files.</td></tr>';
+    bodyOth.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No other documents yet. Use <strong>Upload Document</strong> for staff or org files.</td></tr>';
   } else {
     bodyOth.innerHTML = other.map(rowHtml).join('');
   }
@@ -359,11 +474,13 @@ async function loadLinkedOptions() {
 }
 
 async function loadDocuments() {
+  window.__focusClientId = null;
+  window.__docFilterMode = 'all';
   const bodyReq = document.getElementById('docBodyRequired');
   const bodyOth = document.getElementById('docBodyOther');
   const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
-    const msg = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Connect to the Java API with your org to manage documents and compliance.</td></tr>';
+    const msg = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Connect to the Java API with your org to manage documents and compliance.</td></tr>';
     bodyReq.innerHTML = msg;
     bodyOth.innerHTML = msg;
     return;
@@ -376,14 +493,16 @@ async function loadDocuments() {
     if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     docsData = await res.json();
     if (!docsData.length) {
-      const msg = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents yet.</td></tr>';
+      const msg = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No documents yet.</td></tr>';
       bodyReq.innerHTML = msg;
       bodyOth.innerHTML = msg;
+      applyDocumentsUrlParams();
       return;
     }
     renderDocTables();
+    applyDocumentsUrlParams();
   } catch (e) {
-    const err = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e && e.message ? e.message : 'unknown error') + '</td></tr>';
+    const err = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e && e.message ? e.message : 'unknown error') + '</td></tr>';
     bodyReq.innerHTML = err;
     bodyOth.innerHTML = err;
   }
@@ -392,6 +511,10 @@ async function loadDocuments() {
 function openNewDocument() {
   document.getElementById('editDocId').value = '';
   document.getElementById('uploadDocModalTitle').textContent = 'Upload document';
+  var hint = document.getElementById('intakeHintBlock');
+  if (hint) hint.style.display = 'none';
+  var fi = document.getElementById('docFileInput');
+  if (fi) fi.value = '';
   document.getElementById('docNameInput').value = '';
   document.getElementById('docTypeInput').selectedIndex = 0;
   document.getElementById('docLinkedInput').value = '';
@@ -404,6 +527,10 @@ function openNewDocument() {
 function openEditDoc(id) {
   const d = docsData.find((x) => x.id === id);
   if (!d) return;
+  var hint = document.getElementById('intakeHintBlock');
+  if (hint) hint.style.display = d.requirement_key ? '' : 'none';
+  var fi = document.getElementById('docFileInput');
+  if (fi) fi.value = '';
   document.getElementById('editDocId').value = id;
   document.getElementById('uploadDocModalTitle').textContent = (normStatus(d.status) === 'missing') ? 'Complete required document' : 'Edit document';
   document.getElementById('docNameInput').value = d.doc_name || '';
@@ -480,7 +607,7 @@ function openViewDoc(id) {
   document.getElementById('viewDocLinked').textContent = d.linked_name || '—';
   document.getElementById('viewDocUploadDate').textContent = fmtDate(d.upload_date);
   document.getElementById('viewDocExpiryDate').textContent = fmtDate(d.expiry_date);
-  document.getElementById('viewDocStatus').innerHTML = statusBadge(d.status);
+  document.getElementById('viewDocStatus').innerHTML = statusBadge(effectiveStatus(d));
   document.getElementById('viewDocContent').textContent = d.content_text || 'No content saved.';
   openModal('viewDocModal');
 }
@@ -505,28 +632,76 @@ async function confirmDeleteDoc() {
 }
 
 function filterDocTables() {
-  const q = (document.getElementById('docSearch') || {}).value.toLowerCase() || '';
+  const q = ((document.getElementById('docSearch') || {}).value || '').toLowerCase().trim();
+  const mode = window.__docFilterMode || 'all';
+  const focusClient = window.__focusClientId;
   document.querySelectorAll('.doc-filter-row').forEach((row) => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    const r = normStatus(row.getAttribute('data-status'));
+    const pr = row.getAttribute('data-priority') || 'ok';
+    let modeOk = true;
+    if (mode === 'all') modeOk = true;
+    else if (mode === 'missing') modeOk = r === 'missing';
+    else if (mode === 'expiring') modeOk = r === 'expiring';
+    else if (mode === 'expired') modeOk = r === 'expired';
+    else if (mode === 'active') modeOk = r === 'active' || r === 'expiring';
+    else if (mode === 'tier-expired') modeOk = pr === 'expired';
+    else if (mode === 'tier-missing') modeOk = pr === 'missing';
+    else if (mode === 'tier-soon') modeOk = pr === 'soon';
+    const textOk = !q || row.textContent.toLowerCase().includes(q);
+    var clientOk = true;
+    if (focusClient) clientOk = row.getAttribute('data-client-id') === focusClient;
+    row.style.display = modeOk && textOk && clientOk ? '' : 'none';
   });
+}
+
+function applyDocumentsUrlParams() {
+  try {
+    var q = new URLSearchParams(window.location.search || '');
+    var cid = q.get('client_id');
+    var focus = q.get('focus');
+    if (!cid) return;
+    window.__focusClientId = cid;
+    if (focus === 'intake') window.__docFilterMode = 'tier-missing';
+    filterDocTables();
+    var hdr = document.getElementById('docComplianceTop');
+    setTimeout(function () {
+      if (hdr && hdr.offsetParent !== null && hdr.innerHTML && hdr.innerHTML.trim()) {
+        hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
+  } catch (_) {
+    /* ignore */
+  }
 }
 
 function filterDocs(ev, status) {
-  document.querySelectorAll('.doc-filter-row').forEach((row) => {
-    const r = normStatus(row.getAttribute('data-status'));
-    let show = true;
-    if (status === 'all') show = true;
-    else if (status === 'missing') show = r === 'missing';
-    else if (status === 'expiring') show = r === 'expiring';
-    else if (status === 'expired') show = r === 'expired';
-    else if (status === 'active') show = r === 'active' || r === 'expiring';
-    row.style.display = show ? '' : 'none';
-  });
+  window.__docFilterMode = status || 'all';
+  if (status === 'all') window.__focusClientId = null;
   document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active-blue'));
   if (ev && ev.target) ev.target.classList.add('active-blue');
+  filterDocTables();
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
+  var docFileEl = document.getElementById('docFileInput');
+  if (docFileEl) {
+    docFileEl.addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      var ta = document.getElementById('docContentInput');
+      if (!ta) return;
+      var note = '[Attachment: ' + f.name + ' — ' + f.type + ' — ' + (f.size || 0) + ' bytes]\n';
+      if (/\.txt$/i.test(f.name) || (f.type && f.type.indexOf('text') === 0)) {
+        var r = new FileReader();
+        r.onload = function () {
+          ta.value = note + '\n' + String(r.result || '').slice(0, 120000);
+        };
+        r.readAsText(f);
+      } else {
+        ta.value = (ta.value ? ta.value + '\n' : '') + note + '(Paste typed summary or excerpts from PDF/images per policy.)';
+      }
+    });
+  }
   if (typeof loadGilbertoOrganization === 'function') {
     await loadGilbertoOrganization();
   }
