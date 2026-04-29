@@ -63,7 +63,7 @@
       <div><h1>Skills</h1><p>Define and manage skill targets for behavior plans</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addSkillModal')">+ Add Skill</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -84,74 +84,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="skillsBody">
-          <tr>
-            <td>Requesting Items</td>
-            <td>Communication</td>
-            <td>Use functional communication to make requests</td>
-            <td>Jon Snow</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Requesting Items','Communication','Use functional communication to make requests','Jon Snow','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Following Directions</td>
-            <td>Compliance</td>
-            <td>Follow one and two step instructions independently</td>
-            <td>Arya Stark</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Following Directions','Compliance','Follow one and two step instructions independently','Arya Stark','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Identifying Emotions</td>
-            <td>Social Skills</td>
-            <td>Label basic emotions from pictures</td>
-            <td>Robb Stark</td>
-            <td><span class="badge badge-pending">Pending</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Identifying Emotions','Social Skills','Label basic emotions from pictures','Robb Stark','Pending')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Sharing and Turn Taking</td>
-            <td>Social Skills</td>
-            <td>Engage in cooperative play with peers</td>
-            <td>Sansa Stark</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Sharing and Turn Taking','Social Skills','Engage in cooperative play with peers','Sansa Stark','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Daily Living Tasks</td>
-            <td>Self-Care</td>
-            <td>Complete hygiene and grooming tasks with minimal prompting</td>
-            <td>Jon Snow</td>
-            <td><span class="badge badge-draft">Draft</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Daily Living Tasks','Self-Care','Complete hygiene and grooming tasks with minimal prompting','Jon Snow','Draft')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Tolerating Transitions</td>
-            <td>Adaptive</td>
-            <td>Move between activities without problem behavior</td>
-            <td>Arya Stark</td>
-            <td><span class="badge badge-inactive">Inactive</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSkill('Tolerating Transitions','Adaptive','Move between activities without problem behavior','Arya Stark','Inactive')">View</button>
-              <button class="tbl-btn" onclick="openModal('editSkillModal')">Edit</button>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="skillsBody"></tbody>
       </table>
     </div>
   </main>
@@ -207,7 +140,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('addSkillModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('addSkillModal')">Save Skill</button>
+      <button class="add-btn" onclick="addSkillFromModal()">Save Skill</button>
     </div>
   </div>
 </div>
@@ -297,13 +230,38 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let skillsRows = [];
+function scopedSkillsKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_skills:' + orgId;
+}
+function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function saveSkills() { localStorage.setItem(scopedSkillsKey(), JSON.stringify(skillsRows)); }
+function loadSkills() {
+  try { skillsRows = JSON.parse(localStorage.getItem(scopedSkillsKey()) || '[]'); } catch (_) { skillsRows = []; }
+}
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function renderSkills() {
+  const body = document.getElementById('skillsBody');
+  if (!skillsRows.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#6b8c7a;">No skills yet. Click <strong>+ Add Skill</strong> to get started.</td></tr>';
+    return;
+  }
+  body.innerHTML = skillsRows.map((r,i)=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.objective)+'</td><td>'+esc(r.client)+'</td><td><span class="badge badge-'+(String(r.status).toLowerCase())+'">'+esc(r.status)+'</span></td><td><button class="tbl-btn" onclick="openViewSkill('+JSON.stringify(r.name)+','+JSON.stringify(r.category)+','+JSON.stringify(r.objective)+','+JSON.stringify(r.client)+','+JSON.stringify(r.status)+')">View</button><button class="tbl-btn danger" onclick="deleteSkill('+i+')">Delete</button></td></tr>').join('');
+}
+function deleteSkill(i){ skillsRows.splice(i,1); saveSkills(); renderSkills(); toast('Skill deleted'); }
+function addSkillFromModal() {
+  const m = document.getElementById('addSkillModal');
+  const inputs = m.querySelectorAll('input, select, textarea');
+  const row = { name: inputs[0].value.trim(), category: inputs[1].value, objective: inputs[2].value.trim(), client: inputs[3].value, status: inputs[4].value };
+  if (!row.name) { toast('Skill name is required'); return; }
+  skillsRows.unshift(row); saveSkills(); renderSkills(); closeModal('addSkillModal'); m.querySelectorAll('input,textarea').forEach(el=>el.value=''); toast('Skill saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -319,6 +277,11 @@ function openViewSkill(name, category, objective, client, status) {
   document.getElementById('vs-status').textContent = status;
   openModal('viewSkillModal');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadSkills();
+  renderSkills();
+});
 </script>
 </body>
 </html>

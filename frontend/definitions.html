@@ -54,7 +54,7 @@
       <div><h1>Definitions</h1><p>Operational definitions used across behavior plans</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addDefModal')">+ Add Definition</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -270,13 +270,33 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let definitionRows = [];
+let pendingDeleteTerm = '';
+function scopedDefinitionsKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_definitions:' + orgId;
+}
+function toast(msg, bg) {
   const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' + (bg || '#2d4a3e') + ';color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function loadDefinitions(){ try { definitionRows = JSON.parse(localStorage.getItem(scopedDefinitionsKey())||'[]'); } catch(_) { definitionRows = []; } }
+function saveDefinitions(){ localStorage.setItem(scopedDefinitionsKey(), JSON.stringify(definitionRows)); }
+function renderDefinitions(){
+  const body = document.getElementById('defBody');
+  if (!definitionRows.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#6b8c7a;">No definitions yet. Click <strong>+ Add Definition</strong> to get started.</td></tr>'; return; }
+  body.innerHTML = definitionRows.map((r)=>'<tr><td>'+esc(r.term)+'</td><td>'+esc(r.definition)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.addedBy)+'</td><td><button class="tbl-btn" onclick="openViewDef('+JSON.stringify(r.term)+','+JSON.stringify(r.definition)+','+JSON.stringify(r.category)+','+JSON.stringify(r.addedBy)+')">View</button><button class="tbl-btn danger" onclick="openDeleteDef('+JSON.stringify(r.term)+')">Delete</button></td></tr>').join('');
+}
+function addDefinitionFromModal(){
+  const m = document.getElementById('addDefModal');
+  const f = m.querySelectorAll('input, textarea, select');
+  const row = { term: f[0].value.trim(), definition: f[1].value.trim(), category: f[2].value, addedBy: (window.gilbertoCurrentUserName || 'Current User') };
+  if (!row.term) { toast('Term is required'); return; }
+  definitionRows.unshift(row); saveDefinitions(); renderDefinitions(); closeModal('addDefModal'); m.querySelectorAll('input,textarea').forEach(el=>el.value=''); toast('Definition saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -292,17 +312,24 @@ function openViewDef(term, definition, category, addedBy) {
   openModal('viewDefModal');
 }
 function openDeleteDef(term) {
+  pendingDeleteTerm = term;
   document.getElementById('dd-term').textContent = term;
   openModal('deleteDefModal');
 }
 function confirmDelete() {
+  definitionRows = definitionRows.filter((r) => r.term !== pendingDeleteTerm);
+  saveDefinitions();
+  renderDefinitions();
   closeModal('deleteDefModal');
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#c0392b;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Definition deleted';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+  toast('Definition deleted', '#c0392b');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadDefinitions();
+  renderDefinitions();
+  const saveBtn = document.querySelector('#addDefModal .add-btn');
+  if (saveBtn) saveBtn.setAttribute('onclick', 'addDefinitionFromModal()');
+});
 </script>
 </body>
 </html>

@@ -63,7 +63,7 @@
       <div><h1>Objectives</h1><p>Short term and long term objectives tied to behavior plans</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addObjectiveModal')">+ Add Objective</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -86,104 +86,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="objBody">
-          <tr>
-            <td>Reduce off-task episodes to 2 or fewer per session</td>
-            <td><span class="badge badge-active">STO</span></td>
-            <td>Jon Snow</td>
-            <td>12/session</td>
-            <td>2/session</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">6/session</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:50%"></div></div>
-            </td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Reduce off-task episodes to 2 or fewer per session','STO','Jon Snow','12/session','2/session','6/session','50','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Independently request break using words</td>
-            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
-            <td>Arya Stark</td>
-            <td>0%</td>
-            <td>80%</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">45%</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:56%"></div></div>
-            </td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Independently request break using words','LTO','Arya Stark','0%','80%','45%','56','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Follow 2-step instructions without prompts</td>
-            <td><span class="badge badge-active">STO</span></td>
-            <td>Robb Stark</td>
-            <td>10%</td>
-            <td>90%</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">65%</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:72%"></div></div>
-            </td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Follow 2-step instructions without prompts','STO','Robb Stark','10%','90%','65%','72','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Reduce SIB to 0 instances per week</td>
-            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
-            <td>Sansa Stark</td>
-            <td>8/week</td>
-            <td>0/week</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">3/week</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:62%"></div></div>
-            </td>
-            <td><span class="badge badge-pending">Pending</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Reduce SIB to 0 instances per week','LTO','Sansa Stark','8/week','0/week','3/week','62','Pending')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Demonstrate turn-taking with a peer for 3 rounds</td>
-            <td><span class="badge badge-active">STO</span></td>
-            <td>Jon Snow</td>
-            <td>0 rounds</td>
-            <td>3 rounds</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">1 round</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:33%"></div></div>
-            </td>
-            <td><span class="badge badge-draft">Draft</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Demonstrate turn-taking with a peer for 3 rounds','STO','Jon Snow','0 rounds','3 rounds','1 round','33','Draft')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Independently complete morning hygiene routine</td>
-            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
-            <td>Arya Stark</td>
-            <td>20%</td>
-            <td>95%</td>
-            <td>
-              <div style="font-size:12px;margin-bottom:4px;">55%</div>
-              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:58%"></div></div>
-            </td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewObj('Independently complete morning hygiene routine','LTO','Arya Stark','20%','95%','55%','58','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="objBody"></tbody>
       </table>
     </div>
   </main>
@@ -247,7 +150,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('addObjectiveModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('addObjectiveModal')">Save Objective</button>
+      <button class="add-btn" onclick="addObjectiveFromModal()">Save Objective</button>
     </div>
   </div>
 </div>
@@ -353,13 +256,34 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let objectiveRows = [];
+function scopedObjectivesKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_objectives:' + orgId;
+}
+function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function loadObjectives(){ try { objectiveRows = JSON.parse(localStorage.getItem(scopedObjectivesKey())||'[]'); } catch(_) { objectiveRows = []; } }
+function saveObjectives(){ localStorage.setItem(scopedObjectivesKey(), JSON.stringify(objectiveRows)); }
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function numPct(v){ const n = Number(String(v).replace('%','')); return isNaN(n) ? 0 : Math.max(0, Math.min(100, n)); }
+function renderObjectives(){
+  const body = document.getElementById('objBody');
+  if (!objectiveRows.length) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No objectives yet. Click <strong>+ Add Objective</strong> to get started.</td></tr>'; return; }
+  body.innerHTML = objectiveRows.map((r,i)=>{ const pct = numPct(r.pct); return '<tr><td>'+esc(r.name)+'</td><td><span class="badge">'+esc(r.type)+'</span></td><td>'+esc(r.client)+'</td><td>'+esc(r.baseline)+'</td><td>'+esc(r.target)+'</td><td><div style="font-size:12px;margin-bottom:4px;">'+esc(r.current)+'</div><div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div></td><td><span class="badge badge-'+String(r.status).toLowerCase()+'">'+esc(r.status)+'</span></td><td><button class="tbl-btn" onclick="openViewObj('+JSON.stringify(r.name)+','+JSON.stringify(r.type)+','+JSON.stringify(r.client)+','+JSON.stringify(r.baseline)+','+JSON.stringify(r.target)+','+JSON.stringify(r.current)+','+JSON.stringify(String(pct))+','+JSON.stringify(r.status)+')">View</button><button class="tbl-btn danger" onclick="deleteObjective('+i+')">Delete</button></td></tr>'; }).join('');
+}
+function deleteObjective(i){ objectiveRows.splice(i,1); saveObjectives(); renderObjectives(); toast('Objective deleted'); }
+function addObjectiveFromModal(){
+  const m = document.getElementById('addObjectiveModal');
+  const f = m.querySelectorAll('textarea, select, input');
+  const row = { name: f[0].value.trim(), type: f[1].value, client: f[2].value, baseline: f[3].value.trim(), target: f[4].value.trim(), current: f[5].value.trim(), status: f[6].value, pct: f[5].value.trim() };
+  if (!row.name) { toast('Objective is required'); return; }
+  objectiveRows.unshift(row); saveObjectives(); renderObjectives(); closeModal('addObjectiveModal'); m.querySelectorAll('textarea,input').forEach(el=>el.value=''); toast('Objective saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -378,6 +302,11 @@ function openViewObj(name, type, client, baseline, target, current, pct, status)
   document.getElementById('vo-bar').style.width = pct + '%';
   openModal('viewObjectiveModal');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadObjectives();
+  renderObjectives();
+});
 </script>
 </body>
 </html>

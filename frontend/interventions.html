@@ -63,7 +63,7 @@
       <div><h1>Interventions</h1><p>Behavior intervention strategies used in sessions</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addInterventionModal')">+ Add Intervention</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -85,80 +85,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="intBody">
-          <tr>
-            <td>Differential Reinforcement of Other Behavior</td>
-            <td>Reinforcement</td>
-            <td>Off-Task Behavior</td>
-            <td>Jon Snow</td>
-            <td>Reinforce any behavior other than the target problem behavior</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Differential Reinforcement of Other Behavior','Reinforcement','Off-Task Behavior','Jon Snow','Reinforce any behavior other than the target problem behavior','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Functional Communication Training</td>
-            <td>Communication</td>
-            <td>Self-Injurious Behavior</td>
-            <td>Arya Stark</td>
-            <td>Teach appropriate ways to communicate wants and needs</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Functional Communication Training','Communication','Self-Injurious Behavior','Arya Stark','Teach appropriate ways to communicate wants and needs','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Token Economy</td>
-            <td>Reinforcement</td>
-            <td>Non-Compliance</td>
-            <td>Robb Stark</td>
-            <td>Use token board to reinforce compliance with directions</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Token Economy','Reinforcement','Non-Compliance','Robb Stark','Use token board to reinforce compliance with directions','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Antecedent Modification</td>
-            <td>Environmental</td>
-            <td>Elopement</td>
-            <td>Sansa Stark</td>
-            <td>Modify the environment to reduce the likelihood of elopement</td>
-            <td><span class="badge badge-pending">Pending</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Antecedent Modification','Environmental','Elopement','Sansa Stark','Modify the environment to reduce the likelihood of elopement','Pending')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Extinction</td>
-            <td>Behavioral</td>
-            <td>Verbal Aggression</td>
-            <td>Jon Snow</td>
-            <td>Withhold reinforcement for the problem behavior</td>
-            <td><span class="badge badge-draft">Draft</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Extinction','Behavioral','Verbal Aggression','Jon Snow','Withhold reinforcement for the problem behavior','Draft')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Visual Supports</td>
-            <td>Environmental</td>
-            <td>Off-Task Behavior</td>
-            <td>Arya Stark</td>
-            <td>Use visual schedules and timers to support transitions</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewInt('Visual Supports','Environmental','Off-Task Behavior','Arya Stark','Use visual schedules and timers to support transitions','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editInterventionModal')">Edit</button>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="intBody"></tbody>
       </table>
     </div>
   </main>
@@ -226,7 +153,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('addInterventionModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('addInterventionModal')">Save Intervention</button>
+      <button class="add-btn" onclick="addInterventionFromModal()">Save Intervention</button>
     </div>
   </div>
 </div>
@@ -329,13 +256,33 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let interventionRows = [];
+function scopedInterventionsKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_interventions:' + orgId;
+}
+function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function loadInterventions(){ try { interventionRows = JSON.parse(localStorage.getItem(scopedInterventionsKey())||'[]'); } catch(_) { interventionRows = []; } }
+function saveInterventions(){ localStorage.setItem(scopedInterventionsKey(), JSON.stringify(interventionRows)); }
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function renderInterventions(){
+  const body = document.getElementById('intBody');
+  if (!interventionRows.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No interventions yet. Click <strong>+ Add Intervention</strong> to get started.</td></tr>'; return; }
+  body.innerHTML = interventionRows.map((r,i)=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.target)+'</td><td>'+esc(r.client)+'</td><td>'+esc(r.desc)+'</td><td><span class="badge badge-'+String(r.status).toLowerCase()+'">'+esc(r.status)+'</span></td><td><button class="tbl-btn" onclick="openViewInt('+JSON.stringify(r.name)+','+JSON.stringify(r.type)+','+JSON.stringify(r.target)+','+JSON.stringify(r.client)+','+JSON.stringify(r.desc)+','+JSON.stringify(r.status)+')">View</button><button class="tbl-btn danger" onclick="deleteIntervention('+i+')">Delete</button></td></tr>').join('');
+}
+function deleteIntervention(i){ interventionRows.splice(i,1); saveInterventions(); renderInterventions(); toast('Intervention deleted'); }
+function addInterventionFromModal(){
+  const m = document.getElementById('addInterventionModal');
+  const f = m.querySelectorAll('input, select, textarea');
+  const row = { name: f[0].value.trim(), type: f[1].value, target: f[2].value, client: f[3].value, status: f[4].value, desc: f[5].value.trim() };
+  if (!row.name) { toast('Intervention name is required'); return; }
+  interventionRows.unshift(row); saveInterventions(); renderInterventions(); closeModal('addInterventionModal'); m.querySelectorAll('input,textarea').forEach(el=>el.value=''); toast('Intervention saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -352,6 +299,11 @@ function openViewInt(name, type, target, client, desc, status) {
   document.getElementById('vi-status').textContent = status;
   openModal('viewInterventionModal');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadInterventions();
+  renderInterventions();
+});
 </script>
 </body>
 </html>

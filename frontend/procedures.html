@@ -54,7 +54,7 @@
       <div><h1>Procedures</h1><p>Behavior intervention procedures used in treatment</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addProcedureModal')">+ Add Procedure</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -274,13 +274,33 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let procedureRows = [];
+function scopedProceduresKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_procedures:' + orgId;
+}
+function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function loadProcedures(){ try { procedureRows = JSON.parse(localStorage.getItem(scopedProceduresKey())||'[]'); } catch(_) { procedureRows = []; } }
+function saveProcedures(){ localStorage.setItem(scopedProceduresKey(), JSON.stringify(procedureRows)); }
+function renderProcedures(){
+  const body = document.getElementById('procBody');
+  if (!procedureRows.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#6b8c7a;">No procedures yet. Click <strong>+ Add Procedure</strong> to get started.</td></tr>'; return; }
+  body.innerHTML = procedureRows.map((r,i)=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.desc)+'</td><td>'+esc(r.behavior)+'</td><td><span class="badge badge-'+String(r.status).toLowerCase()+'">'+esc(r.status)+'</span></td><td><button class="tbl-btn" onclick="openViewProc('+JSON.stringify(r.name)+','+JSON.stringify(r.type)+','+JSON.stringify(r.desc)+','+JSON.stringify(r.behavior)+','+JSON.stringify(r.status)+')">View</button><button class="tbl-btn danger" onclick="deleteProcedure('+i+')">Delete</button></td></tr>').join('');
+}
+function deleteProcedure(i){ procedureRows.splice(i,1); saveProcedures(); renderProcedures(); toast('Procedure deleted'); }
+function addProcedureFromModal(){
+  const m = document.getElementById('addProcedureModal');
+  const f = m.querySelectorAll('input, textarea, select');
+  const row = { name: f[0].value.trim(), type: f[1].value, desc: f[2].value.trim(), behavior: f[3].value, status: f[4].value };
+  if (!row.name) { toast('Procedure name is required'); return; }
+  procedureRows.unshift(row); saveProcedures(); renderProcedures(); closeModal('addProcedureModal'); m.querySelectorAll('input,textarea').forEach(el=>el.value=''); toast('Procedure saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -296,6 +316,13 @@ function openViewProc(name, type, desc, behavior, status) {
   document.getElementById('vp-status').textContent = status;
   openModal('viewProcedureModal');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadProcedures();
+  renderProcedures();
+  const saveBtn = document.querySelector('#addProcedureModal .add-btn');
+  if (saveBtn) saveBtn.setAttribute('onclick', 'addProcedureFromModal()');
+});
 </script>
 </body>
 </html>

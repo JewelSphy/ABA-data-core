@@ -236,6 +236,7 @@ let curYear  = new Date().getFullYear();
 let curMonth = new Date().getMonth();
 let curView  = 'month';
 const TODAY  = new Date();
+let selectedDateKey = dk(curYear, curMonth, TODAY.getDate());
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -281,6 +282,20 @@ function nextYear()  { curYear++;  render(); }
 function prevMonth() { if (curMonth === 0) { curMonth = 11; curYear--; } else { curMonth--; } render(); }
 function nextMonth() { if (curMonth === 11) { curMonth = 0; curYear++; } else { curMonth++; } render(); }
 function goToToday() { curYear = TODAY.getFullYear(); curMonth = TODAY.getMonth(); render(); }
+function selectDay(key) {
+  selectedDateKey = key;
+  const d = new Date(key + 'T00:00:00');
+  if (!isNaN(d.getTime())) {
+    curYear = d.getFullYear();
+    curMonth = d.getMonth();
+  }
+  curView = 'day';
+  ['day', 'week', 'month'].forEach(x => {
+    const el = document.getElementById(x + 'Btn');
+    if (el) el.classList.toggle('active-blue', x === 'day');
+  });
+  render();
+}
 
 function setView(v) {
   curView = v;
@@ -315,13 +330,13 @@ function renderMonth() {
     const key = dk(curYear, curMonth, d);
     const evs = calCache[key] || [];
     const td  = isToday(curYear, curMonth, d);
-    h += `<div class="day-box ${td ? 'today' : ''}">
+    h += `<div class="day-box ${td ? 'today' : ''}" onclick="selectDay('${key}')">
       <strong${td ? ' style="color:#6b9e7e;"' : ''}>${d}</strong>
       ${evs.map(e => {
         const meta  = eventMeta(e.type);
         const label = e.client ? e.title + ' — ' + e.client : e.title;
         const eJson = encodeURIComponent(JSON.stringify(e));
-        return `<div class="event-card ${meta.cls}" onclick="openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${label}</span></div>`;
+        return `<div class="event-card ${meta.cls}" onclick="event.stopPropagation();openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${label}</span></div>`;
       }).join('')}
     </div>`;
   }
@@ -344,12 +359,12 @@ function renderWeek() {
     const key = dk(dd.getFullYear(), dd.getMonth(), dd.getDate());
     const evs = calCache[key] || [];
     const td  = isToday(dd.getFullYear(), dd.getMonth(), dd.getDate());
-    h += `<div class="day-box ${td ? 'today' : ''}" style="min-height:90px;">
+    h += `<div class="day-box ${td ? 'today' : ''}" style="min-height:90px;" onclick="selectDay('${key}')">
       <strong${td ? ' style="color:#6b9e7e;"' : ''}>${dd.getDate()} <span style="font-weight:400;font-size:10px;">${MONTHS[dd.getMonth()].slice(0, 3)}</span></strong>
       ${evs.map(e => {
         const meta  = eventMeta(e.type);
         const eJson = encodeURIComponent(JSON.stringify(e));
-        return `<div class="event-card ${meta.cls}" onclick="openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${e.title}</span></div>`;
+        return `<div class="event-card ${meta.cls}" onclick="event.stopPropagation();openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${e.title}</span></div>`;
       }).join('')}
     </div>`;
   }
@@ -361,9 +376,12 @@ function renderWeek() {
 function renderDay() {
   const grid = document.getElementById('calGrid');
   grid.style.gridTemplateColumns = '1fr';
-  const d   = isToday(curYear, curMonth, TODAY.getDate()) ? TODAY.getDate() : 1;
-  const dow = new Date(curYear, curMonth, d).getDay();
-  const key = dk(curYear, curMonth, d);
+  const chosen = new Date(selectedDateKey + 'T00:00:00');
+  const d = !isNaN(chosen.getTime()) ? chosen.getDate() : TODAY.getDate();
+  const m = !isNaN(chosen.getTime()) ? chosen.getMonth() : curMonth;
+  const y = !isNaN(chosen.getTime()) ? chosen.getFullYear() : curYear;
+  const dow = new Date(y, m, d).getDay();
+  const key = dk(y, m, d);
   const daySessions = (calCache[key] || []).slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
   const SLOTS = [
     '7:00 AM','7:30 AM','8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM',
@@ -384,7 +402,7 @@ function renderDay() {
   });
 
   let h = `<div class="day-name" style="grid-column:1/-1;text-align:left;padding:10px 14px;font-size:13px;">
-    ${DNAMES[dow]}, ${MONTHS[curMonth]} ${d}, ${curYear}</div>`;
+    ${DNAMES[dow]}, ${MONTHS[m]} ${d}, ${y}</div>`;
   SLOTS.forEach(slot => {
     const evs = slotMap[slot] || [];
     h += `<div style="display:flex;align-items:flex-start;gap:12px;padding:6px 14px;border-bottom:1px solid #f0f5f2;min-height:34px;">

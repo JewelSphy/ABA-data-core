@@ -63,7 +63,7 @@
       <div><h1>Behaviors</h1><p>Define target behaviors and their measurement criteria</p></div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addBehaviorModal')">+ Add Behavior</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -85,80 +85,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="behaviorsBody">
-          <tr>
-            <td>Off-Task Behavior</td>
-            <td>Engaging in activity other than the assigned task for more than 5 seconds</td>
-            <td>Maladaptive</td>
-            <td>Jon Snow</td>
-            <td>Frequency</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Off-Task Behavior','Engaging in activity other than the assigned task for more than 5 seconds','Maladaptive','Jon Snow','Frequency','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Self-Injurious Behavior</td>
-            <td>Any instance of hitting self with open hand or closed fist</td>
-            <td>Maladaptive</td>
-            <td>Arya Stark</td>
-            <td>Frequency</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Self-Injurious Behavior','Any instance of hitting self with open hand or closed fist','Maladaptive','Arya Stark','Frequency','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Verbal Aggression</td>
-            <td>Any instance of yelling or using offensive language toward another person</td>
-            <td>Maladaptive</td>
-            <td>Robb Stark</td>
-            <td>Frequency</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Verbal Aggression','Any instance of yelling or using offensive language toward another person','Maladaptive','Robb Stark','Frequency','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Elopement</td>
-            <td>Leaving the designated area without permission</td>
-            <td>Maladaptive</td>
-            <td>Sansa Stark</td>
-            <td>Duration</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Elopement','Leaving the designated area without permission','Maladaptive','Sansa Stark','Duration','Active')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Non-Compliance</td>
-            <td>Failure to follow a direct instruction within 5 seconds</td>
-            <td>Maladaptive</td>
-            <td>Jon Snow</td>
-            <td>Frequency</td>
-            <td><span class="badge badge-pending">Pending</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Non-Compliance','Failure to follow a direct instruction within 5 seconds','Maladaptive','Jon Snow','Frequency','Pending')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Property Destruction</td>
-            <td>Throwing, breaking, or damaging items</td>
-            <td>Maladaptive</td>
-            <td>Arya Stark</td>
-            <td>Frequency</td>
-            <td><span class="badge badge-draft">Draft</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewBehavior('Property Destruction','Throwing, breaking, or damaging items','Maladaptive','Arya Stark','Frequency','Draft')">View</button>
-              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="behaviorsBody"></tbody>
       </table>
     </div>
   </main>
@@ -222,7 +149,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('addBehaviorModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('addBehaviorModal')">Save Behavior</button>
+      <button class="add-btn" onclick="addBehaviorFromModal()">Save Behavior</button>
     </div>
   </div>
 </div>
@@ -321,13 +248,33 @@
 <script>
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
+let behaviorsRows = [];
+function scopedBehaviorsKey() {
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
+  return 'gilberto_behaviors:' + orgId;
+}
+function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function loadBehaviors(){ try { behaviorsRows = JSON.parse(localStorage.getItem(scopedBehaviorsKey())||'[]'); } catch(_) { behaviorsRows = []; } }
+function saveBehaviors(){ localStorage.setItem(scopedBehaviorsKey(), JSON.stringify(behaviorsRows)); }
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function renderBehaviors() {
+  const body = document.getElementById('behaviorsBody');
+  if (!behaviorsRows.length) { body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No behaviors yet. Click <strong>+ Add Behavior</strong> to get started.</td></tr>'; return; }
+  body.innerHTML = behaviorsRows.map((r,i)=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.def)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.client)+'</td><td>'+esc(r.measurement)+'</td><td><span class="badge badge-'+String(r.status).toLowerCase()+'">'+esc(r.status)+'</span></td><td><button class="tbl-btn" onclick="openViewBehavior('+JSON.stringify(r.name)+','+JSON.stringify(r.def)+','+JSON.stringify(r.category)+','+JSON.stringify(r.client)+','+JSON.stringify(r.measurement)+','+JSON.stringify(r.status)+')">View</button><button class="tbl-btn danger" onclick="deleteBehavior('+i+')">Delete</button></td></tr>').join('');
+}
+function deleteBehavior(i){ behaviorsRows.splice(i,1); saveBehaviors(); renderBehaviors(); toast('Behavior deleted'); }
+function addBehaviorFromModal(){
+  const m = document.getElementById('addBehaviorModal');
+  const fields = m.querySelectorAll('input, textarea, select');
+  const row = { name: fields[0].value.trim(), def: fields[1].value.trim(), category: fields[2].value, client: fields[3].value, measurement: fields[4].value, status: fields[5].value };
+  if (!row.name) { toast('Behavior name is required'); return; }
+  behaviorsRows.unshift(row); saveBehaviors(); renderBehaviors(); closeModal('addBehaviorModal'); m.querySelectorAll('input,textarea').forEach(el=>el.value=''); toast('Behavior saved');
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -344,6 +291,11 @@ function openViewBehavior(name, def, category, client, measurement, status) {
   document.getElementById('vb-status').textContent = status;
   openModal('viewBehaviorModal');
 }
+document.addEventListener('DOMContentLoaded', async function(){
+  if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+  loadBehaviors();
+  renderBehaviors();
+});
 </script>
 </body>
 </html>

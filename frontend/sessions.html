@@ -82,8 +82,8 @@
             <button class="small-btn active-blue" data-view="month" onclick="setView('month')">Month</button>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="small-btn"><span class="icon-chip icon-settings" aria-hidden="true"></span> Settings</button>
-            <button class="small-btn"><span class="icon-chip icon-filter" aria-hidden="true"></span> Filters</button>
+            <button class="small-btn" onclick="toggleSessionDensity()"><span class="icon-chip icon-settings" aria-hidden="true"></span> Density</button>
+            <button class="small-btn" onclick="cycleSessionStatusFilter()"><span class="icon-chip icon-filter" aria-hidden="true"></span> Filter Status</button>
           </div>
         </div>
         <div class="table-search">
@@ -478,6 +478,7 @@
       const d = new Date(cell);
       row.style.display = (!isNaN(d.getTime()) && d >= start && d <= endOfDay) ? '' : 'none';
     });
+    applySessionStatusFilter();
   }
 
   function prevPeriod() {
@@ -500,6 +501,52 @@
       b.classList.toggle('active-blue', b.dataset.view === v);
     });
     updateDisplay();
+  }
+
+  let sessionDenseMode = false;
+  let sessionStatusFilter = 'all'; // all | pending | complete
+
+  function toggleSessionDensity() {
+    sessionDenseMode = !sessionDenseMode;
+    const body = document.getElementById('sessionsBody');
+    if (!body) return;
+    body.querySelectorAll('td').forEach(function (td) {
+      td.style.padding = sessionDenseMode ? '6px 10px' : '';
+      td.style.fontSize = sessionDenseMode ? '12.5px' : '';
+    });
+    showToast(sessionDenseMode ? 'Compact rows enabled' : 'Comfortable rows enabled');
+  }
+
+  function applySessionStatusFilter() {
+    const rows = document.querySelectorAll('#sessionsBody tr');
+    rows.forEach(function (row) {
+      if (row.cells.length < 7) return;
+      const status = (row.cells[6].textContent || '').toLowerCase();
+      if (sessionStatusFilter === 'all') {
+        if (row.style.display === 'none') return;
+        row.style.display = '';
+        return;
+      }
+      const matchPending = sessionStatusFilter === 'pending' && status.includes('pending');
+      const matchComplete = sessionStatusFilter === 'complete' && status.includes('complete');
+      const passes = matchPending || matchComplete;
+      row.style.display = passes ? '' : 'none';
+    });
+  }
+
+  function cycleSessionStatusFilter() {
+    sessionStatusFilter = sessionStatusFilter === 'all'
+      ? 'pending'
+      : sessionStatusFilter === 'pending'
+      ? 'complete'
+      : 'all';
+    applySessionStatusFilter();
+    const label = sessionStatusFilter === 'all'
+      ? 'All statuses'
+      : sessionStatusFilter === 'pending'
+      ? 'Pending only'
+      : 'Complete only';
+    showToast('Status filter: ' + label);
   }
 </script>
 </body>
