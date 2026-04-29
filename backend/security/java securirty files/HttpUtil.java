@@ -81,12 +81,12 @@ public final class HttpUtil {
     String k2 = ex.getRequestHeaders ().getFirst ( "apikey" );
     String auth = ex.getRequestHeaders ().getFirst ( "Authorization" );
     String bearer = ( auth != null && auth.toLowerCase ().startsWith ( "bearer " ) ) ? auth.substring ( 7 ).trim () : null;
-    if ( equalsAny ( Env.API_KEY, List.of ( k1, k2, bearer ) ) ) return true;
+    if ( equalsAny ( Env.API_KEY, k1, k2, bearer ) ) return true;
     err ( ex, 401, "Unauthorized" );
     return false;
   }
 
-  private static boolean equalsAny ( String expected, List<String> values ) {
+  private static boolean equalsAny ( String expected, String... values ) {
     for ( String v : values ) if ( v != null && expected.equals ( v ) ) return true;
     return false;
   }
