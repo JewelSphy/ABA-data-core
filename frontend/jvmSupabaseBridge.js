@@ -387,6 +387,47 @@ function caregiverJvmDelete (caregiverId) {
   return jvmFetch ("/api/caregivers?id=eq." + encodeURIComponent (caregiverId), { method: "DELETE" });
 }
 
+// ── Provider helpers ──────────────────────────────────────────────────────────
+function providerJvmFetch (orgId) {
+  var path = "/api/providers";
+  if (orgId) path += "?org_id=eq." + encodeURIComponent (orgId);
+  return jvmFetch (path, { method: "GET" });
+}
+
+function providerJvmCreate (rowObj) {
+  return jvmFetch ("/api/providers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify (rowObj || {})
+  });
+}
+
+function providerJvmDelete (providerId) {
+  return jvmFetch ("/api/providers?id=eq." + encodeURIComponent (providerId), { method: "DELETE" });
+}
+
+// ── Document helpers ──────────────────────────────────────────────────────────
+function documentJvmFetch (orgId, providerId) {
+  var path = "/api/documents";
+  var qs = [];
+  if (orgId) qs.push ("org_id=eq." + encodeURIComponent (orgId));
+  if (providerId) qs.push ("provider_id=eq." + encodeURIComponent (providerId));
+  if (qs.length) path += "?" + qs.join ("&");
+  return jvmFetch (path, { method: "GET" });
+}
+
+function documentJvmCreate (rowObj) {
+  return jvmFetch ("/api/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify (rowObj || {})
+  });
+}
+
+function documentJvmDelete (docId) {
+  return jvmFetch ("/api/documents?id=eq." + encodeURIComponent (docId), { method: "DELETE" });
+}
+
 // ── Error parser ──────────────────────────────────────────────────────────────
 
 async function readJvmErrorResponse (pr) {

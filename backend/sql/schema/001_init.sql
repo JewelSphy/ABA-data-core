@@ -110,3 +110,37 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   UNIQUE KEY uq_user_profiles_org_user (org_id, user_key),
   INDEX idx_user_profiles_org (org_id)
 );
+
+CREATE TABLE IF NOT EXISTS providers (
+  id VARCHAR(36) PRIMARY KEY,
+  org_id VARCHAR(64) NULL,
+  full_name VARCHAR(180) NOT NULL,
+  cert_type VARCHAR(80) NULL,
+  cert_number VARCHAR(80) NULL,
+  email VARCHAR(150) NULL,
+  phone VARCHAR(40) NULL,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  authorization_info TEXT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_providers_org (org_id),
+  INDEX idx_providers_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+  id VARCHAR(36) PRIMARY KEY,
+  org_id VARCHAR(64) NULL,
+  provider_id VARCHAR(36) NULL,
+  doc_name VARCHAR(200) NOT NULL,
+  doc_type VARCHAR(80) NULL,
+  linked_name VARCHAR(180) NULL,
+  upload_date DATE NULL,
+  expiry_date DATE NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'active',
+  content_text LONGTEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_documents_org (org_id),
+  INDEX idx_documents_provider (provider_id),
+  INDEX idx_documents_status (status)
+);

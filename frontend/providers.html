@@ -101,11 +101,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" placeholder="Provider name"/>
+          <input id="providerName" type="text" placeholder="Provider name"/>
         </div>
         <div class="form-group">
           <label>Certification Type</label>
-          <select>
+          <select id="providerCertType">
             <option>BCBA</option>
             <option>BCaBA</option>
             <option>RBT</option>
@@ -116,35 +116,35 @@
       <div class="form-row">
         <div class="form-group">
           <label>Cert Number</label>
-          <input type="text" placeholder="e.g. BCBA-1042"/>
+          <input id="providerCertNumber" type="text" placeholder="e.g. BCBA-1042"/>
         </div>
         <div class="form-group">
           <label>Email</label>
-          <input type="email" placeholder="provider@example.com"/>
+          <input id="providerEmail" type="email" placeholder="provider@example.com"/>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Start Date</label>
-          <input type="date"/>
+          <input id="providerStartDate" type="date"/>
         </div>
         <div class="form-group">
           <label>End Date</label>
-          <input type="date"/>
+          <input id="providerEndDate" type="date"/>
         </div>
       </div>
       <div class="form-group">
         <label>Phone</label>
-        <input type="text" placeholder="555-0000"/>
+        <input id="providerPhone" type="text" placeholder="555-0000"/>
       </div>
       <div class="form-group">
         <label>Authorization Info</label>
-        <textarea rows="3" placeholder="Relevant authorization details..."></textarea>
+        <textarea id="providerAuthorization" rows="3" placeholder="Relevant authorization details..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('addProviderModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('addProviderModal')">Save</button>
+      <button class="add-btn" onclick="saveProvider()">Save</button>
     </div>
   </div>
 </div>
@@ -157,7 +157,17 @@
       <button class="modal-close" onclick="closeModal('viewProviderModal')">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:14px;color:#6b8c7a;line-height:1.5;">No provider record selected yet.</p>
+      <div class="info-grid">
+        <div class="info-item"><label>Name</label><span id="viewProviderName">—</span></div>
+        <div class="info-item"><label>Certification Type</label><span id="viewProviderCertType">—</span></div>
+        <div class="info-item"><label>Cert Number</label><span id="viewProviderCertNumber">—</span></div>
+        <div class="info-item"><label>Start Date</label><span id="viewProviderStartDate">—</span></div>
+        <div class="info-item"><label>End Date</label><span id="viewProviderEndDate">—</span></div>
+        <div class="info-item"><label>Email</label><span id="viewProviderEmail">—</span></div>
+        <div class="info-item"><label>Phone</label><span id="viewProviderPhone">—</span></div>
+        <div class="info-item"><label>Status</label><span id="viewProviderStatus">—</span></div>
+        <div class="info-item"><label>Authorization Info</label><span id="viewProviderAuth">—</span></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('viewProviderModal')">Close</button>
@@ -181,7 +191,7 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="providerDocsBody">
           <tr>
             <td colspan="3" style="text-align:center;padding:16px;color:#6b8c7a;">No provider documents loaded yet.</td>
           </tr>
@@ -190,7 +200,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('providerDocsModal')">Close</button>
-      <button class="add-btn" onclick="showToast('Upload feature coming soon')">Upload Document</button>
+      <button class="add-btn" onclick="goToPage('documents.html')">Open Documents</button>
     </div>
   </div>
 </div>
@@ -201,16 +211,11 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+let providersData = [];
+let activeProviderId = null;
+
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
@@ -218,12 +223,126 @@ function showToast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, "\\'"); }
+function d(v) { if (!v) return '—'; const x = new Date(String(v) + 'T00:00:00'); return Number.isNaN(x.getTime()) ? String(v) : x.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function statusBadge(s) {
+  const v = String(s || 'active').toLowerCase();
+  if (v === 'expired') return '<span class="badge badge-expired">Expired</span>';
+  if (v === 'expiring') return '<span class="badge badge-expiring">Expiring</span>';
+  return '<span class="badge badge-active">Active</span>';
+}
+async function loadProviders() {
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const body = document.getElementById('providerBody');
+  if (!orgId || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No providers loaded yet.</td></tr>';
+    return;
+  }
+  try {
+    const res = await providerJvmFetch(orgId);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    providersData = await res.json();
+    if (!providersData.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No providers loaded yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = providersData.map((p) => `<tr>
+      <td>${esc(p.full_name || '—')}</td>
+      <td>${esc(p.cert_type || '—')}</td>
+      <td>${esc(p.cert_number || '—')}</td>
+      <td>${d(p.start_date)}</td>
+      <td>${d(p.end_date)}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td>
+        <button class="tbl-btn" onclick="openProviderView('${p.id}')">View</button>
+        <button class="tbl-btn" onclick="openProviderDocs('${p.id}')">Documents</button>
+        <button class="tbl-btn danger" onclick="deleteProvider('${p.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#b04f4f;">Failed to load providers: ' + esc(e?.message || 'unknown error') + '</td></tr>';
+  }
+}
+async function saveProvider() {
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  if (!orgId) { showToast('Organization not loaded'); return; }
+  const payload = {
+    org_id: orgId,
+    full_name: (document.getElementById('providerName').value || '').trim(),
+    cert_type: document.getElementById('providerCertType').value || null,
+    cert_number: (document.getElementById('providerCertNumber').value || '').trim() || null,
+    email: (document.getElementById('providerEmail').value || '').trim() || null,
+    phone: (document.getElementById('providerPhone').value || '').trim() || null,
+    start_date: document.getElementById('providerStartDate').value || null,
+    end_date: document.getElementById('providerEndDate').value || null,
+    authorization_info: (document.getElementById('providerAuthorization').value || '').trim() || null,
+    status: 'active'
+  };
+  if (!payload.full_name) { showToast('Provider name is required'); return; }
+  try {
+    const res = await providerJvmCreate(payload);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    closeModal('addProviderModal');
+    showToast('Provider saved');
+    await loadProviders();
+  } catch (e) {
+    showToast('Save failed: ' + (e?.message || 'unknown error'));
+  }
+}
+function openProviderView(id) {
+  const p = providersData.find((x) => x.id === id);
+  if (!p) return;
+  activeProviderId = id;
+  document.getElementById('viewProviderName').textContent = p.full_name || '—';
+  document.getElementById('viewProviderCertType').textContent = p.cert_type || '—';
+  document.getElementById('viewProviderCertNumber').textContent = p.cert_number || '—';
+  document.getElementById('viewProviderStartDate').textContent = d(p.start_date);
+  document.getElementById('viewProviderEndDate').textContent = d(p.end_date);
+  document.getElementById('viewProviderEmail').textContent = p.email || '—';
+  document.getElementById('viewProviderPhone').textContent = p.phone || '—';
+  document.getElementById('viewProviderStatus').innerHTML = statusBadge(p.status);
+  document.getElementById('viewProviderAuth').textContent = p.authorization_info || '—';
+  openModal('viewProviderModal');
+}
+async function openProviderDocs(id) {
+  activeProviderId = id;
+  const p = providersData.find((x) => x.id === id);
+  const name = p ? p.full_name : null;
+  const body = document.getElementById('providerDocsBody');
+  try {
+    const res = await documentJvmFetch(window.gilbertoCurrentOrg?.id || null, id);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    const rows = await res.json();
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#6b8c7a;">No provider documents loaded yet.</td></tr>';
+    } else {
+      body.innerHTML = rows.map((r) => `<tr><td>${esc(r.doc_name || '—')}</td><td>${d(r.upload_date)}</td><td><button class="tbl-btn" onclick="showToast('Open Documents page to view full content')">View</button></td></tr>`).join('');
+    }
+    openModal('providerDocsModal');
+    if (name) showToast('Viewing documents for ' + name);
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents.</td></tr>';
+    openModal('providerDocsModal');
+  }
+}
+async function deleteProvider(id) {
+  if (!id || !confirm('Delete this provider?')) return;
+  try {
+    const res = await providerJvmDelete(id);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    showToast('Provider deleted');
+    await loadProviders();
+  } catch (e) {
+    showToast('Delete failed: ' + (e?.message || 'unknown error'));
+  }
+}
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
   document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
     row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
+document.addEventListener('DOMContentLoaded', function () { loadProviders(); });
 </script>
 </body>
 </html>

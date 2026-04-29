@@ -67,7 +67,7 @@
       </div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('uploadDocModal')">+ Upload Document</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -95,110 +95,7 @@
           </tr>
         </thead>
         <tbody id="docBody">
-          <tr data-status="active">
-            <td>Consent Form</td>
-            <td>Consent Form</td>
-            <td>Jon Snow</td>
-            <td>Jan 5, 2026</td>
-            <td>Jan 5, 2027</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="active">
-            <td>Behavior Plan</td>
-            <td>Evaluation</td>
-            <td>Arya Stark</td>
-            <td>Feb 10, 2026</td>
-            <td>Feb 10, 2027</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="expiring">
-            <td>Insurance Certificate</td>
-            <td>Authorization</td>
-            <td>Provider One</td>
-            <td>Mar 1, 2026</td>
-            <td>Jun 1, 2026</td>
-            <td><span class="badge badge-expiring">Expiring</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="expired">
-            <td>Staff Agreement</td>
-            <td>Service Agreement</td>
-            <td>Tyrion Lannister</td>
-            <td>Jan 1, 2025</td>
-            <td>Jan 1, 2026</td>
-            <td><span class="badge badge-expired">Expired</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="active">
-            <td>Evaluation Report</td>
-            <td>Evaluation</td>
-            <td>Robb Stark</td>
-            <td>Dec 1, 2025</td>
-            <td>Dec 1, 2026</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="expiring">
-            <td>RBT Certificate</td>
-            <td>Certification</td>
-            <td>Brienne of Tarth</td>
-            <td>Mar 15, 2024</td>
-            <td>Mar 15, 2026</td>
-            <td><span class="badge badge-expiring">Expiring</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="active">
-            <td>Service Agreement</td>
-            <td>Service Agreement</td>
-            <td>Sansa Stark</td>
-            <td>Nov 1, 2025</td>
-            <td>Nov 1, 2026</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
-          <tr data-status="expired">
-            <td>Background Check</td>
-            <td>Authorization</td>
-            <td>Samwell Tarly</td>
-            <td>Jan 20, 2024</td>
-            <td>Jan 20, 2025</td>
-            <td><span class="badge badge-expired">Expired</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
-              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
-              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
-            </td>
-          </tr>
+          <tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>
         </tbody>
       </table>
     </div>
@@ -216,11 +113,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>Document Name</label>
-          <input type="text" placeholder="e.g. Consent Form 2026"/>
+          <input id="docNameInput" type="text" placeholder="e.g. Consent Form 2026"/>
         </div>
         <div class="form-group">
           <label>Type</label>
-          <select>
+          <select id="docTypeInput">
             <option>Consent Form</option>
             <option>Evaluation</option>
             <option>Certification</option>
@@ -232,32 +129,28 @@
       </div>
       <div class="form-group">
         <label>Linked To</label>
-        <select>
-          <option>Jon Snow</option>
-          <option>Robb Stark</option>
-          <option>Arya Stark</option>
-          <option>Sansa Stark</option>
-          <option>The Hound</option>
+        <select id="docLinkedInput">
+          <option value="">— Optional link —</option>
         </select>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Upload Date</label>
-          <input type="date"/>
+          <input id="docUploadDateInput" type="date"/>
         </div>
         <div class="form-group">
           <label>Expiry Date</label>
-          <input type="date"/>
+          <input id="docExpiryDateInput" type="date"/>
         </div>
       </div>
       <div class="form-group">
-        <label>File</label>
-        <input type="file"/>
+        <label>Document Content</label>
+        <textarea id="docContentInput" rows="4" placeholder="Paste or type document content here so it is stored and viewable."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('uploadDocModal')">Cancel</button>
-      <button class="add-btn" onclick="saveForm('uploadDocModal')">Upload</button>
+      <button class="add-btn" onclick="saveDocument()">Upload</button>
     </div>
   </div>
 </div>
@@ -271,12 +164,13 @@
     </div>
     <div class="modal-body">
       <div class="info-grid">
-        <div class="info-item"><label>Document Name</label><span>Consent Form</span></div>
-        <div class="info-item"><label>Type</label><span>Consent Form</span></div>
-        <div class="info-item"><label>Linked To</label><span>Jon Snow</span></div>
-        <div class="info-item"><label>Upload Date</label><span>Jan 5, 2026</span></div>
-        <div class="info-item"><label>Expiry Date</label><span>Jan 5, 2027</span></div>
-        <div class="info-item"><label>Status</label><span><span class="badge badge-active">Active</span></span></div>
+        <div class="info-item"><label>Document Name</label><span id="viewDocName">—</span></div>
+        <div class="info-item"><label>Type</label><span id="viewDocType">—</span></div>
+        <div class="info-item"><label>Linked To</label><span id="viewDocLinked">—</span></div>
+        <div class="info-item"><label>Upload Date</label><span id="viewDocUploadDate">—</span></div>
+        <div class="info-item"><label>Expiry Date</label><span id="viewDocExpiryDate">—</span></div>
+        <div class="info-item"><label>Status</label><span id="viewDocStatus">—</span></div>
+        <div class="info-item" style="grid-column:1/-1"><label>Content</label><span id="viewDocContent">—</span></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -299,7 +193,7 @@
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('deleteDocModal')">Cancel</button>
-      <button class="tbl-btn danger" onclick="saveForm('deleteDocModal')">Delete</button>
+      <button class="tbl-btn danger" onclick="confirmDeleteDoc()">Delete</button>
     </div>
   </div>
 </div>
@@ -310,22 +204,131 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+let docsData = [];
+let pendingDeleteDocId = null;
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function saveForm(id) {
-  closeModal(id);
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-  t.textContent = 'Saved successfully';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
 function showToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
+}
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, "\\'"); }
+function fmtDate(v) { if (!v) return '—'; const d = new Date(String(v) + 'T00:00:00'); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function statusFor(expiry) {
+  if (!expiry) return 'active';
+  const now = new Date();
+  const e = new Date(String(expiry) + 'T00:00:00');
+  if (Number.isNaN(e.getTime())) return 'active';
+  if (e < now) return 'expired';
+  const days = Math.round((e.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 45) return 'expiring';
+  return 'active';
+}
+function statusBadge(s) {
+  const v = String(s || 'active').toLowerCase();
+  if (v === 'expired') return '<span class="badge badge-expired">Expired</span>';
+  if (v === 'expiring') return '<span class="badge badge-expiring">Expiring</span>';
+  return '<span class="badge badge-active">Active</span>';
+}
+async function loadLinkedOptions() {
+  const sel = document.getElementById('docLinkedInput');
+  sel.innerHTML = '<option value="">— Optional link —</option>';
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  if (!orgId) return;
+  try {
+    const [cRes, sRes, pRes] = await Promise.all([jvmFetchClients(orgId, null), jvmFetchStaff(orgId, null), providerJvmFetch(orgId)]);
+    const add = (label) => { sel.innerHTML += `<option value="${esc(label)}">${esc(label)}</option>`; };
+    if (cRes.ok) (await cRes.json()).forEach((x) => add(`${x.first_name || ''} ${x.last_name || ''}`.trim()));
+    if (sRes.ok) (await sRes.json()).forEach((x) => add(`${x.first_name || ''} ${x.last_name || ''}`.trim()));
+    if (pRes.ok) (await pRes.json()).forEach((x) => add(x.full_name || ''));
+  } catch (_) {}
+}
+async function loadDocuments() {
+  const body = document.getElementById('docBody');
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  if (!orgId || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>';
+    return;
+  }
+  try {
+    const res = await documentJvmFetch(orgId, null);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    docsData = await res.json();
+    if (!docsData.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = docsData.map((d) => `<tr data-status="${esc(d.status || 'active')}">
+      <td>${esc(d.doc_name || '—')}</td>
+      <td>${esc(d.doc_type || '—')}</td>
+      <td>${esc(d.linked_name || '—')}</td>
+      <td>${fmtDate(d.upload_date)}</td>
+      <td>${fmtDate(d.expiry_date)}</td>
+      <td>${statusBadge(d.status)}</td>
+      <td>
+        <button class="tbl-btn" onclick="openViewDoc('${d.id}')">View</button>
+        <button class="tbl-btn danger" onclick="openDeleteDoc('${d.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e?.message || 'unknown error') + '</td></tr>';
+  }
+}
+async function saveDocument() {
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  if (!orgId) { showToast('Organization not loaded'); return; }
+  const payload = {
+    org_id: orgId,
+    doc_name: (document.getElementById('docNameInput').value || '').trim(),
+    doc_type: document.getElementById('docTypeInput').value || null,
+    linked_name: document.getElementById('docLinkedInput').value || null,
+    upload_date: document.getElementById('docUploadDateInput').value || null,
+    expiry_date: document.getElementById('docExpiryDateInput').value || null,
+    content_text: (document.getElementById('docContentInput').value || '').trim() || null
+  };
+  payload.status = statusFor(payload.expiry_date);
+  if (!payload.doc_name) { showToast('Document name is required'); return; }
+  try {
+    const res = await documentJvmCreate(payload);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    closeModal('uploadDocModal');
+    showToast('Document saved and stored');
+    await loadDocuments();
+  } catch (e) {
+    showToast('Save failed: ' + (e?.message || 'unknown error'));
+  }
+}
+function openViewDoc(id) {
+  const d = docsData.find((x) => x.id === id);
+  if (!d) return;
+  document.getElementById('viewDocName').textContent = d.doc_name || '—';
+  document.getElementById('viewDocType').textContent = d.doc_type || '—';
+  document.getElementById('viewDocLinked').textContent = d.linked_name || '—';
+  document.getElementById('viewDocUploadDate').textContent = fmtDate(d.upload_date);
+  document.getElementById('viewDocExpiryDate').textContent = fmtDate(d.expiry_date);
+  document.getElementById('viewDocStatus').innerHTML = statusBadge(d.status);
+  document.getElementById('viewDocContent').textContent = d.content_text || 'No content saved.';
+  openModal('viewDocModal');
+}
+function openDeleteDoc(id) {
+  pendingDeleteDocId = id;
+  openModal('deleteDocModal');
+}
+async function confirmDeleteDoc() {
+  if (!pendingDeleteDocId) return;
+  try {
+    const res = await documentJvmDelete(pendingDeleteDocId);
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
+    closeModal('deleteDocModal');
+    showToast('Document deleted');
+    pendingDeleteDocId = null;
+    await loadDocuments();
+  } catch (e) {
+    showToast('Delete failed: ' + (e?.message || 'unknown error'));
+  }
 }
 function filterTable(inputId, tbodyId) {
   const q = document.getElementById(inputId).value.toLowerCase();
@@ -341,6 +344,10 @@ function filterDocs(status) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-blue'));
   event.target.classList.add('active-blue');
 }
+document.addEventListener('DOMContentLoaded', function () {
+  loadLinkedOptions();
+  loadDocuments();
+});
 </script>
 </body>
 </html>
