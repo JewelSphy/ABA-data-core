@@ -248,11 +248,56 @@ async function logout() {
   }
 }
 
+async function resolveCurrentUserIdentity() {
+  const fallback = { id: "", email: "", fullName: "Current User", initial: "C" };
+  try {
+    if (!window.supabaseClient) {
+      window.gilbertoCurrentUserId = "";
+      window.gilbertoCurrentUserEmail = "";
+      window.gilbertoCurrentUserName = fallback.fullName;
+      window.gilbertoCurrentUserInitial = fallback.initial;
+      return fallback;
+    }
+    const { data } = await window.supabaseClient.auth.getSession();
+    const user = data?.session?.user || null;
+    const userId = user?.id || "";
+    const email = user?.email || "";
+    const metaName = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+    const localName = localStorage.getItem("gilberto_profile_name") || "";
+    const fullName = (localName || metaName || email || fallback.fullName).trim();
+    const initial = (fullName.charAt(0) || fallback.initial).toUpperCase();
+    window.gilbertoCurrentUserId = userId;
+    window.gilbertoCurrentUserEmail = email;
+    window.gilbertoCurrentUserName = fullName;
+    window.gilbertoCurrentUserInitial = initial;
+    return { id: userId, email, fullName, initial };
+  } catch (_) {
+    window.gilbertoCurrentUserName = fallback.fullName;
+    window.gilbertoCurrentUserInitial = fallback.initial;
+    return fallback;
+  }
+}
+window.resolveCurrentUserIdentity = resolveCurrentUserIdentity;
+
+function applyUserIdentityPills() {
+  const name = String(window.gilbertoCurrentUserName || "Current User");
+  const initial = String(window.gilbertoCurrentUserInitial || name.charAt(0) || "C").toUpperCase();
+  document.querySelectorAll(".user-pill").forEach((el) => {
+    el.textContent = initial;
+    el.title = name;
+    el.setAttribute("aria-label", "Signed in as " + name);
+  });
+}
+
 // Sidebar collapse — injected on every page so we don't have to touch each html file
 document.addEventListener('DOMContentLoaded', function () {
   applyAutoTheme();
   enhanceInteractivity();
   void enforceAuthGuard();
+  void resolveCurrentUserIdentity().then(applyUserIdentityPills);
+  window.addEventListener("gilberto-profile-updated", function () {
+    void resolveCurrentUserIdentity().then(applyUserIdentityPills);
+  });
 
   const layout  = document.querySelector('.app-layout');
   const sidebar = document.querySelector('.sidebar');

@@ -92,3 +92,19 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   INDEX idx_audit_actor_time (actor, created_at),
   INDEX idx_audit_entity_time (entity_type, entity_id, created_at)
 );
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id VARCHAR(36) PRIMARY KEY,
+  org_id VARCHAR(36) NOT NULL,
+  user_key VARCHAR(255) NOT NULL,
+  full_name VARCHAR(255) NULL,
+  email VARCHAR(255) NULL,
+  role_title VARCHAR(120) NULL,
+  phone VARCHAR(50) NULL,
+  bio TEXT NULL,
+  avatar_initial VARCHAR(8) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_user_profiles_org_user (org_id, user_key),
+  INDEX idx_user_profiles_org (org_id)
+);

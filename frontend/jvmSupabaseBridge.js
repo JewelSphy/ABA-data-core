@@ -21,6 +21,9 @@ async function jvmHeaders () {
   if (window.JAVA_API_KEY && String(window.JAVA_API_KEY).trim()) {
     h["x-api-key"] = String(window.JAVA_API_KEY).trim();
   }
+  if (window.gilbertoCurrentUserId && String(window.gilbertoCurrentUserId).trim()) {
+    h["x-user-id"] = String(window.gilbertoCurrentUserId).trim();
+  }
   if (window.gilbertoCurrentUserName && String(window.gilbertoCurrentUserName).trim()) {
     h["x-user-name"] = String(window.gilbertoCurrentUserName).trim();
   }
@@ -174,6 +177,22 @@ function sessionNoteJvmFetchBySessionId (sessionId) {
 
 function sessionNoteJvmUpsert (rowObj) {
   return jvmFetch ("/api/session-notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify (rowObj || {})
+  });
+}
+
+// ── Profile helpers ───────────────────────────────────────────────────────────
+function profileJvmFetch (orgId, userKey) {
+  return jvmFetch (
+    "/api/profile?org_id=eq." + encodeURIComponent (orgId) + "&user_key=eq." + encodeURIComponent (userKey),
+    { method: "GET" }
+  );
+}
+
+function profileJvmUpsert (rowObj) {
+  return jvmFetch ("/api/profile", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify (rowObj || {})

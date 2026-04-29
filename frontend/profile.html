@@ -36,6 +36,7 @@
         <p>Manage your account, preferences, and contact information.</p>
       </div>
       <div class="top-actions">
+        <div class="user-pill" id="topbarUserPill">—</div>
         <button class="small-btn" onclick="goToPage('dashboard.html')">Back to Dashboard</button>
         <button class="add-btn" onclick="saveProfile()">Save Changes</button>
       </div>
@@ -45,29 +46,36 @@
       <div class="section-box-header">
         <h3>Account Details</h3>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div id="profileAvatarInitial" style="width:54px;height:54px;border-radius:50%;background:linear-gradient(120deg,#2b73d2,#2ca66b);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;">G</div>
+        <div>
+          <div style="font-weight:700;color:#1f3c31;">Profile Avatar</div>
+          <div style="font-size:12px;color:#6b8c7a;">Auto-generated from the first letter of your full name.</div>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Full Name</label>
-          <input type="text" value="Hand of the Realm" />
+          <input type="text" id="profileFullName" value="" />
         </div>
         <div class="form-group">
           <label>Role</label>
-          <input type="text" value="Clinical Administrator" />
+          <input type="text" id="profileRoleTitle" value="" />
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Email</label>
-          <input type="email" value="admin@gilbertocarecrm.com" />
+          <input type="email" id="profileEmail" value="" />
         </div>
         <div class="form-group">
           <label>Phone</label>
-          <input type="text" value="(555) 015-2244" />
+          <input type="text" id="profilePhone" value="" />
         </div>
       </div>
       <div class="form-group">
         <label>Bio</label>
-        <textarea rows="4">Oversees compliance, supervision, and reporting workflows across all active ABA programs.</textarea>
+        <textarea rows="4" id="profileBio"></textarea>
       </div>
     </section>
 
@@ -121,13 +129,117 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
-function saveProfile() {
+function profileToast(msg, bad) {
   const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:2px;font-size:13px;z-index:999;';
-  t.textContent = 'Profile saved';
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:' + (bad ? '#a64040' : '#2d4a3e') + ';color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:999;';
+  t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2200);
 }
+
+function profileInitialFromName(name) {
+  const s = String(name || '').trim();
+  return (s.charAt(0) || 'G').toUpperCase();
+}
+
+function currentProfileUserKey() {
+  const id = window.gilbertoCurrentUserId || '';
+  const email = window.gilbertoCurrentUserEmail || '';
+  const fallback = window.gilbertoCurrentUserName || 'local-user';
+  return (id || email || fallback).trim();
+}
+
+function syncAvatarPreview() {
+  const name = (document.getElementById('profileFullName')?.value || '').trim() || 'Current User';
+  const initial = profileInitialFromName(name);
+  const avatar = document.getElementById('profileAvatarInitial');
+  if (avatar) avatar.textContent = initial;
+}
+
+function applyProfileToForm(p) {
+  document.getElementById('profileFullName').value = p.full_name || window.gilbertoCurrentUserName || '';
+  document.getElementById('profileRoleTitle').value = p.role_title || '';
+  document.getElementById('profileEmail').value = p.email || window.gilbertoCurrentUserEmail || '';
+  document.getElementById('profilePhone').value = p.phone || '';
+  document.getElementById('profileBio').value = p.bio || '';
+  syncAvatarPreview();
+}
+
+async function loadProfile() {
+  await (window.resolveCurrentUserIdentity ? window.resolveCurrentUserIdentity() : Promise.resolve());
+  await (window.loadGilbertoOrganization ? window.loadGilbertoOrganization() : Promise.resolve());
+  const localFallback = {
+    full_name: localStorage.getItem('gilberto_profile_name') || window.gilbertoCurrentUserName || '',
+    email: localStorage.getItem('gilberto_profile_email') || window.gilbertoCurrentUserEmail || '',
+    role_title: localStorage.getItem('gilberto_profile_role') || '',
+    phone: localStorage.getItem('gilberto_profile_phone') || '',
+    bio: localStorage.getItem('gilberto_profile_bio') || ''
+  };
+  applyProfileToForm(localFallback);
+
+  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) return;
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const userKey = currentProfileUserKey();
+  if (!orgId || !userKey) return;
+  try {
+    const res = await profileJvmFetch(orgId, userKey);
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (Array.isArray(rows) && rows.length) applyProfileToForm(rows[0] || {});
+  } catch (_) {}
+}
+
+async function saveProfile() {
+  const fullName = (document.getElementById('profileFullName').value || '').trim();
+  const roleTitle = (document.getElementById('profileRoleTitle').value || '').trim();
+  const email = (document.getElementById('profileEmail').value || '').trim();
+  const phone = (document.getElementById('profilePhone').value || '').trim();
+  const bio = (document.getElementById('profileBio').value || '').trim();
+  const avatarInitial = profileInitialFromName(fullName);
+
+  localStorage.setItem('gilberto_profile_name', fullName);
+  localStorage.setItem('gilberto_profile_email', email);
+  localStorage.setItem('gilberto_profile_role', roleTitle);
+  localStorage.setItem('gilberto_profile_phone', phone);
+  localStorage.setItem('gilberto_profile_bio', bio);
+  window.gilbertoCurrentUserName = fullName || window.gilbertoCurrentUserName || 'Current User';
+  window.gilbertoCurrentUserInitial = avatarInitial;
+  window.dispatchEvent(new Event('gilberto-profile-updated'));
+  syncAvatarPreview();
+
+  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
+    profileToast('Profile saved locally');
+    return;
+  }
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const userKey = currentProfileUserKey();
+  if (!orgId || !userKey) {
+    profileToast('Profile saved locally (no org context yet)');
+    return;
+  }
+  try {
+    const res = await profileJvmUpsert({
+      org_id: orgId,
+      user_key: userKey,
+      full_name: fullName,
+      role_title: roleTitle,
+      email: email,
+      phone: phone,
+      bio: bio,
+      avatar_initial: avatarInitial
+    });
+    if (!res.ok) throw new Error('save failed');
+    profileToast('Profile saved to backend');
+  } catch (_) {
+    profileToast('Saved locally, backend save failed', true);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const fullName = document.getElementById('profileFullName');
+  if (fullName) fullName.addEventListener('input', syncAvatarPreview);
+  void loadProfile();
+});
 </script>
 </body>
 </html>

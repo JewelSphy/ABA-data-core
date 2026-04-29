@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import gilberto.handlers.ClientsHandler;
 import gilberto.handlers.CaregiversHandler;
 import gilberto.handlers.HealthHandler;
+import gilberto.handlers.ProfileHandler;
 import gilberto.handlers.SessionsHandler;
 import gilberto.handlers.SessionNotesHandler;
 import gilberto.handlers.StaffHandler;
@@ -14,6 +15,7 @@ import java.net.InetSocketAddress;
 public final class Main {
 
   public static final int PORT = Env.intOrDefault ( "PORT", 8788 );
+  public static final String HOST = System.getenv ().getOrDefault ( "HOST", "0.0.0.0" );
 
   public static void main ( String[] args ) throws Exception {
     Db.initSchema ();
@@ -24,7 +26,7 @@ public final class Main {
       System.out.println ( "[security] ALLOWED_ORIGIN=* : consider setting a fixed frontend origin." );
     }
 
-    HttpServer server = HttpServer.create ( new InetSocketAddress ( "127.0.0.1", PORT ), 0 );
+    HttpServer server = HttpServer.create ( new InetSocketAddress ( HOST, PORT ), 0 );
     server.createContext ( "/health",             new HealthHandler ()   );
     server.createContext ( "/api/clients",        new ClientsHandler ()  );
     server.createContext ( "/api/caregivers",     new CaregiversHandler () );
@@ -32,11 +34,12 @@ public final class Main {
     server.createContext ( "/api/sessions",       new SessionsHandler () );
     server.createContext ( "/api/session-notes",  new SessionNotesHandler () );
     server.createContext ( "/api/ai/session-note",new AiNoteHandler () );
+    server.createContext ( "/api/profile",        new ProfileHandler () );
     server.createContext ( "/api/client-stats",   new StatsHandler.ClientStatsHandler () );
     server.createContext ( "/api/dashboard-stats",new StatsHandler.DashboardStatsHandler () );
     server.setExecutor ( null );
     server.start ();
 
-    System.out.println ( "Gilberto backend running on http://127.0.0.1:" + PORT );
+    System.out.println ( "Gilberto backend running on http://" + HOST + ":" + PORT );
   }
 }
