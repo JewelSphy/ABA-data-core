@@ -77,8 +77,8 @@
         <h1>Graph Hub</h1>
         <p>Visual behavior graphs for tracking client progress over time</p>
       </div>
-      <div class="top-actions">
-        <div class="user-pill">Admin &#9662;</div>
+        <div class="top-actions">
+        <div class="user-pill">—</div>
       </div>
     </div>
 
@@ -107,10 +107,6 @@
             <label>Client</label>
             <select id="clientFilter">
               <option>All Clients</option>
-              <option>John Doe 1</option>
-              <option>John Doe 2</option>
-              <option>Jane Doe 1</option>
-              <option>Jane Doe 2</option>
             </select>
           </div>
           <div class="control-group">
@@ -414,6 +410,9 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+  let graphSessions = [];
+  let graphClients = [];
+
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
   function showToast(msg) {
@@ -424,24 +423,163 @@
     setTimeout(() => t.remove(), 2500);
   }
 
-  function applyFilters() {
-    const client = document.getElementById('clientFilter').value;
-    const graphs = {
-      graph1: 'John Doe 1',
-      graph2: 'Jane Doe 1',
-      graph3: 'John Doe 1',
-      graph4: 'Jane Doe 1'
-    };
-    Object.entries(graphs).forEach(([id, name]) => {
-      const el = document.getElementById(id);
-      if (client === 'All Clients' || client === name) {
-        el.style.display = '';
-      } else {
-        el.style.display = 'none';
-      }
-    });
-    showToast('Filters applied');
+  function esc(v) {
+    return String(v == null ? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
   }
+
+  function weekStartIso(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    const day = d.getDay();
+    const diff = (day + 6) % 7;
+    d.setDate(d.getDate() - diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function fmtShortDate(v) {
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d.getTime())) return v;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function loadClientFilter() {
+    const sel = document.getElementById('clientFilter');
+    const prev = sel.value || 'All Clients';
+    sel.innerHTML = '<option>All Clients</option>' + graphClients.map(function (name) {
+      return '<option>' + esc(name) + '</option>';
+    }).join('');
+    if ([...sel.options].some(function (o) { return o.value === prev; })) sel.value = prev;
+  }
+
+  function getClientName(row) {
+    return [row?.clients?.first_name || '', row?.clients?.last_name || ''].join(' ').trim() || 'Unknown Client';
+  }
+
+  function aggregateByWeek(rows) {
+    const map = {};
+    (rows || []).forEach(function (r) {
+      if (!r || !r.session_date) return;
+      const wk = weekStartIso(r.session_date);
+      if (!wk) return;
+      if (!map[wk]) map[wk] = 0;
+      map[wk] += 1;
+    });
+    return Object.keys(map).sort().slice(-8).map(function (wk) { return { week: wk, value: map[wk] }; });
+  }
+
+  function metricTrend(points) {
+    if (!points.length) return 'Flat';
+    if (points.length === 1) return 'Stable';
+    const first = points[0].value;
+    const last = points[points.length - 1].value;
+    if (last > first) return 'Increasing';
+    if (last < first) return 'Decreasing';
+    return 'Stable';
+  }
+
+  function svgFor(points) {
+    const w = 600;
+    const h = 200;
+    const left = 40;
+    const right = 580;
+    const top = 20;
+    const bottom = 170;
+    if (!points.length) {
+      return '<svg viewBox="0 0 600 200" width="100%" height="200"><text x="300" y="105" text-anchor="middle" fill="#9dbfb0" font-size="13">No data in selected range</text></svg>';
+    }
+    const vals = points.map(function (p) { return p.value; });
+    const min = Math.min.apply(null, vals);
+    const max = Math.max.apply(null, vals);
+    const span = Math.max(1, max - min);
+    const step = points.length > 1 ? (right - left) / (points.length - 1) : 0;
+    const xy = points.map(function (p, i) {
+      const x = left + (i * step);
+      const y = bottom - ((p.value - min) / span) * (bottom - top);
+      return { x: x, y: y, v: p.value, label: p.week };
+    });
+    const poly = xy.map(function (p) { return p.x + ',' + p.y; }).join(' ');
+    const circles = xy.map(function (p) { return '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#6b9e7e"/>'; }).join('');
+    const labels = xy.map(function (p) { return '<text x="' + p.x + '" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">' + esc(fmtShortDate(p.label)) + '</text>'; }).join('');
+    const yTop = '<text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">' + max + '</text>';
+    const yBot = '<text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">' + min + '</text>';
+    return '<svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">'
+      + '<line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>'
+      + '<line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>'
+      + '<polyline points="' + poly + '" fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>'
+      + circles + labels + yTop + yBot + '</svg>';
+  }
+
+  function renderCard(cardId, title, clientName, points) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const avg = points.length ? (points.reduce(function (a, p) { return a + p.value; }, 0) / points.length) : 0;
+    const baseline = points.length ? points[0].value : 0;
+    const target = Math.max(0, Math.round((baseline || 0) * 0.5));
+    const trend = metricTrend(points);
+    card.innerHTML =
+      '<div class="graph-card-header"><div><h3>' + esc(title) + '</h3><span>' + esc(clientName) + ' - Sessions per week</span></div>'
+      + '<button class="small-btn" onclick="showToast(\'Export coming soon\')">Export PNG</button></div>'
+      + '<div class="graph-card-body">' + svgFor(points) + '</div>'
+      + '<div class="graph-card-footer">'
+      + '<div class="graph-stat"><div class="label">Current Avg</div><div class="value">' + avg.toFixed(1) + ' / week</div></div>'
+      + '<div class="graph-stat"><div class="label">Baseline</div><div class="value">' + baseline + ' / week</div></div>'
+      + '<div class="graph-stat"><div class="label">Target</div><div class="value">' + target + ' / week</div></div>'
+      + '<div class="graph-stat"><div class="label">Trend</div><div class="value">' + esc(trend) + '</div></div>'
+      + '</div>';
+  }
+
+  function applyFilters(noToast) {
+    const client = document.getElementById('clientFilter').value;
+    const from = document.getElementById('dateFrom').value || '';
+    const to = document.getElementById('dateTo').value || '';
+    const scoped = graphSessions.filter(function (r) {
+      if (!r || !r.session_date) return false;
+      const n = getClientName(r);
+      if (client !== 'All Clients' && n !== client) return false;
+      if (from && r.session_date < from) return false;
+      if (to && r.session_date > to) return false;
+      return true;
+    });
+    const byClient = {};
+    scoped.forEach(function (r) {
+      const n = getClientName(r);
+      if (!byClient[n]) byClient[n] = [];
+      byClient[n].push(r);
+    });
+    const names = Object.keys(byClient).sort();
+    const c1 = names[0] || client;
+    const c2 = names[1] || names[0] || client;
+    renderCard('graph1', 'Session Frequency (Client A)', c1 || 'No client selected', aggregateByWeek(byClient[c1] || []));
+    renderCard('graph2', 'Session Frequency (Client B)', c2 || 'No client selected', aggregateByWeek(byClient[c2] || []));
+    renderCard('graph3', 'Completed Sessions', c1 || 'No client selected', aggregateByWeek((byClient[c1] || []).filter(function (r) { return String(r.status || '').toLowerCase() === 'completed'; })));
+    renderCard('graph4', 'Pending Sessions', c2 || 'No client selected', aggregateByWeek((byClient[c2] || []).filter(function (r) { return String(r.status || '').toLowerCase() !== 'completed'; })));
+    if (!noToast) showToast('Controls applied');
+  }
+
+  async function initGraphHub() {
+    try {
+      await loadGilbertoOrganization();
+      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
+      const res = await jvmFetchSessionsTable(orgId, 500);
+      if (!res.ok) throw new Error(await readJvmErrorResponse(res));
+      graphSessions = await res.json();
+      graphClients = Array.from(new Set(graphSessions.map(getClientName))).sort();
+      loadClientFilter();
+      applyFilters(true);
+    } catch (e) {
+      showToast('Failed to load graph data');
+      ['graph1', 'graph2', 'graph3', 'graph4'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="graph-card-body" style="padding:20px;color:#9f3a38;">Failed to load: ' + esc(e && e.message ? e.message : String(e)) + '</div>';
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { void initGraphHub(); });
 </script>
 </body>
 </html>

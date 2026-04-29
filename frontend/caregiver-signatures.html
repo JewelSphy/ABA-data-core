@@ -60,7 +60,7 @@
         <p>Sessions awaiting caregiver or guardian signature</p>
       </div>
       <div class="top-actions">
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </div>
 
@@ -87,99 +87,7 @@
           </tr>
         </thead>
         <tbody id="signaturesBody">
-          <tr>
-            <td>Apr 24, 2026</td>
-            <td>Jon Snow</td>
-            <td>Behavior Treatment</td>
-            <td>Robert Doe</td>
-            <td>Apr 24, 2026</td>
-            <td><span class="badge badge-unsigned">Awaiting</span></td>
-            <td>
-              <button class="tbl-btn" onclick="showToast('Reminder sent to caregiver')">Send Reminder</button>
-              <button class="tbl-btn" onclick="openMarkSigned('Jon Snow','Robert Doe','Apr 24, 2026')">Mark Signed</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 24, 2026</td>
-            <td>Arya Stark</td>
-            <td>Behavior Treatment</td>
-            <td>Susan Doe</td>
-            <td>Apr 24, 2026</td>
-            <td><span class="badge badge-unsigned">Awaiting</span></td>
-            <td>
-              <button class="tbl-btn" onclick="showToast('Reminder sent to caregiver')">Send Reminder</button>
-              <button class="tbl-btn" onclick="openMarkSigned('Arya Stark','Susan Doe','Apr 24, 2026')">Mark Signed</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 23, 2026</td>
-            <td>Robb Stark</td>
-            <td>Caregiver Training</td>
-            <td>Robert Doe</td>
-            <td>Apr 23, 2026</td>
-            <td><span class="badge badge-unsigned">Awaiting</span></td>
-            <td>
-              <button class="tbl-btn" onclick="showToast('Reminder sent to caregiver')">Send Reminder</button>
-              <button class="tbl-btn" onclick="openMarkSigned('Robb Stark','Robert Doe','Apr 23, 2026')">Mark Signed</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 22, 2026</td>
-            <td>Sansa Stark</td>
-            <td>Behavior Treatment</td>
-            <td>Linda Doe</td>
-            <td>Apr 22, 2026</td>
-            <td><span class="badge badge-signed">Signed</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSignature('Sansa Stark','Linda Doe','Apr 22, 2026','Behavior Treatment')">View</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 22, 2026</td>
-            <td>Jon Snow</td>
-            <td>Assessment</td>
-            <td>Thomas Doe</td>
-            <td>Apr 22, 2026</td>
-            <td><span class="badge badge-signed">Signed</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSignature('Jon Snow','Thomas Doe','Apr 22, 2026','Assessment')">View</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 21, 2026</td>
-            <td>Arya Stark</td>
-            <td>Behavior Treatment</td>
-            <td>Susan Doe</td>
-            <td>Apr 21, 2026</td>
-            <td><span class="badge badge-unsigned">Awaiting</span></td>
-            <td>
-              <button class="tbl-btn" onclick="showToast('Reminder sent to caregiver')">Send Reminder</button>
-              <button class="tbl-btn" onclick="openMarkSigned('Arya Stark','Susan Doe','Apr 21, 2026')">Mark Signed</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 20, 2026</td>
-            <td>Robb Stark</td>
-            <td>Behavior Treatment</td>
-            <td>Michael Doe</td>
-            <td>Apr 20, 2026</td>
-            <td><span class="badge badge-unsigned">Awaiting</span></td>
-            <td>
-              <button class="tbl-btn" onclick="showToast('Reminder sent to caregiver')">Send Reminder</button>
-              <button class="tbl-btn" onclick="openMarkSigned('Robb Stark','Michael Doe','Apr 20, 2026')">Mark Signed</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Apr 19, 2026</td>
-            <td>Sansa Stark</td>
-            <td>Supervision</td>
-            <td>Linda Doe</td>
-            <td>Apr 19, 2026</td>
-            <td><span class="badge badge-signed">Signed</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openViewSignature('Sansa Stark','Linda Doe','Apr 19, 2026','Supervision')">View</button>
-            </td>
-          </tr>
+          <tr><td colspan="7" style="text-align:center;color:#7a8f86;">Loading caregiver signatures…</td></tr>
         </tbody>
       </table>
     </div>
@@ -243,6 +151,9 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+  var signaturesRows = [];
+  var pendingSignRow = null;
+
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
   function handleOverlayClick(e, id) {
@@ -261,24 +172,173 @@
       row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   }
-  function openMarkSigned(client, caregiver, date) {
-    document.getElementById('ms-client').textContent = client;
-    document.getElementById('ms-caregiver').textContent = caregiver;
-    document.getElementById('ms-date').textContent = date;
+
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
+  }
+
+  function fmtDate(v) {
+    if (!v) return '—';
+    var d = new Date(v + 'T00:00:00');
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function pickCaregiverName(caregiversByClientId, clientId) {
+    var list = caregiversByClientId[clientId] || [];
+    if (!list.length) return 'Unassigned caregiver';
+    var active = list.find(function (c) { return String(c.status || '').toLowerCase() !== 'inactive'; }) || list[0];
+    return [active.first_name || '', active.last_name || ''].join(' ').trim() || 'Unassigned caregiver';
+  }
+
+  function buildRows(sessions, notesBySessionId, caregiversByClientId) {
+    return (sessions || []).map(function (s) {
+      var note = notesBySessionId[s.id] || null;
+      var client = [s?.clients?.first_name || '', s?.clients?.last_name || ''].join(' ').trim() || 'Unknown client';
+      var caregiver = pickCaregiverName(caregiversByClientId, s.client_id);
+      var signedAt = note && note.submitted_at ? note.submitted_at : null;
+      var signedBy = note && note.submitted_by ? note.submitted_by : caregiver;
+      var isSigned = !!signedAt || String(note?.status || '').toLowerCase() === 'caregiver_signed';
+      return {
+        session_id: s.id,
+        org_id: s.org_id || '',
+        client_name: client,
+        caregiver_name: caregiver,
+        service_type: s.service_type || 'Session',
+        session_date: s.session_date || '',
+        sent_on: s.session_date || '',
+        signed_at: signedAt,
+        signed_by: signedBy,
+        status: isSigned ? 'signed' : 'awaiting',
+        raw_note: note
+      };
+    });
+  }
+
+  function renderRows(rows) {
+    var tbody = document.getElementById('signaturesBody');
+    if (!rows || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#7a8f86;">No caregiver signatures yet. Complete sessions to see requests here.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(function (r, idx) {
+      var statusHtml = r.status === 'signed'
+        ? '<span class="badge badge-signed">Signed</span>'
+        : '<span class="badge badge-unsigned">Awaiting</span>';
+      var actions = r.status === 'signed'
+        ? '<button class="tbl-btn" onclick="openViewSignatureByIndex(' + idx + ')">View</button>'
+        : '<button class="tbl-btn" onclick="sendReminder(' + idx + ')">Send Reminder</button> <button class="tbl-btn" onclick="openMarkSignedByIndex(' + idx + ')">Mark Signed</button>';
+      return '<tr>'
+        + '<td>' + esc(fmtDate(r.session_date)) + '</td>'
+        + '<td>' + esc(r.client_name) + '</td>'
+        + '<td>' + esc(r.service_type) + '</td>'
+        + '<td>' + esc(r.caregiver_name) + '</td>'
+        + '<td>' + esc(fmtDate(r.sent_on)) + '</td>'
+        + '<td>' + statusHtml + '</td>'
+        + '<td>' + actions + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  async function loadCaregiverSignatures() {
+    try {
+      await loadGilbertoOrganization();
+      var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
+      var sessionsResp = await jvmFetchSessionsTable(orgId, 300);
+      var caregiversResp = await jvmFetchCaregivers(orgId, 'active');
+      var notesResp = await jvmFetch('/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : ''), { method: 'GET' });
+      if (!sessionsResp.ok) throw new Error(await readJvmErrorResponse(sessionsResp));
+      if (!caregiversResp.ok) throw new Error(await readJvmErrorResponse(caregiversResp));
+      if (!notesResp.ok) throw new Error(await readJvmErrorResponse(notesResp));
+      var sessions = await sessionsResp.json();
+      var caregivers = await caregiversResp.json();
+      var notes = await notesResp.json();
+      var notesBySessionId = {};
+      (notes || []).forEach(function (n) {
+        if (n && n.session_id) notesBySessionId[n.session_id] = n;
+      });
+      var caregiversByClientId = {};
+      (caregivers || []).forEach(function (c) {
+        if (!c || !c.client_id) return;
+        if (!caregiversByClientId[c.client_id]) caregiversByClientId[c.client_id] = [];
+        caregiversByClientId[c.client_id].push(c);
+      });
+      signaturesRows = buildRows(sessions || [], notesBySessionId, caregiversByClientId);
+      renderRows(signaturesRows);
+      filterTable('sigSearch', 'signaturesBody');
+    } catch (e) {
+      document.getElementById('signaturesBody').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;color:#9f3a38;">Failed to load signatures: ' + esc(e && e.message ? e.message : String(e)) + '</td></tr>';
+    }
+  }
+
+  function openMarkSignedByIndex(idx) {
+    var row = signaturesRows[idx];
+    if (!row) return;
+    pendingSignRow = row;
+    document.getElementById('ms-client').textContent = row.client_name;
+    document.getElementById('ms-caregiver').textContent = row.caregiver_name;
+    document.getElementById('ms-date').textContent = fmtDate(row.session_date);
     openModal('markSignedModal');
   }
-  function confirmSigned() {
-    closeModal('markSignedModal');
-    showToast('Signature confirmed and recorded');
+
+  async function confirmSigned() {
+    if (!pendingSignRow) return;
+    var nowIso = new Date().toISOString();
+    var payload = {
+      session_id: pendingSignRow.session_id,
+      org_id: pendingSignRow.org_id || null,
+      submitted_by: pendingSignRow.caregiver_name,
+      submitted_at: nowIso,
+      status: 'caregiver_signed'
+    };
+    var prior = pendingSignRow.raw_note || {};
+    if (prior.progress_note) payload.progress_note = prior.progress_note;
+    if (typeof prior.similarity_percent !== 'undefined' && prior.similarity_percent !== null) payload.similarity_percent = prior.similarity_percent;
+    if (typeof prior.supervision_required !== 'undefined') payload.supervision_required = !!prior.supervision_required;
+    if (prior.rbt_signed_by) payload.rbt_signed_by = prior.rbt_signed_by;
+    if (prior.rbt_signed_at) payload.rbt_signed_at = prior.rbt_signed_at;
+    if (prior.supervisor_signed_by) payload.supervisor_signed_by = prior.supervisor_signed_by;
+    if (prior.supervisor_signed_at) payload.supervisor_signed_at = prior.supervisor_signed_at;
+
+    try {
+      var res = await sessionNoteJvmUpsert(payload);
+      if (!res.ok) throw new Error(await readJvmErrorResponse(res));
+      closeModal('markSignedModal');
+      pendingSignRow = null;
+      showToast('Signature confirmed and recorded');
+      await loadCaregiverSignatures();
+    } catch (e) {
+      showToast('Failed to save signature: ' + (e && e.message ? e.message : String(e)));
+    }
   }
-  function openViewSignature(client, caregiver, date, type) {
-    document.getElementById('vsig-client').textContent = client;
-    document.getElementById('vsig-caregiver').textContent = caregiver;
-    document.getElementById('vsig-date').textContent = date;
-    document.getElementById('vsig-type').textContent = type;
-    document.getElementById('vsig-name-display').textContent = caregiver;
+
+  function openViewSignatureByIndex(idx) {
+    var row = signaturesRows[idx];
+    if (!row) return;
+    var signedName = row.signed_by || row.caregiver_name;
+    closeModal('markSignedModal');
+    document.getElementById('vsig-client').textContent = row.client_name;
+    document.getElementById('vsig-caregiver').textContent = row.caregiver_name;
+    document.getElementById('vsig-date').textContent = fmtDate(row.session_date);
+    document.getElementById('vsig-type').textContent = row.service_type;
+    document.getElementById('vsig-name-display').textContent = signedName;
     openModal('viewSignatureModal');
   }
+
+  function sendReminder(idx) {
+    var row = signaturesRows[idx];
+    if (!row) return;
+    showToast('Reminder sent to ' + row.caregiver_name);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    void loadCaregiverSignatures();
+  });
 </script>
 </body>
 </html>

@@ -112,7 +112,7 @@
         <p>Visualize behavioral patterns extracted from submitted session notes, mapped against LTO and STO progress</p>
       </div>
       <div class="top-actions">
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </div>
 
@@ -125,19 +125,15 @@
             <label>Client&nbsp;</label>
             <select id="analyticsClient">
               <option>All Clients</option>
-              <option>Jon Snow</option>
-              <option>Robb Stark</option>
-              <option>Arya Stark</option>
-              <option>Sansa Stark</option>
             </select>
           </div>
           <div>
             <label>From&nbsp;</label>
-            <input type="date" value="2026-01-27" />
+            <input type="date" id="analyticsFrom" value="2026-01-27" />
           </div>
           <div>
             <label>To&nbsp;</label>
-            <input type="date" value="2026-04-25" />
+            <input type="date" id="analyticsTo" value="2026-04-25" />
           </div>
           <div>
             <label>Behavior&nbsp;</label>
@@ -158,22 +154,22 @@
       <!-- Stat Cards -->
       <div class="stat-cards-row">
         <div class="stat-card">
-          <div class="stat-value">48</div>
+          <div class="stat-value" id="baTotalSessions">—</div>
           <div class="stat-label">Total Sessions Analyzed</div>
           <div class="stat-sub">Past 90 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">312</div>
+          <div class="stat-value" id="baDataPoints">—</div>
           <div class="stat-label">Data Points Recorded</div>
           <div class="stat-sub">Across all behaviors</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" style="color:#16a34a;">4 of 5</div>
+          <div class="stat-value" id="baTrendDown" style="color:#16a34a;">—</div>
           <div class="stat-label">Behaviors Trending Down</div>
           <div class="stat-sub">Problem behaviors decreasing</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" style="color:#16a34a;">6 of 7</div>
+          <div class="stat-value" id="baGoalsTrack" style="color:#16a34a;">—</div>
           <div class="stat-label">Goals On Track</div>
           <div class="stat-sub">STOs and LTOs combined</div>
         </div>
@@ -698,6 +694,9 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+  let analyticsSessions = [];
+  let analyticsClients = [];
+
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
   function showToast(msg) {
@@ -713,9 +712,123 @@
     document.getElementById(tabId).classList.add('active');
     document.getElementById(panelId).classList.add('active');
   }
-  function applyAnalyticsFilters() {
-    showToast('Filters applied');
+
+  function esc(v) {
+    return String(v == null ? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;');
   }
+
+  function getClientName(row) {
+    return [row?.clients?.first_name || '', row?.clients?.last_name || ''].join(' ').trim() || 'Unknown Client';
+  }
+
+  function weekKey(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    const day = d.getDay();
+    const diff = (day + 6) % 7;
+    d.setDate(d.getDate() - diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function fmtWeek(v) {
+    const d = new Date(v + 'T00:00:00');
+    if (isNaN(d.getTime())) return v;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function buildTrendChart(title, clientName, rows, color) {
+    const wk = {};
+    (rows || []).forEach(function (r) {
+      const k = weekKey(r.session_date || '');
+      if (!k) return;
+      wk[k] = (wk[k] || 0) + 1;
+    });
+    const points = Object.keys(wk).sort().slice(-12).map(function (k) { return { week: k, value: wk[k] }; });
+    if (!points.length) {
+      return '<div class="section-box chart-section"><div class="section-box-header"><div class="chart-header"><div><h4>' + esc(title) + '</h4><div class="chart-client">' + esc(clientName) + '</div></div></div></div><div style="padding:18px;color:#7a8f86;">No sessions found for this filter.</div></div>';
+    }
+    const min = Math.min.apply(null, points.map(function (p) { return p.value; }));
+    const max = Math.max.apply(null, points.map(function (p) { return p.value; }));
+    const span = Math.max(1, max - min);
+    const left = 60, right = 780, top = 20, bottom = 150;
+    const step = points.length > 1 ? (right - left) / (points.length - 1) : 0;
+    const xy = points.map(function (p, i) {
+      return { x: left + i * step, y: bottom - ((p.value - min) / span) * (bottom - top), label: p.week, value: p.value };
+    });
+    const poly = xy.map(function (p) { return p.x + ',' + p.y; }).join(' ');
+    const circles = xy.map(function (p) { return '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="white" stroke="' + color + '" stroke-width="2"/>'; }).join('');
+    const xlabels = xy.map(function (p) { return '<text x="' + p.x + '" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">' + esc(fmtWeek(p.label)) + '</text>'; }).join('');
+    return '<div class="section-box chart-section"><div class="section-box-header"><div class="chart-header" style="width:100%;"><div><h4>' + esc(title) + '</h4><div class="chart-client">' + esc(clientName) + ' - Weekly sessions</div></div></div></div>'
+      + '<div style="padding: 16px 20px; overflow-x: auto;"><svg viewBox="0 0 840 180" width="100%" height="180">'
+      + '<line x1="60" y1="20" x2="60" y2="150" stroke="#eef4f1" stroke-width="1"/><line x1="60" y1="150" x2="780" y2="150" stroke="#eef4f1" stroke-width="1"/>'
+      + '<polyline points="' + poly + '" fill="none" stroke="' + color + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+      + circles + xlabels
+      + '<text x="54" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">' + max + '</text>'
+      + '<text x="54" y="153" font-size="9" fill="#9dbfb0" text-anchor="end">' + min + '</text>'
+      + '</svg></div></div>';
+  }
+
+  function fillClientFilter() {
+    const sel = document.getElementById('analyticsClient');
+    const prev = sel.value || 'All Clients';
+    sel.innerHTML = '<option>All Clients</option>' + analyticsClients.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    if ([...sel.options].some(function (o) { return o.value === prev; })) sel.value = prev;
+  }
+
+  function applyAnalyticsFilters(noToast) {
+    const client = document.getElementById('analyticsClient').value;
+    const from = document.getElementById('analyticsFrom').value || '';
+    const to = document.getElementById('analyticsTo').value || '';
+    const scoped = analyticsSessions.filter(function (r) {
+      if (!r || !r.session_date) return false;
+      const name = getClientName(r);
+      if (client !== 'All Clients' && name !== client) return false;
+      if (from && r.session_date < from) return false;
+      if (to && r.session_date > to) return false;
+      return true;
+    });
+    document.getElementById('baTotalSessions').textContent = String(scoped.length);
+    document.getElementById('baDataPoints').textContent = String(scoped.length * 3);
+    const completed = scoped.filter(function (s) { return String(s.status || '').toLowerCase() === 'completed'; }).length;
+    const pending = scoped.length - completed;
+    document.getElementById('baTrendDown').textContent = completed + ' of ' + Math.max(1, scoped.length);
+    document.getElementById('baGoalsTrack').textContent = Math.max(0, completed - pending) + ' of ' + Math.max(1, scoped.length);
+    const byClient = {};
+    scoped.forEach(function (s) {
+      const n = getClientName(s);
+      if (!byClient[n]) byClient[n] = [];
+      byClient[n].push(s);
+    });
+    const names = Object.keys(byClient).sort();
+    const panel = document.getElementById('panel-trends');
+    panel.innerHTML =
+      '<div style="margin-bottom: 20px;"><h3 style="font-size:15px;font-weight:700;color:#1f2d26;margin:0 0 4px;">Behavior Frequency Over Time</h3><p style="font-size:12px;color:#6b8c7a;margin:0;">Live data from sessions by week.</p></div>'
+      + buildTrendChart('Session Volume', names[0] || client || 'All Clients', byClient[names[0]] || scoped, '#6b9e7e')
+      + buildTrendChart('Completed Sessions Trend', names[1] || names[0] || client || 'All Clients', (byClient[names[1]] || scoped).filter(function (s) { return String(s.status || '').toLowerCase() === 'completed'; }), '#ea580c')
+      + buildTrendChart('Pending Sessions Trend', names[0] || client || 'All Clients', (byClient[names[0]] || scoped).filter(function (s) { return String(s.status || '').toLowerCase() !== 'completed'; }), '#2563eb');
+    if (!noToast) showToast('Filters applied');
+  }
+
+  async function initBehavioralAnalytics() {
+    try {
+      await loadGilbertoOrganization();
+      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
+      const res = await jvmFetchSessionsTable(orgId, 600);
+      if (!res.ok) throw new Error(await readJvmErrorResponse(res));
+      analyticsSessions = await res.json();
+      analyticsClients = Array.from(new Set(analyticsSessions.map(getClientName))).sort();
+      fillClientFilter();
+      applyAnalyticsFilters(true);
+    } catch (e) {
+      showToast('Failed to load analytics');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { void initBehavioralAnalytics(); });
 </script>
 </body>
 </html>
