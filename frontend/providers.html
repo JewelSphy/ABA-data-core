@@ -58,7 +58,7 @@
       </div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addProviderModal')">+ Add Provider</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -82,69 +82,7 @@
         </thead>
         <tbody id="providerBody">
           <tr>
-            <td>Provider One</td>
-            <td>BCBA</td>
-            <td>BCBA-1042</td>
-            <td>Jan 1, 2024</td>
-            <td>Jan 1, 2027</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
-              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
-              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Provider Two</td>
-            <td>RBT</td>
-            <td>RBT-5521</td>
-            <td>Mar 15, 2024</td>
-            <td>Mar 15, 2026</td>
-            <td><span class="badge badge-expiring">Expiring</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
-              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
-              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Provider Three</td>
-            <td>BCaBA</td>
-            <td>BCABA-3301</td>
-            <td>Jul 1, 2023</td>
-            <td>Jul 1, 2026</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
-              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
-              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Provider Four</td>
-            <td>BCBA</td>
-            <td>BCBA-8802</td>
-            <td>Feb 1, 2022</td>
-            <td>Feb 1, 2025</td>
-            <td><span class="badge badge-expired">Expired</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
-              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
-              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Provider Five</td>
-            <td>RBT</td>
-            <td>RBT-6614</td>
-            <td>Nov 1, 2024</td>
-            <td>Nov 1, 2026</td>
-            <td><span class="badge badge-active">Active</span></td>
-            <td>
-              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
-              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
-              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
-            </td>
+            <td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No providers loaded yet.</td>
           </tr>
         </tbody>
       </table>
@@ -219,17 +157,7 @@
       <button class="modal-close" onclick="closeModal('viewProviderModal')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="info-grid">
-        <div class="info-item"><label>Name</label><span>Provider One</span></div>
-        <div class="info-item"><label>Certification Type</label><span>BCBA</span></div>
-        <div class="info-item"><label>Cert Number</label><span>BCBA-1042</span></div>
-        <div class="info-item"><label>Start Date</label><span>Jan 1, 2024</span></div>
-        <div class="info-item"><label>End Date</label><span>Jan 1, 2027</span></div>
-        <div class="info-item"><label>Email</label><span>provider1@example.com</span></div>
-        <div class="info-item"><label>Phone</label><span>555-2001</span></div>
-        <div class="info-item"><label>Status</label><span><span class="badge badge-active">Active</span></span></div>
-        <div class="info-item"><label>Authorization Info</label><span>Authorized for all standard ABA services under current contract.</span></div>
-      </div>
+      <p style="font-size:14px;color:#6b8c7a;line-height:1.5;">No provider record selected yet.</p>
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('viewProviderModal')">Close</button>
@@ -255,19 +183,7 @@
         </thead>
         <tbody>
           <tr>
-            <td>Provider Agreement</td>
-            <td>Jan 5, 2024</td>
-            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
-          </tr>
-          <tr>
-            <td>Insurance Certificate</td>
-            <td>Jan 5, 2024</td>
-            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
-          </tr>
-          <tr>
-            <td>Background Check</td>
-            <td>Dec 20, 2023</td>
-            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
+            <td colspan="3" style="text-align:center;padding:16px;color:#6b8c7a;">No provider documents loaded yet.</td>
           </tr>
         </tbody>
       </table>
