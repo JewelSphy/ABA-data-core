@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Scheme Options — Gilberto CRM</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #f0f0f0; padding: 40px 30px; }
+    h1 { font-size: 22px; margin-bottom: 6px; color: #111; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 36px; }
+
+    .schemes { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 32px; }
+
+    .scheme { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .scheme-label { padding: 16px 20px; font-weight: bold; font-size: 15px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; }
+    .scheme-label span { font-size: 12px; font-weight: normal; color: #888; }
+
+    .preview { display: flex; height: 280px; }
+
+    /* SIDEBAR */
+    .s { width: 130px; padding: 14px 10px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .s-logo { font-weight: 800; font-size: 13px; margin-bottom: 10px; padding: 6px 8px; border-radius: 8px; }
+    .s-item { padding: 7px 10px; border-radius: 8px; font-size: 11px; opacity: 0.7; }
+    .s-item.active { opacity: 1; font-weight: bold; }
+    .s-divider { font-size: 10px; margin: 8px 8px 4px; opacity: 0.5; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* MAIN */
+    .m { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+    .m-topbar { background: white; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .m-topbar strong { font-size: 14px; }
+    .m-topbar span { font-size: 11px; color: #888; }
+    .m-pill { border-radius: 999px; padding: 5px 12px; font-size: 11px; font-weight: bold; color: white; }
+    .m-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .m-card { background: white; border-radius: 10px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .m-card p { font-size: 10px; color: #888; }
+    .m-card h3 { font-size: 20px; font-weight: 800; margin: 2px 0; }
+    .m-card span { font-size: 10px; color: #aaa; }
+    .m-panel { background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex: 1; }
+    .m-panel strong { font-size: 12px; display: block; margin-bottom: 8px; }
+    .m-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 11px; color: #555; }
+    .m-row span { font-size: 11px; font-weight: bold; }
+    .m-tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+
+    /* ─── SCHEME 1: Current (Dark Navy + Blue) ─── */
+    .s1 .s { background: #313646; color: white; }
+    .s1 .s-logo { background: #3b82f6; color: white; }
+    .s1 .s-item { color: #e5e7eb; }
+    .s1 .s-item.active { background: #3b82f6; color: white; }
+    .s1 .m { background: #f5f7fb; }
+    .s1 .m-pill { background: #3b82f6; }
+    .s1 .m-card h3 { color: #1f2937; }
+    .s1 .m-row span { color: #3b82f6; }
+    .s1 .m-tag { background: #eff6ff; color: #3b82f6; }
+
+    /* ─── SCHEME 2: Calm Teal ─── */
+    .s2 .s { background: #134e4a; color: white; }
+    .s2 .s-logo { background: #0d9488; color: white; }
+    .s2 .s-item { color: #99f6e4; }
+    .s2 .s-item.active { background: #0d9488; color: white; }
+    .s2 .m { background: #f0fdf9; }
+    .s2 .m-pill { background: #0d9488; }
+    .s2 .m-card h3 { color: #134e4a; }
+    .s2 .m-row span { color: #0d9488; }
+    .s2 .m-tag { background: #ccfbf1; color: #0d9488; }
+
+    /* ─── SCHEME 3: Warm Sage ─── */
+    .s3 .s { background: #2d4a3e; color: white; }
+    .s3 .s-logo { background: #6b9e7e; color: white; }
+    .s3 .s-item { color: #c6ddd3; }
+    .s3 .s-item.active { background: #6b9e7e; color: white; }
+    .s3 .m { background: #f4f7f5; }
+    .s3 .m-pill { background: #6b9e7e; }
+    .s3 .m-card h3 { color: #2d4a3e; }
+    .s3 .m-row span { color: #6b9e7e; }
+    .s3 .m-tag { background: #e8f3ec; color: #2d4a3e; }
+
+    /* ─── SCHEME 4: Deep Purple ─── */
+    .s4 .s { background: #1e1b4b; color: white; }
+    .s4 .s-logo { background: #7c3aed; color: white; }
+    .s4 .s-item { color: #c4b5fd; }
+    .s4 .s-item.active { background: #7c3aed; color: white; }
+    .s4 .m { background: #f5f3ff; }
+    .s4 .m-pill { background: #7c3aed; }
+    .s4 .m-card h3 { color: #1e1b4b; }
+    .s4 .m-row span { color: #7c3aed; }
+    .s4 .m-tag { background: #ede9fe; color: #7c3aed; }
+
+    /* ─── SCHEME 5: Slate + Coral ─── */
+    .s5 .s { background: #1e293b; color: white; }
+    .s5 .s-logo { background: #f97316; color: white; }
+    .s5 .s-item { color: #94a3b8; }
+    .s5 .s-item.active { background: #f97316; color: white; }
+    .s5 .m { background: #f8fafc; }
+    .s5 .m-pill { background: #f97316; }
+    .s5 .m-card h3 { color: #1e293b; }
+    .s5 .m-row span { color: #f97316; }
+    .s5 .m-tag { background: #fff7ed; color: #f97316; }
+
+    /* ─── SCHEME 6: Midnight Cyan ─── */
+    .s6 .s { background: #0a0f1e; color: white; }
+    .s6 .s-logo { background: #06b6d4; color: #0a0f1e; }
+    .s6 .s-item { color: #64748b; }
+    .s6 .s-item.active { background: #06b6d4; color: #0a0f1e; }
+    .s6 .m { background: #f0fbff; }
+    .s6 .m-pill { background: #06b6d4; color: #0a0f1e; }
+    .s6 .m-card h3 { color: #0a0f1e; }
+    .s6 .m-row span { color: #06b6d4; }
+    .s6 .m-tag { background: #e0f9ff; color: #0891b2; }
+
+    /* ─── SCHEME 7: Soft Lavender ─── */
+    .s7 .s { background: #3b2f6e; color: white; }
+    .s7 .s-logo { background: #a78bfa; color: white; }
+    .s7 .s-item { color: #c4b5fd; }
+    .s7 .s-item.active { background: #a78bfa; color: white; }
+    .s7 .m { background: #faf8ff; }
+    .s7 .m-pill { background: #a78bfa; }
+    .s7 .m-card h3 { color: #3b2f6e; }
+    .s7 .m-row span { color: #a78bfa; }
+    .s7 .m-tag { background: #f3eeff; color: #7c3aed; }
+
+    /* ─── SCHEME 8: Forest + Gold ─── */
+    .s8 .s { background: #1a2e1a; color: white; }
+    .s8 .s-logo { background: #d4a72c; color: #1a2e1a; }
+    .s8 .s-item { color: #86a886; }
+    .s8 .s-item.active { background: #d4a72c; color: #1a2e1a; }
+    .s8 .m { background: #f7f9f3; }
+    .s8 .m-pill { background: #d4a72c; color: #1a2e1a; }
+    .s8 .m-card h3 { color: #1a2e1a; }
+    .s8 .m-row span { color: #d4a72c; }
+    .s8 .m-tag { background: #fef9e7; color: #b7860c; }
+
+    /* ─── SCHEME 9: Rose + Charcoal ─── */
+    .s9 .s { background: #27212e; color: white; }
+    .s9 .s-logo { background: #e11d74; color: white; }
+    .s9 .s-item { color: #9d8faa; }
+    .s9 .s-item.active { background: #e11d74; color: white; }
+    .s9 .m { background: #fff5f9; }
+    .s9 .m-pill { background: #e11d74; }
+    .s9 .m-card h3 { color: #27212e; }
+    .s9 .m-row span { color: #e11d74; }
+    .s9 .m-tag { background: #ffe4ef; color: #be185d; }
+
+    /* ─── SCHEME 10: Steel + Emerald ─── */
+    .s10 .s { background: #1c2b36; color: white; }
+    .s10 .s-logo { background: #10b981; color: white; }
+    .s10 .s-item { color: #7a9bae; }
+    .s10 .s-item.active { background: #10b981; color: white; }
+    .s10 .m { background: #f2faf7; }
+    .s10 .m-pill { background: #10b981; }
+    .s10 .m-card h3 { color: #1c2b36; }
+    .s10 .m-row span { color: #10b981; }
+    .s10 .m-tag { background: #d1fae5; color: #065f46; }
+
+    /* ── LIGHT & NEUTRAL SECTION ── */
+    .section-break { grid-column: 1 / -1; padding: 10px 0 4px; border-top: 2px solid #ddd; }
+    .section-break h2 { font-size: 16px; color: #555; }
+
+    /* ─── SCHEME 11: Cloud White + Sky Blue ─── */
+    .s11 .s { background: #f1f5f9; color: #334155; border-right: 1px solid #e2e8f0; }
+    .s11 .s-logo { background: #3b82f6; color: white; }
+    .s11 .s-item { color: #64748b; }
+    .s11 .s-item.active { background: #dbeafe; color: #1d4ed8; font-weight: bold; }
+    .s11 .s-divider { color: #94a3b8; }
+    .s11 .m { background: #f8fafc; }
+    .s11 .m-pill { background: #3b82f6; color: white; }
+    .s11 .m-card h3 { color: #1e293b; }
+    .s11 .m-row span { color: #3b82f6; }
+    .s11 .m-tag { background: #dbeafe; color: #1d4ed8; }
+
+    /* ─── SCHEME 12: Warm Linen + Sage ─── */
+    .s12 .s { background: #faf7f2; color: #3d3830; border-right: 1px solid #e8e0d5; }
+    .s12 .s-logo { background: #6b9e7e; color: white; }
+    .s12 .s-item { color: #7a6e63; }
+    .s12 .s-item.active { background: #e8f3ec; color: #2d5a3d; font-weight: bold; }
+    .s12 .s-divider { color: #b0a090; }
+    .s12 .m { background: #fdfbf8; }
+    .s12 .m-pill { background: #6b9e7e; color: white; }
+    .s12 .m-card h3 { color: #3d3830; }
+    .s12 .m-row span { color: #6b9e7e; }
+    .s12 .m-tag { background: #e8f3ec; color: #2d5a3d; }
+
+    /* ─── SCHEME 13: Soft Mist ─── */
+    .s13 .s { background: #eef2f7; color: #2c3e50; border-right: 1px solid #dde4ee; }
+    .s13 .s-logo { background: #5b8dee; color: white; }
+    .s13 .s-item { color: #6b7e96; }
+    .s13 .s-item.active { background: #d6e4fc; color: #2457c5; font-weight: bold; }
+    .s13 .s-divider { color: #96a8be; }
+    .s13 .m { background: #f7f9fc; }
+    .s13 .m-pill { background: #5b8dee; color: white; }
+    .s13 .m-card h3 { color: #2c3e50; }
+    .s13 .m-row span { color: #5b8dee; }
+    .s13 .m-tag { background: #d6e4fc; color: #2457c5; }
+
+    /* ─── SCHEME 14: Blush + Warm Stone ─── */
+    .s14 .s { background: #fdf6f4; color: #3d2b26; border-right: 1px solid #f0e0da; }
+    .s14 .s-logo { background: #e07b6a; color: white; }
+    .s14 .s-item { color: #8c6b63; }
+    .s14 .s-item.active { background: #fde8e4; color: #b94d3b; font-weight: bold; }
+    .s14 .s-divider { color: #c4a098; }
+    .s14 .m { background: #fffaf9; }
+    .s14 .m-pill { background: #e07b6a; color: white; }
+    .s14 .m-card h3 { color: #3d2b26; }
+    .s14 .m-row span { color: #e07b6a; }
+    .s14 .m-tag { background: #fde8e4; color: #b94d3b; }
+
+    /* ─── SCHEME 15: Zen White + Moss ─── */
+    .s15 .s { background: #ffffff; color: #2e3d2e; border-right: 1px solid #e8ede8; }
+    .s15 .s-logo { background: #4a7c59; color: white; }
+    .s15 .s-item { color: #6b8c6b; }
+    .s15 .s-item.active { background: #e0ede4; color: #2e5c3a; font-weight: bold; }
+    .s15 .s-divider { color: #9ab89a; }
+    .s15 .m { background: #f8faf8; }
+    .s15 .m-pill { background: #4a7c59; color: white; }
+    .s15 .m-card h3 { color: #2e3d2e; }
+    .s15 .m-row span { color: #4a7c59; }
+    .s15 .m-tag { background: #e0ede4; color: #2e5c3a; }
+  </style>
+</head>
+<body>
+
+<h1>Color Scheme Options — Gilberto CRM</h1>
+<p class="meta">Pick one and I'll apply it across the full CRM.</p>
+
+<div class="schemes">
+
+  <!-- 1: Current -->
+  <div class="scheme s1">
+    <div class="scheme-label">1 — Current (Dark Navy + Blue) <span>Professional · Clinical</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2: Calm Teal -->
+  <div class="scheme s2">
+    <div class="scheme-label">2 — Calm Teal <span>Therapeutic · Healthcare</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3: Warm Sage -->
+  <div class="scheme s3">
+    <div class="scheme-label">3 — Warm Sage <span>Calm · Natural · Welcoming</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4: Deep Purple -->
+  <div class="scheme s4">
+    <div class="scheme-label">4 — Deep Purple <span>Bold · Clinical · Modern</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5: Slate + Coral -->
+  <div class="scheme s5">
+    <div class="scheme-label">5 — Slate + Coral <span>Warm · Energetic · Friendly</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6: Midnight Cyan -->
+  <div class="scheme s6">
+    <div class="scheme-label">6 — Midnight Cyan <span>Dark · Techy · Sharp</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7: Soft Lavender -->
+  <div class="scheme s7">
+    <div class="scheme-label">7 — Soft Lavender <span>Gentle · Therapeutic · Calming</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8: Forest + Gold -->
+  <div class="scheme s8">
+    <div class="scheme-label">8 — Forest + Gold <span>Grounded · Premium · Natural</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9: Rose + Charcoal -->
+  <div class="scheme s9">
+    <div class="scheme-label">9 — Rose + Charcoal <span>Warm · Modern · Distinct</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10: Steel + Emerald -->
+  <div class="scheme s10">
+    <div class="scheme-label">10 — Steel + Emerald <span>Clean · Clinical · Fresh</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  <!-- SECTION BREAK -->
+  <div class="section-break"><h2>Light & Neutral — Therapeutic Palette</h2></div>
+
+  <!-- 11: Cloud White + Sky Blue -->
+  <div class="scheme s11">
+    <div class="scheme-label">11 — Cloud White + Sky Blue <span>Clean · Airy · Clinical</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12: Warm Linen + Sage -->
+  <div class="scheme s12">
+    <div class="scheme-label">12 — Warm Linen + Sage <span>Natural · Earthy · Welcoming</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13: Soft Mist -->
+  <div class="scheme s13">
+    <div class="scheme-label">13 — Soft Mist <span>Calm · Gentle · Trustworthy</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14: Blush + Warm Stone -->
+  <div class="scheme s14">
+    <div class="scheme-label">14 — Blush + Warm Stone <span>Soft · Compassionate · Human</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 15: Zen White + Moss -->
+  <div class="scheme s15">
+    <div class="scheme-label">15 — Zen White + Moss <span>Minimal · Pure · Therapeutic</span></div>
+    <div class="preview">
+      <div class="s">
+        <div class="s-logo">G</div>
+        <div class="s-item active">Dashboard</div>
+        <div class="s-item">Calendar</div>
+        <div class="s-item">Sessions</div>
+        <div class="s-divider">People</div>
+        <div class="s-item">Clients</div>
+        <div class="s-item">Staff</div>
+        <div class="s-divider">Reports</div>
+        <div class="s-item">Monthly</div>
+      </div>
+      <div class="m">
+        <div class="m-topbar"><strong>Dashboard</strong> <div class="m-pill">Arya</div></div>
+        <div class="m-cards">
+          <div class="m-card"><p>Active Clients</p><h3>24</h3><span>In services</span></div>
+          <div class="m-card"><p>Sessions Today</p><h3>8</h3><span>Treatment</span></div>
+          <div class="m-card"><p>Revisions</p><h3>126</h3><span>Pending</span></div>
+        </div>
+        <div class="m-panel">
+          <strong>Today's Schedule</strong>
+          <div class="m-row">Behavior Treatment · Ethan M. <span class="m-tag">9:00 AM</span></div>
+          <div class="m-row">Supervision Log · BCBA <span class="m-tag">11:30 AM</span></div>
+          <div class="m-row">Assessment <span class="m-tag">2:00 PM</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+</body>
+</html>

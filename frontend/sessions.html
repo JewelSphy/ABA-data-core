@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sessions - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="page-sessions">
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item active" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Sessions</h1>
+        <p>View and manage all therapy sessions</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Arya</div>
+        <button class="add-btn" onclick="openModal('newSessionModal')">+ New Session</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper table-oversight">
+      <div class="table-toolbar">
+        <div class="dashboard-strip" style="width:100%;">
+          <button class="small-btn" onclick="prevPeriod()" title="Previous period">← Prev</button>
+          <div style="display:inline-flex;align-items:center;gap:0;border:1px solid #d4e4da;border-radius:8px;overflow:hidden;background:#fff;">
+            <span style="display:inline-flex;align-items:center;padding:0 10px;border-right:1px solid #d4e4da;background:#f4f7f5;height:100%;font-size:14px;" aria-hidden="true">🗓️</span>
+            <input id="dateRangeInput" class="search-input" readonly style="min-width:200px;border:none;border-radius:0;margin:0;cursor:default;background:#fff;" value="Apr 1, 2026 – Apr 30, 2026" />
+          </div>
+          <button class="small-btn" onclick="nextPeriod()" title="Next period">Next →</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+          <div class="segmented">
+            <button class="small-btn" data-view="day"   onclick="setView('day')">Day</button>
+            <button class="small-btn" data-view="week"  onclick="setView('week')">Week</button>
+            <button class="small-btn active-blue" data-view="month" onclick="setView('month')">Month</button>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="small-btn"><span class="icon-chip icon-settings" aria-hidden="true"></span> Settings</button>
+            <button class="small-btn"><span class="icon-chip icon-filter" aria-hidden="true"></span> Filters</button>
+          </div>
+        </div>
+        <div class="table-search">
+          <input class="search-input" id="sessionSearch" type="text" placeholder="Search sessions..." oninput="filterTable('sessionSearch','sessionsBody')" />
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="min-width:170px;">Service</th>
+            <th>Client</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>POS</th>
+            <th>Procedure</th>
+            <th>Status</th>
+            <th>Provider Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sessionsBody">
+          <tr>
+            <td colspan="9" style="text-align:center;padding:18px;color:#6b8c7a;">Loading sessions...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- View Session Modal -->
+<div class="modal-overlay" id="viewSessionModal" onclick="handleOverlayClick(event,'viewSessionModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Session Details</h3>
+      <button class="modal-close" onclick="closeModal('viewSessionModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Client</label><span id="vs-client"></span></div>
+        <div class="info-item"><label>Date</label><span id="vs-date"></span></div>
+        <div class="info-item"><label>Session Type</label><span id="vs-type"></span></div>
+        <div class="info-item"><label>RBT</label><span id="vs-rbt"></span></div>
+        <div class="info-item"><label>Duration</label><span id="vs-duration"></span></div>
+        <div class="info-item"><label>Location</label><span id="vs-location"></span></div>
+        <div class="info-item"><label>Status</label><span id="vs-status"></span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" onclick="closeModal('viewSessionModal')">Close</button>
+      <button class="add-btn" onclick="closeModal('viewSessionModal'); goToPage('behavior-treatment-session.html')">Open Session Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Session Modal -->
+<div class="modal-overlay" id="newSessionModal" onclick="handleOverlayClick(event,'newSessionModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>New Session</h3>
+      <button class="modal-close" onclick="closeModal('newSessionModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Client</label>
+        <select id="newSessionClient">
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Session Type</label>
+        <select id="newSessionType">
+          <option>Behavior Treatment</option>
+          <option>Assessment</option>
+          <option>Supervision</option>
+          <option>Caregiver Training</option>
+          <option>Parent Training</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input id="newSessionDate" type="date" value="2026-04-24" />
+        </div>
+        <div class="form-group">
+          <label>Start Time</label>
+          <input id="newSessionStartTime" type="time" value="09:00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Duration</label>
+          <select id="newSessionDuration">
+            <option>30 min</option>
+            <option>1 hr</option>
+            <option>1.5 hrs</option>
+            <option selected>2 hrs</option>
+            <option>3 hrs</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <select id="newSessionLocation">
+            <option>Home</option>
+            <option>School</option>
+            <option>Clinic</option>
+            <option>Community</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Assigned RBT</label>
+        <select id="newSessionRbt">
+          <option>Tyrion Lannister</option>
+          <option>Brienne of Tarth</option>
+          <option>Samwell Tarly</option>
+          <option>Jaime Lannister</option>
+          <option>Davos Seaworth</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="newSessionNotes" rows="3" placeholder="Any additional notes about this session..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" onclick="closeModal('newSessionModal')">Cancel</button>
+      <button class="add-btn" onclick="createSessionFromModal()">Create Session</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="dashboard.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script>
+  // ===========================================================================
+  // sessions.html — inline controller
+  // Reads:  loadSessionsTable() in dashboard.js (Supabase JS with joins)
+  // Writes: createSessionFromModal() routes through Java bridge when available
+  // ===========================================================================
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+  function saveForm(id) {
+    closeModal(id);
+    showToast('Session created successfully');
+  }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  function filterTable(inputId, tbodyId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  function openViewSession(client, date, type, rbt, duration, location, status) {
+    document.getElementById('vs-client').textContent = client;
+    document.getElementById('vs-date').textContent = date;
+    document.getElementById('vs-type').textContent = type;
+    document.getElementById('vs-rbt').textContent = rbt;
+    document.getElementById('vs-duration').textContent = duration;
+    document.getElementById('vs-location').textContent = location;
+    document.getElementById('vs-status').textContent = status;
+    openModal('viewSessionModal');
+  }
+
+  async function loadSessionFormDropdowns() {
+    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
+    const orgId = window.gilbertoCurrentOrg?.id || null;
+    const clientSel = document.getElementById("newSessionClient");
+    const rbtSel = document.getElementById("newSessionRbt");
+    try {
+      const [cRes, sRes] = await Promise.all([
+        jvmFetchClients(orgId, "active"),
+        jvmFetchStaff(orgId, "active"),
+      ]);
+      const clients = cRes.ok ? await cRes.json() : [];
+      const staff = sRes.ok ? await sRes.json() : [];
+      if (clientSel) {
+        clientSel.innerHTML = clients.length
+          ? clients.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name}</option>`).join("")
+          : '<option value="">No active clients found</option>';
+      }
+      if (rbtSel) {
+        rbtSel.innerHTML = staff.length
+          ? staff.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name}</option>`).join("")
+          : '<option value="">No active staff found</option>';
+      }
+    } catch (_) {
+      if (clientSel) clientSel.innerHTML = '<option value="">No active clients found</option>';
+      if (rbtSel) rbtSel.innerHTML = '<option value="">No active staff found</option>';
+    }
+  }
+
+  function mapSessionRow(row) {
+    return {
+      id: row.id || "",
+      client: row.client || row.client_name || "Unknown Client",
+      date: row.date || row.session_date || "",
+      type: row.type || row.service || row.service_type || "Behavior Treatment",
+      provider: row.provider || row.provider_name || row.rbt || "Unassigned",
+      duration: row.duration || "1 hr",
+      location: row.location || row.pos || "Home",
+      status: row.status || "Pending",
+      time: row.time || row.time_range || "9:00 AM - 10:00 AM",
+      procedure: row.procedure || row.procedure_code || "97153"
+    };
+  }
+
+  function buildSessionRowHtml(item) {
+    const serviceClass = item.type.toLowerCase().includes("supervision")
+      ? "supervision"
+      : item.type.toLowerCase().includes("assessment")
+      ? "assessment"
+      : item.type.toLowerCase().includes("family") || item.type.toLowerCase().includes("caregiver")
+      ? "family"
+      : "behavior";
+    const statusClass = item.status.toLowerCase().includes("complete") ? "badge-complete" : "badge-pending";
+    const esc = (v) => String(v ?? "").replace(/'/g, "\\'");
+    return `
+      <tr>
+        <td><span class="service-pill ${serviceClass}">${item.type}</span></td>
+        <td>${item.client}</td>
+        <td>${item.date}</td>
+        <td>${item.time}</td>
+        <td>${item.location}</td>
+        <td>${item.procedure}</td>
+        <td><span class="badge ${statusClass}">${item.status}</span></td>
+        <td>${item.provider}</td>
+        <td>
+          <button class="tbl-btn" onclick="openViewSession('${esc(item.client)}','${esc(item.date)}','${esc(item.type)}','${esc(item.provider)}','${esc(item.duration)}','${esc(item.location)}','${esc(item.status)}')">View</button>
+          <button class="tbl-btn" onclick="goToPage('behavior-treatment-session.html?session_id=${encodeURIComponent(item.id || '')}')">Open Note</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  async function loadSessionsFromSupabase() {
+    if (!window.supabaseClient) return;
+    try {
+      const { data, error } = await window.supabaseClient
+        .from("sessions")
+        .select("*")
+        .order("session_date", { ascending: false })
+        .limit(200);
+
+      if (error) {
+        console.warn("Sessions load warning:", error.message);
+        return;
+      }
+      if (!data || data.length === 0) return;
+
+      const body = document.getElementById("sessionsBody");
+      body.innerHTML = data.map((row) => buildSessionRowHtml(mapSessionRow(row))).join("");
+    } catch (err) {
+      console.warn("Sessions load failed:", err?.message || err);
+    }
+  }
+
+  function toDisplayDate(isoDate) {
+    const d = new Date(isoDate + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function toDisplayTime(startTime, duration) {
+    if (!startTime) return "9:00 AM - 10:00 AM";
+    const [h, m] = startTime.split(":").map(Number);
+    const start = new Date();
+    start.setHours(h, m, 0, 0);
+    const mins = duration.includes("30") ? 30 : duration.includes("1.5") ? 90 : duration.includes("2") ? 120 : duration.includes("3") ? 180 : 60;
+    const end = new Date(start.getTime() + mins * 60000);
+    const fmt = (d) => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    return `${fmt(start)} - ${fmt(end)}`;
+  }
+
+  async function createSessionFromModal() {
+    // ── Build row using actual DB schema columns ──────────────────────────────
+    // DB: org_id, client_id, staff_id, service_type, session_date,
+    //     start_time, end_time, pos, procedure_code, status, notes
+    const serviceTypeRaw = document.getElementById("newSessionType").value;
+    const serviceTypeMap = {
+      "Behavior Treatment":  "behavior_treatment",
+      "Assessment":          "assessment",
+      "Supervision":         "supervision",
+      "Caregiver Training":  "caregiver_training",
+      "Parent Training":     "family_training",
+    };
+
+    const row = buildSessionInsertRow({
+      service_type:   serviceTypeMap[serviceTypeRaw] || "behavior_treatment",
+      session_date:   document.getElementById("newSessionDate").value,
+      start_time:     document.getElementById("newSessionStartTime").value || null,
+      pos:            document.getElementById("newSessionLocation").value  || null,
+      notes:          document.getElementById("newSessionNotes").value     || null,
+      status:         "pending",
+      procedure_code: "97153",
+      client_id:      document.getElementById("newSessionClient").value || null,
+      staff_id:       document.getElementById("newSessionRbt").value || null,
+    }, window.gilbertoCurrentOrg?.id || null);
+
+    // ── Route write through Java bridge if available, else direct Supabase ────
+    try {
+      if (jvmSupabaseRelayEnabled()) {
+        const res = await sessionJvmCreate(row);
+        if (!res.ok) {
+          const msg = await readJvmErrorResponse(res);
+          showToast("Save failed: " + msg);
+          return;
+        }
+      } else {
+        if (!window.supabaseClient) { showToast("Supabase client not ready"); return; }
+        const { error } = await window.supabaseClient.from("sessions").insert(row);
+        if (error) { showToast("Save failed: " + error.message); return; }
+      }
+
+      closeModal("newSessionModal");
+      showToast("Session saved");
+      // Reload table with fresh data from DB
+      if (typeof loadSessionsTable === "function") await loadSessionsTable();
+    } catch (err) {
+      showToast("Save failed: " + (err?.message || "unknown error"));
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    loadSessionFormDropdowns();
+    if (typeof loadSessionsTable === "function") void loadSessionsTable();
+    updateDisplay();
+  });
+
+  /* ── Date-range nav ─────────────────────────────────── */
+  let currentView = 'month';
+  let currentDate = new Date(2026, 3, 1); // April 2026
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function getRange() {
+    if (currentView === 'day') {
+      return { start: new Date(currentDate), end: new Date(currentDate) };
+    }
+    if (currentView === 'week') {
+      const s = new Date(currentDate);
+      s.setDate(s.getDate() - s.getDay()); // Sunday
+      const e = new Date(s);
+      e.setDate(s.getDate() + 6);          // Saturday
+      return { start: s, end: e };
+    }
+    // month
+    const s = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const e = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    return { start: s, end: e };
+  }
+
+  function updateDisplay() {
+    const r = getRange();
+    const el = document.getElementById('dateRangeInput');
+    if (el) {
+      el.value = currentView === 'day'
+        ? fmtDate(r.start)
+        : fmtDate(r.start) + ' – ' + fmtDate(r.end);
+    }
+    filterByRange(r.start, r.end);
+  }
+
+  function filterByRange(start, end) {
+    // set end to end-of-day so same-day sessions match
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+    document.querySelectorAll('#sessionsBody tr').forEach(row => {
+      const cell = row.cells?.[2]?.textContent?.trim();
+      if (!cell) { row.style.display = ''; return; }
+      const d = new Date(cell);
+      row.style.display = (!isNaN(d.getTime()) && d >= start && d <= endOfDay) ? '' : 'none';
+    });
+  }
+
+  function prevPeriod() {
+    if (currentView === 'day')   currentDate.setDate(currentDate.getDate() - 1);
+    else if (currentView === 'week')  currentDate.setDate(currentDate.getDate() - 7);
+    else currentDate.setMonth(currentDate.getMonth() - 1);
+    updateDisplay();
+  }
+
+  function nextPeriod() {
+    if (currentView === 'day')   currentDate.setDate(currentDate.getDate() + 1);
+    else if (currentView === 'week')  currentDate.setDate(currentDate.getDate() + 7);
+    else currentDate.setMonth(currentDate.getMonth() + 1);
+    updateDisplay();
+  }
+
+  function setView(v) {
+    currentView = v;
+    document.querySelectorAll('.segmented .small-btn').forEach(b => {
+      b.classList.toggle('active-blue', b.dataset.view === v);
+    });
+    updateDisplay();
+  }
+</script>
+</body>
+</html>

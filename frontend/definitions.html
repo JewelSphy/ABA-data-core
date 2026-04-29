@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Definitions - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item active" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Definitions</h1><p>Operational definitions used across behavior plans</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addDefModal')">+ Add Definition</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="defSearch" type="text" placeholder="Search definitions..." oninput="filterTable('defSearch','defBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="defTable">
+        <thead>
+          <tr>
+            <th>Term</th>
+            <th>Definition</th>
+            <th>Category</th>
+            <th>Added By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="defBody">
+          <tr>
+            <td>Off-Task</td>
+            <td>Engaging in any activity other than the assigned task for more than 5 consecutive seconds</td>
+            <td>Behavior</td>
+            <td>Daenerys Targaryen</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Off-Task','Engaging in any activity other than the assigned task for more than 5 consecutive seconds','Behavior','Daenerys Targaryen')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Off-Task')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Aggression</td>
+            <td>Any physical contact intended to harm another person, including hitting, biting, or kicking</td>
+            <td>Behavior</td>
+            <td>Jaime Lannister</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Aggression','Any physical contact intended to harm another person, including hitting, biting, or kicking','Behavior','Jaime Lannister')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Aggression')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Elopement</td>
+            <td>Leaving a designated area without permission from an adult</td>
+            <td>Behavior</td>
+            <td>Daenerys Targaryen</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Elopement','Leaving a designated area without permission from an adult','Behavior','Daenerys Targaryen')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Elopement')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Mand</td>
+            <td>A verbal behavior that is controlled by a state of deprivation and results in a specific reinforcer</td>
+            <td>Term</td>
+            <td>Jaime Lannister</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Mand','A verbal behavior that is controlled by a state of deprivation and results in a specific reinforcer','Term','Jaime Lannister')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Mand')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Tact</td>
+            <td>A verbal behavior that is under the control of a non-verbal stimulus</td>
+            <td>Term</td>
+            <td>Daenerys Targaryen</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Tact','A verbal behavior that is under the control of a non-verbal stimulus','Term','Daenerys Targaryen')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Tact')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Reinforcer</td>
+            <td>Any stimulus that increases the future probability of a behavior</td>
+            <td>Term</td>
+            <td>Tyrion Lannister</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Reinforcer','Any stimulus that increases the future probability of a behavior','Term','Tyrion Lannister')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Reinforcer')">Delete</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Prompt</td>
+            <td>Any supplemental stimulus provided to occasion a correct response</td>
+            <td>Procedure</td>
+            <td>Jaime Lannister</td>
+            <td>
+              <button class="tbl-btn" onclick="openViewDef('Prompt','Any supplemental stimulus provided to occasion a correct response','Procedure','Jaime Lannister')">View</button>
+              <button class="tbl-btn" onclick="openModal('editDefModal')">Edit</button>
+              <button class="tbl-btn danger" onclick="openDeleteDef('Prompt')">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Definition Modal -->
+<div class="modal-overlay" id="addDefModal" onclick="if(event.target===this)closeModal('addDefModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Definition</h3>
+      <button class="modal-close" onclick="closeModal('addDefModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Term</label>
+        <input type="text" placeholder="Enter term"/>
+      </div>
+      <div class="form-group">
+        <label>Definition</label>
+        <textarea rows="3" placeholder="Write the operational definition..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select>
+          <option>Behavior</option>
+          <option>Term</option>
+          <option>Procedure</option>
+          <option>Concept</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addDefModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addDefModal')">Save Definition</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Definition Modal -->
+<div class="modal-overlay" id="editDefModal" onclick="if(event.target===this)closeModal('editDefModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Definition</h3>
+      <button class="modal-close" onclick="closeModal('editDefModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Term</label>
+        <input type="text" value="Off-Task"/>
+      </div>
+      <div class="form-group">
+        <label>Definition</label>
+        <textarea rows="3">Engaging in any activity other than the assigned task for more than 5 consecutive seconds</textarea>
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select>
+          <option selected>Behavior</option>
+          <option>Term</option>
+          <option>Procedure</option>
+          <option>Concept</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editDefModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editDefModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Definition Modal -->
+<div class="modal-overlay" id="viewDefModal" onclick="if(event.target===this)closeModal('viewDefModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Definition Details</h3>
+      <button class="modal-close" onclick="closeModal('viewDefModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span>Term</span><strong id="vd-term"></strong></div>
+        <div class="info-item"><span>Category</span><strong id="vd-category"></strong></div>
+        <div class="info-item"><span>Added By</span><strong id="vd-addedby"></strong></div>
+        <div class="info-item" style="grid-column:1/-1"><span>Definition</span><strong id="vd-definition"></strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewDefModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteDefModal" onclick="if(event.target===this)closeModal('deleteDefModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Delete Definition</h3>
+      <button class="modal-close" onclick="closeModal('deleteDefModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete the definition for <strong id="dd-term"></strong>? This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('deleteDefModal')">Cancel</button>
+      <button class="tbl-btn danger" onclick="confirmDelete()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewDef(term, definition, category, addedBy) {
+  document.getElementById('vd-term').textContent = term;
+  document.getElementById('vd-definition').textContent = definition;
+  document.getElementById('vd-category').textContent = category;
+  document.getElementById('vd-addedby').textContent = addedBy;
+  openModal('viewDefModal');
+}
+function openDeleteDef(term) {
+  document.getElementById('dd-term').textContent = term;
+  openModal('deleteDefModal');
+}
+function confirmDelete() {
+  closeModal('deleteDefModal');
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#c0392b;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Definition deleted';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+</script>
+</body>
+</html>

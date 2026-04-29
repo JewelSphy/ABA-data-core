@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Providers - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item active" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Providers</h1>
+        <p>Provider certifications, dates and authorization info</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addProviderModal')">+ Add Provider</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="providerSearch" type="text" placeholder="Search providers..." oninput="filterTable('providerSearch','providerBody')"/>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Certification Type</th>
+            <th>Cert Number</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="providerBody">
+          <tr>
+            <td>Provider One</td>
+            <td>BCBA</td>
+            <td>BCBA-1042</td>
+            <td>Jan 1, 2024</td>
+            <td>Jan 1, 2027</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
+              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
+              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Provider Two</td>
+            <td>RBT</td>
+            <td>RBT-5521</td>
+            <td>Mar 15, 2024</td>
+            <td>Mar 15, 2026</td>
+            <td><span class="badge badge-expiring">Expiring</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
+              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
+              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Provider Three</td>
+            <td>BCaBA</td>
+            <td>BCABA-3301</td>
+            <td>Jul 1, 2023</td>
+            <td>Jul 1, 2026</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
+              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
+              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Provider Four</td>
+            <td>BCBA</td>
+            <td>BCBA-8802</td>
+            <td>Feb 1, 2022</td>
+            <td>Feb 1, 2025</td>
+            <td><span class="badge badge-expired">Expired</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
+              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
+              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Provider Five</td>
+            <td>RBT</td>
+            <td>RBT-6614</td>
+            <td>Nov 1, 2024</td>
+            <td>Nov 1, 2026</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewProviderModal')">View</button>
+              <button class="tbl-btn" onclick="openModal('addProviderModal')">Edit</button>
+              <button class="tbl-btn" onclick="openModal('providerDocsModal')">Documents</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Provider Modal -->
+<div class="modal-overlay" id="addProviderModal" onclick="if(event.target===this)closeModal('addProviderModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Add Provider</h3>
+      <button class="modal-close" onclick="closeModal('addProviderModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" placeholder="Provider name"/>
+        </div>
+        <div class="form-group">
+          <label>Certification Type</label>
+          <select>
+            <option>BCBA</option>
+            <option>BCaBA</option>
+            <option>RBT</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cert Number</label>
+          <input type="text" placeholder="e.g. BCBA-1042"/>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" placeholder="provider@example.com"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date"/>
+        </div>
+        <div class="form-group">
+          <label>End Date</label>
+          <input type="date"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" placeholder="555-0000"/>
+      </div>
+      <div class="form-group">
+        <label>Authorization Info</label>
+        <textarea rows="3" placeholder="Relevant authorization details..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addProviderModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addProviderModal')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Provider Modal -->
+<div class="modal-overlay" id="viewProviderModal" onclick="if(event.target===this)closeModal('viewProviderModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Provider Details</h3>
+      <button class="modal-close" onclick="closeModal('viewProviderModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Name</label><span>Provider One</span></div>
+        <div class="info-item"><label>Certification Type</label><span>BCBA</span></div>
+        <div class="info-item"><label>Cert Number</label><span>BCBA-1042</span></div>
+        <div class="info-item"><label>Start Date</label><span>Jan 1, 2024</span></div>
+        <div class="info-item"><label>End Date</label><span>Jan 1, 2027</span></div>
+        <div class="info-item"><label>Email</label><span>provider1@example.com</span></div>
+        <div class="info-item"><label>Phone</label><span>555-2001</span></div>
+        <div class="info-item"><label>Status</label><span><span class="badge badge-active">Active</span></span></div>
+        <div class="info-item"><label>Authorization Info</label><span>Authorized for all standard ABA services under current contract.</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewProviderModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Provider Documents Modal -->
+<div class="modal-overlay" id="providerDocsModal" onclick="if(event.target===this)closeModal('providerDocsModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Provider Documents</h3>
+      <button class="modal-close" onclick="closeModal('providerDocsModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Uploaded</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Provider Agreement</td>
+            <td>Jan 5, 2024</td>
+            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
+          </tr>
+          <tr>
+            <td>Insurance Certificate</td>
+            <td>Jan 5, 2024</td>
+            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
+          </tr>
+          <tr>
+            <td>Background Check</td>
+            <td>Dec 20, 2023</td>
+            <td><button class="tbl-btn" onclick="showToast('Opening document...')">View</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('providerDocsModal')">Close</button>
+      <button class="add-btn" onclick="showToast('Upload feature coming soon')">Upload Document</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

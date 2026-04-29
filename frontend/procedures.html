@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Procedures - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item active" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Procedures</h1><p>Behavior intervention procedures used in treatment</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addProcedureModal')">+ Add Procedure</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="procSearch" type="text" placeholder="Search procedures..." oninput="filterTable('procSearch','procBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="procTable">
+        <thead>
+          <tr>
+            <th>Procedure</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Related Behavior</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="procBody">
+          <tr>
+            <td>Discrete Trial Training</td>
+            <td>Teaching Procedure</td>
+            <td>Structured teaching method using clear instructions, prompts, and reinforcement</td>
+            <td>Skill Acquisition</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Discrete Trial Training','Teaching Procedure','Structured teaching method using clear instructions, prompts, and reinforcement','Skill Acquisition','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Natural Environment Teaching</td>
+            <td>Teaching Procedure</td>
+            <td>Teaching skills in the natural environment using incidental teaching</td>
+            <td>Communication</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Natural Environment Teaching','Teaching Procedure','Teaching skills in the natural environment using incidental teaching','Communication','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Pivotal Response Training</td>
+            <td>Teaching Procedure</td>
+            <td>Child-led naturalistic teaching targeting pivotal areas of development</td>
+            <td>Social Skills</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Pivotal Response Training','Teaching Procedure','Child-led naturalistic teaching targeting pivotal areas of development','Social Skills','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Behavioral Momentum</td>
+            <td>Compliance Procedure</td>
+            <td>Begin with high-probability requests to build compliance</td>
+            <td>Non-Compliance</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Behavioral Momentum','Compliance Procedure','Begin with high-probability requests to build compliance','Non-Compliance','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Response Blocking</td>
+            <td>Safety Procedure</td>
+            <td>Physically prevent the occurrence of a problem behavior</td>
+            <td>Self-Injurious Behavior</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Response Blocking','Safety Procedure','Physically prevent the occurrence of a problem behavior','Self-Injurious Behavior','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Planned Ignoring</td>
+            <td>Reduction Procedure</td>
+            <td>Withhold attention following occurrences of low-level problem behavior</td>
+            <td>Verbal Aggression</td>
+            <td><span class="badge badge-draft">Draft</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewProc('Planned Ignoring','Reduction Procedure','Withhold attention following occurrences of low-level problem behavior','Verbal Aggression','Draft')">View</button>
+              <button class="tbl-btn" onclick="openModal('editProcedureModal')">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Procedure Modal -->
+<div class="modal-overlay" id="addProcedureModal" onclick="if(event.target===this)closeModal('addProcedureModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Add Procedure</h3>
+      <button class="modal-close" onclick="closeModal('addProcedureModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Procedure Name</label>
+        <input type="text" placeholder="Enter procedure name"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option>Teaching Procedure</option>
+            <option>Compliance Procedure</option>
+            <option>Safety Procedure</option>
+            <option>Reduction Procedure</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Related Behavior</label>
+          <input type="text" placeholder="e.g. Non-Compliance"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="3" placeholder="Describe how this procedure is carried out..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select>
+          <option>Active</option>
+          <option>Draft</option>
+          <option>Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addProcedureModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addProcedureModal')">Save Procedure</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Procedure Modal -->
+<div class="modal-overlay" id="editProcedureModal" onclick="if(event.target===this)closeModal('editProcedureModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Edit Procedure</h3>
+      <button class="modal-close" onclick="closeModal('editProcedureModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Procedure Name</label>
+        <input type="text" value="Discrete Trial Training"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option selected>Teaching Procedure</option>
+            <option>Compliance Procedure</option>
+            <option>Safety Procedure</option>
+            <option>Reduction Procedure</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Related Behavior</label>
+          <input type="text" value="Skill Acquisition"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="3">Structured teaching method using clear instructions, prompts, and reinforcement</textarea>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select>
+          <option selected>Active</option>
+          <option>Draft</option>
+          <option>Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editProcedureModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editProcedureModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Procedure Modal -->
+<div class="modal-overlay" id="viewProcedureModal" onclick="if(event.target===this)closeModal('viewProcedureModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Procedure Details</h3>
+      <button class="modal-close" onclick="closeModal('viewProcedureModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span>Procedure</span><strong id="vp-name"></strong></div>
+        <div class="info-item"><span>Type</span><strong id="vp-type"></strong></div>
+        <div class="info-item"><span>Related Behavior</span><strong id="vp-behavior"></strong></div>
+        <div class="info-item"><span>Status</span><strong id="vp-status"></strong></div>
+        <div class="info-item" style="grid-column:1/-1"><span>Description</span><strong id="vp-desc"></strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewProcedureModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewProc(name, type, desc, behavior, status) {
+  document.getElementById('vp-name').textContent = name;
+  document.getElementById('vp-type').textContent = type;
+  document.getElementById('vp-desc').textContent = desc;
+  document.getElementById('vp-behavior').textContent = behavior;
+  document.getElementById('vp-status').textContent = status;
+  openModal('viewProcedureModal');
+}
+</script>
+</body>
+</html>

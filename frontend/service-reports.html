@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Reports - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item active" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Service Reports</h1>
+        <p>Billing and service delivery reports for submitted sessions</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('newServiceModal')">+ New Service Report</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div class="section-box">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="serviceSearch" type="text" placeholder="Search service reports..." oninput="filterTable('serviceSearch','serviceBody')" />
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Service Period</th>
+              <th>Client</th>
+              <th>Service Type</th>
+              <th>Billed Units</th>
+              <th>Rate</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="serviceBody">
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No service reports loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Service Report Modal -->
+<div class="modal-overlay" id="viewServiceModal" onclick="if(event.target===this)closeModal('viewServiceModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Service Report Details</h3>
+      <button class="modal-close" onclick="closeModal('viewServiceModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Service Period</label>
+          <span id="vs-period">-</span>
+        </div>
+        <div class="info-item">
+          <label>Client</label>
+          <span id="vs-client">-</span>
+        </div>
+        <div class="info-item">
+          <label>Service Type</label>
+          <span id="vs-type">-</span>
+        </div>
+        <div class="info-item">
+          <label>Billed Units</label>
+          <span id="vs-units">-</span>
+        </div>
+        <div class="info-item">
+          <label>Rate per Unit</label>
+          <span id="vs-rate">-</span>
+        </div>
+        <div class="info-item">
+          <label>Total Amount</label>
+          <span id="vs-total" style="font-weight:700;font-size:15px;">-</span>
+        </div>
+        <div class="info-item">
+          <label>Status</label>
+          <span id="vs-status">-</span>
+        </div>
+        <div class="info-item">
+          <label>Insurance Provider</label>
+          <span>BlueCross BlueShield</span>
+        </div>
+        <div class="info-item">
+          <label>Authorization Number</label>
+          <span>AUTH-2026-0041</span>
+        </div>
+        <div class="info-item">
+          <label>CPT Code</label>
+          <span>97153</span>
+        </div>
+        <div class="info-item">
+          <label>Rendering Provider</label>
+          <span>Daenerys Targaryen, BCBA</span>
+        </div>
+        <div class="info-item">
+          <label>Place of Service</label>
+          <span>Home</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="showToast('Exporting service report...')">Export PDF</button>
+      <button class="add-btn" onclick="closeModal('viewServiceModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Service Report Modal -->
+<div class="modal-overlay" id="newServiceModal" onclick="if(event.target===this)closeModal('newServiceModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Service Report</h3>
+      <button class="modal-close" onclick="closeModal('newServiceModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Client</label>
+        <select>
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Service Type</label>
+        <select>
+          <option>Behavior Treatment</option>
+          <option>Assessment</option>
+          <option>Supervision</option>
+          <option>Parent Training</option>
+          <option>Protocol Modification</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Service Month</label>
+          <select>
+            <option>January</option>
+            <option>February</option>
+            <option>March</option>
+            <option>April</option>
+            <option>May</option>
+            <option>June</option>
+            <option>July</option>
+            <option>August</option>
+            <option>September</option>
+            <option>October</option>
+            <option>November</option>
+            <option>December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Service Year</label>
+          <select>
+            <option>2026</option>
+            <option>2025</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Billed Units</label>
+          <input type="number" placeholder="e.g. 80" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Rate per Unit ($)</label>
+          <input type="number" placeholder="e.g. 15" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="3" placeholder="Add any notes about this service report..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('newServiceModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('newServiceModal')">Save Report</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function saveForm(id) {
+    closeModal(id);
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = 'Saved successfully';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function filterTable(inputId, tbodyId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function openViewService(period, client, type, units, rate, total, status) {
+    document.getElementById('vs-period').textContent = period;
+    document.getElementById('vs-client').textContent = client;
+    document.getElementById('vs-type').textContent = type;
+    document.getElementById('vs-units').textContent = units;
+    document.getElementById('vs-rate').textContent = rate;
+    document.getElementById('vs-total').textContent = total;
+    document.getElementById('vs-status').textContent = status;
+    openModal('viewServiceModal');
+  }
+</script>
+</body>
+</html>

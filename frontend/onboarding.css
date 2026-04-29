@@ -1,0 +1,478 @@
+/* =====================================================
+   Gilberto CRM — Onboarding step flow
+   ===================================================== */
+
+/* --- Reset (scoped so dashboard.css doesn't fight it) --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", system-ui, Arial, sans-serif;
+}
+
+/* ---- Page shell ---- */
+.page-onboarding {
+  min-height: 100vh;
+  color: #1f2d26;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%,  rgba(107,158,126,0.35), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 30%, rgba(45,74,62,0.25),   transparent 45%),
+    radial-gradient(ellipse 50% 50% at 0%   100%,rgba(255,200,120,0.12), transparent 40%),
+    linear-gradient(165deg, #0f1f1a 0%, #1a2e26 40%, #243d33 100%);
+  overflow-x: hidden;
+}
+
+/* ---- Animated orb layer ---- */
+.onb-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.onb-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: 0.4;
+  animation: onbFloat 18s ease-in-out infinite;
+}
+
+.onb-orb--a {
+  width: min(52vw, 420px);
+  height: min(52vw, 420px);
+  top: -12%; right: -8%;
+  background: radial-gradient(circle, #5fa888, transparent 70%);
+}
+.onb-orb--b {
+  width: min(40vw, 360px);
+  height: min(40vw, 360px);
+  bottom: 5%; left: -10%;
+  background: radial-gradient(circle, #3d6b5c, transparent 70%);
+  animation-delay: -6s;
+}
+.onb-orb--c {
+  width: 200px; height: 200px;
+  top: 42%; left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 70%);
+  animation-delay: -12s;
+}
+
+@keyframes onbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(12px, -18px) scale(1.05); }
+  66%       { transform: translate(-16px, 8px) scale(0.98); }
+}
+
+/* confetti bursts */
+.onb-burst {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: #9fd4b8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(159,212,184,0.5);
+  pointer-events: none;
+  z-index: 0;
+  animation: onbPop 0.7s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes onbPop {
+  0%   { transform: scale(0); opacity: 0; }
+  40%  { opacity: 1; }
+  100% { transform: scale(1); opacity: 0.85;
+         box-shadow: 0 0 0 40px rgba(159,212,184,0); }
+}
+
+/* ---- Outer wrapper — scrolls naturally, card sits at top with padding ---- */
+.onb-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Top bar ---- */
+.onb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.onb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.95);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: 1.05rem;
+}
+
+.onb-logo {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+.onb-exit {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.onb-exit:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+
+/* ---- Card ---- */
+.onb-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(248,251,249,0.98) 100%);
+  border-radius: 20px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.4) inset;
+  position: relative;
+  /* NO overflow: hidden — lets content breathe */
+}
+
+/* shimmer accent bar on top */
+.onb-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  border-radius: 20px 20px 0 0;
+  background: linear-gradient(90deg, #3a6350, #6b9e7e, #8fd4a8, #3a6350);
+  background-size: 200% 100%;
+  animation: onbShimmer 3.5s linear infinite;
+  z-index: 1;
+}
+
+@keyframes onbShimmer {
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ---- Progress pills ---- */
+.onb-step-track {
+  display: flex;
+  gap: 6px;
+  padding: 24px 28px 0;
+}
+
+.onb-step-pill {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #d4e4da;
+  transition: background 0.35s, transform 0.25s;
+}
+
+.onb-step-pill.is-done,
+.onb-step-pill.is-active {
+  background: linear-gradient(90deg, #2d4a3e, #6b9e7e);
+}
+
+.onb-step-pill.is-active {
+  transform: scaleY(1.35);
+  box-shadow: 0 0 12px rgba(107,158,126,0.45);
+}
+
+/* ---- Step content area ---- */
+.onb-content {
+  padding: 24px 28px 28px;
+}
+
+/* Step panels: hidden by default, block when active */
+.onb-step {
+  display: none;
+}
+
+.onb-step.is-visible {
+  display: block;
+  animation: onbStepIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes onbStepIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* ---- Text hierarchy ---- */
+.onb-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #5f7a6d;
+  margin-bottom: 8px;
+}
+
+.onb-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1a2e26;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.onb-sub {
+  font-size: 0.92rem;
+  color: #4a6358;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+/* ---- Welcome step icon row ---- */
+.onb-hero-illus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px 0 8px;
+}
+
+.onb-hero-illus span {
+  display: inline-flex;
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  background: linear-gradient(145deg, #eef4f1, #d8ebe4);
+  border: 1px solid #c5ddd0;
+  box-shadow: 0 12px 28px rgba(45,74,62,0.1);
+  animation: onbBounce 2.4s ease-in-out infinite;
+}
+.onb-hero-illus span:nth-child(2) { animation-delay: 0.2s; background: linear-gradient(145deg, #e6f2ec, #c8e3d4); }
+.onb-hero-illus span:nth-child(3) { animation-delay: 0.4s; background: linear-gradient(145deg, #e8f5ef, #b8d9c4); }
+
+@keyframes onbBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+/* ---- Form fields ---- */
+.onb-field {
+  margin-bottom: 16px;
+}
+
+.onb-field:last-child {
+  margin-bottom: 0;
+}
+
+.onb-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #3d5248;
+  margin-bottom: 6px;
+}
+
+.onb-field input,
+.onb-field select,
+.onb-field textarea {
+  width: 100%;
+  border: 1.5px solid #c8ddd0;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 0.93rem;
+  background: #fff;
+  color: #1f2d26;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: auto;
+}
+
+.onb-field input::placeholder,
+.onb-field select::placeholder,
+.onb-field textarea::placeholder {
+  color: #a8c4b8;
+}
+
+.onb-field input:focus,
+.onb-field select:focus,
+.onb-field textarea:focus {
+  outline: none;
+  border-color: #6b9e7e;
+  box-shadow: 0 0 0 3px rgba(107,158,126,0.2);
+  background: #fff;
+}
+
+.onb-field textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Two-column grid for side-by-side fields */
+.onb-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.onb-row2 .onb-field {
+  margin-bottom: 0;
+}
+
+@media (max-width: 500px) {
+  .onb-row2 { grid-template-columns: 1fr; gap: 0; }
+  .onb-row2 .onb-field { margin-bottom: 16px; }
+}
+
+/* ---- Compliance checkbox ---- */
+.onb-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f4f9f6;
+  border: 1.5px solid #d4e4da;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s, background 0.2s;
+  margin-top: 16px;
+}
+
+.onb-check:hover { background: #edf6f0; border-color: #b5d2c0; }
+
+.onb-check input[type="checkbox"] {
+  width: 18px; height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #2d4a3e;
+  cursor: pointer;
+}
+
+.onb-check span {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #2d4035;
+}
+
+/* ---- Status message ---- */
+#onbStatus,
+.onb-form-status {
+  font-size: 0.8rem;
+  color: #b91c1c;
+  min-height: 0;
+  padding: 0 28px 10px;
+}
+
+#onbStatus:empty,
+.onb-form-status:empty { display: none; }
+
+/* ---- Nav bar (Back / Continue) ---- */
+.onb-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 28px 28px;
+  border-top: 1px solid #e4ece8;
+}
+
+.onb-back {
+  background: transparent;
+  border: none;
+  color: #5f7a6d;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 8px;
+  border-radius: 8px;
+  transition: color 0.2s, background 0.15s;
+}
+
+.onb-back:hover:not(:disabled) {
+  color: #2d4a3e;
+  background: #eef4f1;
+}
+
+.onb-back:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.onb-primary {
+  flex: 1;
+  max-width: 200px;
+  margin-left: auto;
+  background: linear-gradient(135deg, #2d4a3e, #3d6350);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-size: 0.93rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 24px rgba(45,74,62,0.28);
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.15s;
+}
+
+.onb-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(45,74,62,0.36);
+}
+
+.onb-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(45,74,62,0.22);
+}
+
+.onb-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---- Accessibility ---- */
+.onb-sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); border: 0;
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .onb-orb,
+  .onb-card::before,
+  .onb-hero-illus span,
+  .onb-burst,
+  .onb-step.is-visible {
+    animation: none !important;
+  }
+  .onb-step-pill.is-active { transform: none; }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .onb-wrap { padding: 20px 12px 48px; }
+  .onb-step-track { padding: 20px 20px 0; }
+  .onb-content { padding: 20px 20px 24px; }
+  .onb-nav { padding: 16px 20px 24px; }
+  #onbStatus, .onb-form-status { padding-left: 20px; padding-right: 20px; }
+  .onb-title { font-size: 1.35rem; }
+  .onb-primary { max-width: none; }
+}

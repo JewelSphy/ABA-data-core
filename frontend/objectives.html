@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Objectives - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
+    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
+    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
+    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
+    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="ui-colorful">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item active" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Objectives</h1><p>Short term and long term objectives tied to behavior plans</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addObjectiveModal')">+ Add Objective</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="objSearch" type="text" placeholder="Search objectives..." oninput="filterTable('objSearch','objBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="objTable">
+        <thead>
+          <tr>
+            <th>Objective</th>
+            <th>Type</th>
+            <th>Client</th>
+            <th>Baseline</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="objBody">
+          <tr>
+            <td>Reduce off-task episodes to 2 or fewer per session</td>
+            <td><span class="badge badge-active">STO</span></td>
+            <td>Jon Snow</td>
+            <td>12/session</td>
+            <td>2/session</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">6/session</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:50%"></div></div>
+            </td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Reduce off-task episodes to 2 or fewer per session','STO','Jon Snow','12/session','2/session','6/session','50','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Independently request break using words</td>
+            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
+            <td>Arya Stark</td>
+            <td>0%</td>
+            <td>80%</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">45%</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:56%"></div></div>
+            </td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Independently request break using words','LTO','Arya Stark','0%','80%','45%','56','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Follow 2-step instructions without prompts</td>
+            <td><span class="badge badge-active">STO</span></td>
+            <td>Robb Stark</td>
+            <td>10%</td>
+            <td>90%</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">65%</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:72%"></div></div>
+            </td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Follow 2-step instructions without prompts','STO','Robb Stark','10%','90%','65%','72','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Reduce SIB to 0 instances per week</td>
+            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
+            <td>Sansa Stark</td>
+            <td>8/week</td>
+            <td>0/week</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">3/week</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:62%"></div></div>
+            </td>
+            <td><span class="badge badge-pending">Pending</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Reduce SIB to 0 instances per week','LTO','Sansa Stark','8/week','0/week','3/week','62','Pending')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Demonstrate turn-taking with a peer for 3 rounds</td>
+            <td><span class="badge badge-active">STO</span></td>
+            <td>Jon Snow</td>
+            <td>0 rounds</td>
+            <td>3 rounds</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">1 round</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:33%"></div></div>
+            </td>
+            <td><span class="badge badge-draft">Draft</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Demonstrate turn-taking with a peer for 3 rounds','STO','Jon Snow','0 rounds','3 rounds','1 round','33','Draft')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Independently complete morning hygiene routine</td>
+            <td><span class="badge" style="background:#e8f4fd;color:#1565c0;">LTO</span></td>
+            <td>Arya Stark</td>
+            <td>20%</td>
+            <td>95%</td>
+            <td>
+              <div style="font-size:12px;margin-bottom:4px;">55%</div>
+              <div class="progress-bar-wrap" style="width:80px;"><div class="progress-bar-fill" style="width:58%"></div></div>
+            </td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewObj('Independently complete morning hygiene routine','LTO','Arya Stark','20%','95%','55%','58','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editObjectiveModal')">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Objective Modal -->
+<div class="modal-overlay" id="addObjectiveModal" onclick="if(event.target===this)closeModal('addObjectiveModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Add Objective</h3>
+      <button class="modal-close" onclick="closeModal('addObjectiveModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Objective</label>
+        <textarea rows="2" placeholder="Describe the objective..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option>STO</option>
+            <option>LTO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Baseline</label>
+          <input type="text" placeholder="e.g. 12/session"/>
+        </div>
+        <div class="form-group">
+          <label>Target</label>
+          <input type="text" placeholder="e.g. 2/session"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Progress</label>
+          <input type="text" placeholder="e.g. 6/session"/>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addObjectiveModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addObjectiveModal')">Save Objective</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Objective Modal -->
+<div class="modal-overlay" id="editObjectiveModal" onclick="if(event.target===this)closeModal('editObjectiveModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Edit Objective</h3>
+      <button class="modal-close" onclick="closeModal('editObjectiveModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Objective</label>
+        <textarea rows="2">Reduce off-task episodes to 2 or fewer per session</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option selected>STO</option>
+            <option>LTO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option selected>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Baseline</label>
+          <input type="text" value="12/session"/>
+        </div>
+        <div class="form-group">
+          <label>Target</label>
+          <input type="text" value="2/session"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Current Progress</label>
+          <input type="text" value="6/session"/>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option selected>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editObjectiveModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editObjectiveModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Objective Modal -->
+<div class="modal-overlay" id="viewObjectiveModal" onclick="if(event.target===this)closeModal('viewObjectiveModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Objective Details</h3>
+      <button class="modal-close" onclick="closeModal('viewObjectiveModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item" style="grid-column:1/-1"><span>Objective</span><strong id="vo-name"></strong></div>
+        <div class="info-item"><span>Type</span><strong id="vo-type"></strong></div>
+        <div class="info-item"><span>Client</span><strong id="vo-client"></strong></div>
+        <div class="info-item"><span>Baseline</span><strong id="vo-baseline"></strong></div>
+        <div class="info-item"><span>Target</span><strong id="vo-target"></strong></div>
+        <div class="info-item"><span>Status</span><strong id="vo-status"></strong></div>
+        <div class="info-item" style="grid-column:1/-1">
+          <span>Current Progress</span>
+          <strong id="vo-current"></strong>
+          <div class="progress-bar-wrap" style="width:200px;margin-top:6px;">
+            <div class="progress-bar-fill" id="vo-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewObjectiveModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewObj(name, type, client, baseline, target, current, pct, status) {
+  document.getElementById('vo-name').textContent = name;
+  document.getElementById('vo-type').textContent = type;
+  document.getElementById('vo-client').textContent = client;
+  document.getElementById('vo-baseline').textContent = baseline;
+  document.getElementById('vo-target').textContent = target;
+  document.getElementById('vo-current').textContent = current;
+  document.getElementById('vo-status').textContent = status;
+  document.getElementById('vo-bar').style.width = pct + '%';
+  openModal('viewObjectiveModal');
+}
+</script>
+</body>
+</html>

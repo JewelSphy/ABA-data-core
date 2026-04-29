@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Collection Hub - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item active" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Data Collection Hub</h1>
+        <p>Record and review behavior data from sessions</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div style="padding: 24px;">
+
+      <!-- Section 1: Record Data -->
+      <div class="section-box" style="margin-bottom: 24px;">
+        <div class="section-box-header">
+          <h3>Record Data Point</h3>
+        </div>
+        <div style="padding: 20px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Client</label>
+              <select>
+                <option>Jon Snow</option>
+                <option>Robb Stark</option>
+                <option>Arya Stark</option>
+                <option>Sansa Stark</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" value="2026-04-25" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Behavior</label>
+              <select>
+                <option>Off-Task Behavior</option>
+                <option>Verbal Aggression</option>
+                <option>Non-Compliance</option>
+                <option>SIB</option>
+                <option>Elopement</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Session</label>
+              <select>
+                <option>Morning Session</option>
+                <option>Afternoon Session</option>
+                <option>Evening Session</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Measurement Type</label>
+              <select>
+                <option>Frequency</option>
+                <option>Duration</option>
+                <option>Rate</option>
+                <option>Intensity</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Value</label>
+              <input type="number" min="0" placeholder="e.g. 4" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea rows="3" placeholder="Any relevant observations about this data point..."></textarea>
+          </div>
+          <button class="add-btn" onclick="recordDataPoint()">Record Data Point</button>
+        </div>
+      </div>
+
+      <!-- Section 2: Recent Data Points -->
+      <div class="section-box">
+        <div class="section-box-header">
+          <h3>Recent Data Points</h3>
+        </div>
+        <div class="table-toolbar">
+          <div class="table-search">
+            <input class="search-input" type="text" placeholder="Search by client, behavior..." id="dataSearch" oninput="filterDataTable(this.value)" />
+          </div>
+          <button class="small-btn" onclick="showToast('Data exported to CSV')">Export CSV</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="dataTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Behavior</th>
+                <th>Measurement</th>
+                <th>Value</th>
+                <th>Session</th>
+                <th>Recorded By</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody">
+              <tr>
+                <td>Apr 25, 2026</td>
+                <td>Jon Snow</td>
+                <td>Off-Task Behavior</td>
+                <td>Frequency</td>
+                <td>4</td>
+                <td>Morning</td>
+                <td>Tyrion Lannister</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 25, 2026','Jon Snow','Off-Task Behavior','Frequency','4','Morning','Tyrion Lannister')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 25, 2026</td>
+                <td>Arya Stark</td>
+                <td>Verbal Aggression</td>
+                <td>Frequency</td>
+                <td>2</td>
+                <td>Afternoon</td>
+                <td>Brienne of Tarth</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 25, 2026','Arya Stark','Verbal Aggression','Frequency','2','Afternoon','Brienne of Tarth')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 24, 2026</td>
+                <td>Robb Stark</td>
+                <td>Non-Compliance</td>
+                <td>Frequency</td>
+                <td>5</td>
+                <td>Morning</td>
+                <td>Tyrion Lannister</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 24, 2026','Robb Stark','Non-Compliance','Frequency','5','Morning','Tyrion Lannister')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 24, 2026</td>
+                <td>Sansa Stark</td>
+                <td>Off-Task Behavior</td>
+                <td>Frequency</td>
+                <td>7</td>
+                <td>Morning</td>
+                <td>Samwell Tarly</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 24, 2026','Sansa Stark','Off-Task Behavior','Frequency','7','Morning','Samwell Tarly')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 23, 2026</td>
+                <td>Jon Snow</td>
+                <td>SIB</td>
+                <td>Frequency</td>
+                <td>0</td>
+                <td>Afternoon</td>
+                <td>Brienne of Tarth</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 23, 2026','Jon Snow','SIB','Frequency','0','Afternoon','Brienne of Tarth')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 23, 2026</td>
+                <td>Arya Stark</td>
+                <td>Non-Compliance</td>
+                <td>Frequency</td>
+                <td>3</td>
+                <td>Morning</td>
+                <td>Tyrion Lannister</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 23, 2026','Arya Stark','Non-Compliance','Frequency','3','Morning','Tyrion Lannister')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 22, 2026</td>
+                <td>Robb Stark</td>
+                <td>Verbal Aggression</td>
+                <td>Frequency</td>
+                <td>1</td>
+                <td>Afternoon</td>
+                <td>Samwell Tarly</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 22, 2026','Robb Stark','Verbal Aggression','Frequency','1','Afternoon','Samwell Tarly')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 22, 2026</td>
+                <td>Sansa Stark</td>
+                <td>Off-Task Behavior</td>
+                <td>Frequency</td>
+                <td>6</td>
+                <td>Morning</td>
+                <td>Brienne of Tarth</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 22, 2026','Sansa Stark','Off-Task Behavior','Frequency','6','Morning','Brienne of Tarth')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 21, 2026</td>
+                <td>Jon Snow</td>
+                <td>Elopement</td>
+                <td>Frequency</td>
+                <td>0</td>
+                <td>Afternoon</td>
+                <td>Tyrion Lannister</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 21, 2026','Jon Snow','Elopement','Frequency','0','Afternoon','Tyrion Lannister')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Apr 21, 2026</td>
+                <td>Arya Stark</td>
+                <td>Verbal Aggression</td>
+                <td>Frequency</td>
+                <td>4</td>
+                <td>Morning</td>
+                <td>Samwell Tarly</td>
+                <td>
+                  <button class="tbl-btn" onclick="openDataModal('Apr 21, 2026','Arya Stark','Verbal Aggression','Frequency','4','Morning','Samwell Tarly')">View</button>
+                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Data Modal -->
+<div class="modal-overlay" id="viewDataModal" onclick="if(event.target===this)closeModal('viewDataModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Data Point Details</h3>
+      <button class="modal-close" onclick="closeModal('viewDataModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span class="label">Date</span><span class="value" id="dm-date"></span></div>
+        <div class="info-item"><span class="label">Client</span><span class="value" id="dm-client"></span></div>
+        <div class="info-item"><span class="label">Behavior</span><span class="value" id="dm-behavior"></span></div>
+        <div class="info-item"><span class="label">Measurement Type</span><span class="value" id="dm-measurement"></span></div>
+        <div class="info-item"><span class="label">Value</span><span class="value" id="dm-value"></span></div>
+        <div class="info-item"><span class="label">Session</span><span class="value" id="dm-session"></span></div>
+        <div class="info-item"><span class="label">Recorded By</span><span class="value" id="dm-staff"></span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewDataModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function openDataModal(date, client, behavior, measurement, value, session, staff) {
+    document.getElementById('dm-date').textContent = date;
+    document.getElementById('dm-client').textContent = client;
+    document.getElementById('dm-behavior').textContent = behavior;
+    document.getElementById('dm-measurement').textContent = measurement;
+    document.getElementById('dm-value').textContent = value;
+    document.getElementById('dm-session').textContent = session + ' Session';
+    document.getElementById('dm-staff').textContent = staff;
+    openModal('viewDataModal');
+  }
+
+  function deleteDataPoint(btn) {
+    const row = btn.closest('tr');
+    row.style.opacity = '0.4';
+    setTimeout(() => { row.remove(); }, 300);
+    showToast('Data point deleted');
+  }
+
+  function recordDataPoint() {
+    showToast('Data point recorded');
+  }
+
+  function filterDataTable(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#dataTableBody tr').forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

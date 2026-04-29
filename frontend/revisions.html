@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revisions - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item active" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Revisions</h1>
+        <p>Session notes that need review, editing or approval</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div class="notice notice-info">
+      Review each note carefully before approving. Rejected notes are sent back to the author for correction.
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="tbl-btn" id="rev-filter-all" onclick="revFilter('all')">All</button>
+          <button class="tbl-btn" id="rev-filter-pending" onclick="revFilter('pending')">Pending</button>
+          <button class="tbl-btn" id="rev-filter-rejected" onclick="revFilter('rejected')">Rejected</button>
+        </div>
+        <div class="table-search">
+          <input class="search-input" id="revSearch" type="text" placeholder="Search revisions..." oninput="filterTable('revSearch','revisionsBody')" />
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Author</th>
+            <th>Note Type</th>
+            <th>Days Pending</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="revisionsBody">
+          <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No revision records loaded yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Review Note Modal -->
+<div class="modal-overlay" id="reviewNoteModal" onclick="handleOverlayClick(event,'reviewNoteModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Review Note</h3>
+      <button class="modal-close" onclick="closeModal('reviewNoteModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid" style="margin-bottom:16px;">
+        <div class="info-item"><label>Client</label><span id="rn-client"></span></div>
+        <div class="info-item"><label>Author</label><span id="rn-author"></span></div>
+        <div class="info-item"><label>Date</label><span id="rn-date"></span></div>
+      </div>
+      <div class="section-box" style="margin-bottom:16px;">
+        <div class="section-box-header">Session Note Content</div>
+        <p id="reviewNoteBody" style="font-size:14px;line-height:1.6;color:#444;">No session note content loaded yet.</p>
+      </div>
+      <div class="form-group">
+        <label>Rejection Reason (fill out only if rejecting)</label>
+        <textarea id="reviewRejectReason" rows="3" placeholder="If you plan to reject this note, explain what needs to be corrected..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" onclick="closeModal('reviewNoteModal')">Close</button>
+      <button class="tbl-btn" onclick="closeModal('reviewNoteModal'); showToast('Note approved')">Approve</button>
+      <button class="tbl-btn danger" onclick="submitRejectFromReview()">Reject and Send Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal-overlay" id="rejectModal" onclick="handleOverlayClick(event,'rejectModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Reject Note</h3>
+      <button class="modal-close" onclick="closeModal('rejectModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;margin-bottom:12px;color:#555;">This note will be sent back to <strong id="reject-author"></strong> for <strong id="reject-client"></strong>. Please provide a clear reason so the author knows what to fix.</p>
+      <div class="form-group">
+        <label>Rejection Reason <span style="color:#c0392b;">*</span></label>
+        <textarea id="rejectReason" rows="4" placeholder="Describe what needs to be corrected in this note..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" onclick="closeModal('rejectModal')">Cancel</button>
+      <button class="tbl-btn danger" onclick="submitRejection()">Send Back for Revision</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  function filterTable(inputId, tbodyId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  function revFilter(status) {
+    ['rev-filter-all','rev-filter-pending','rev-filter-rejected'].forEach(id => {
+      document.getElementById(id).classList.remove('active-filter');
+    });
+    document.getElementById('rev-filter-' + status).classList.add('active-filter');
+    document.querySelectorAll('#revisionsBody tr').forEach(row => {
+      if (status === 'all') { row.style.display = ''; }
+      else { row.style.display = row.getAttribute('data-rev-status') === status ? '' : 'none'; }
+    });
+  }
+  function openReviewModal(client, author, date) {
+    document.getElementById('rn-client').textContent = client;
+    document.getElementById('rn-author').textContent = author;
+    document.getElementById('rn-date').textContent = date;
+    document.getElementById('reviewRejectReason').value = '';
+    openModal('reviewNoteModal');
+  }
+  function openRejectModal(client, author) {
+    document.getElementById('reject-client').textContent = client;
+    document.getElementById('reject-author').textContent = author;
+    document.getElementById('rejectReason').value = '';
+    openModal('rejectModal');
+  }
+  function submitRejection() {
+    const reason = document.getElementById('rejectReason').value.trim();
+    if (!reason) {
+      showToast('Please enter a rejection reason before sending back');
+      return;
+    }
+    closeModal('rejectModal');
+    showToast('Note sent back for revision');
+  }
+  function submitRejectFromReview() {
+    const reason = document.getElementById('reviewRejectReason').value.trim();
+    if (!reason) {
+      showToast('Please fill in the rejection reason before rejecting');
+      return;
+    }
+    closeModal('reviewNoteModal');
+    showToast('Note sent back for revision');
+  }
+</script>
+</body>
+</html>

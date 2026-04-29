@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assessments - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
+    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
+    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
+    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
+    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="ui-colorful">
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item active" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Assessments</h1>
+        <p>Client assessments including maladaptive behaviors, replacement skills and objectives</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('newAssessmentModal')">+ New Assessment</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div class="section-box">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="assessSearch" type="text" placeholder="Search assessments..." oninput="filterTable('assessSearch','assessBody')" />
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Assessment Title</th>
+              <th>Client</th>
+              <th>Date</th>
+              <th>Conducted By</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="assessBody">
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No assessments loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Assessment Modal -->
+<div class="modal-overlay" id="newAssessmentModal" onclick="if(event.target===this)closeModal('newAssessmentModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Assessment</h3>
+      <button class="modal-close" onclick="closeModal('newAssessmentModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Client</label>
+        <select>
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Assessment Type</label>
+        <select>
+          <option>Functional Behavior Assessment (FBA)</option>
+          <option>VB-MAPP</option>
+          <option>Progress Review</option>
+          <option>Adaptive Skills Assessment</option>
+          <option>Annual Review</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" />
+      </div>
+      <div class="form-group">
+        <label>Conducted By</label>
+        <select>
+          <option>Daenerys Targaryen</option>
+          <option>Jaime Lannister</option>
+          <option>Tyrion Lannister</option>
+          <option>Brienne of Tarth</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="4" placeholder="Add any relevant notes about this assessment..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('newAssessmentModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('newAssessmentModal')">Save Assessment</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Assessment Modal -->
+<div class="modal-overlay" id="viewAssessmentModal" onclick="if(event.target===this)closeModal('viewAssessmentModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3 id="viewAssessTitle">Assessment Details</h3>
+      <button class="modal-close" onclick="closeModal('viewAssessmentModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <!-- Tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #d4e4da;">
+        <button id="tab-summary" onclick="switchTab('summary')" style="padding:8px 16px;border:none;background:none;font-size:13px;font-weight:600;color:#2d7a4f;border-bottom:2px solid #2d7a4f;cursor:pointer;">Summary</button>
+        <button id="tab-maladaptive" onclick="switchTab('maladaptive')" style="padding:8px 16px;border:none;background:none;font-size:13px;color:#6b8c7a;cursor:pointer;">Maladaptive Behaviors</button>
+        <button id="tab-skills" onclick="switchTab('skills')" style="padding:8px 16px;border:none;background:none;font-size:13px;color:#6b8c7a;cursor:pointer;">Replacement Skills</button>
+        <button id="tab-stos" onclick="switchTab('stos')" style="padding:8px 16px;border:none;background:none;font-size:13px;color:#6b8c7a;cursor:pointer;">STOs and LTOs</button>
+      </div>
+
+      <!-- Tab: Summary -->
+      <div id="panel-summary">
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Assessment Title</label>
+            <span id="vTitle">-</span>
+          </div>
+          <div class="info-item">
+            <label>Client</label>
+            <span id="vClient">-</span>
+          </div>
+          <div class="info-item">
+            <label>Date</label>
+            <span id="vDate">-</span>
+          </div>
+          <div class="info-item">
+            <label>Type</label>
+            <span id="vType">-</span>
+          </div>
+          <div class="info-item">
+            <label>Conducted By</label>
+            <span id="vBy">-</span>
+          </div>
+          <div class="info-item">
+            <label>Status</label>
+            <span id="vStatus">-</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:16px;">
+          <label>Clinical Notes</label>
+          <p style="font-size:13px;color:#4a6b5a;line-height:1.6;">This assessment was conducted to evaluate the client's current behavioral patterns and skill levels. Results will be used to update the behavior intervention plan and set new treatment goals for the upcoming service period. All observations were recorded across multiple sessions to ensure accuracy.</p>
+        </div>
+      </div>
+
+      <!-- Tab: Maladaptive Behaviors -->
+      <div id="panel-maladaptive" style="display:none;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Behavior</th><th>Measurement</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Off-Task Behavior</td>
+              <td>Frequency</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Verbal Aggression</td>
+              <td>Frequency</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Non-Compliance</td>
+              <td>Frequency</td>
+              <td><span class="badge badge-pending">Pending</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab: Replacement Skills -->
+      <div id="panel-skills" style="display:none;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Skill</th><th>Domain</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Requesting Break</td>
+              <td>Communication</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Using Words Instead of Actions</td>
+              <td>Communication</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab: STOs and LTOs -->
+      <div id="panel-stos" style="display:none;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Goal</th><th>Type</th><th>Target</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Reduce off-task behavior to below 3 occurrences per session</td>
+              <td>STO</td>
+              <td>3 occurrences</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Request a break independently in 4 out of 5 trials</td>
+              <td>STO</td>
+              <td>80% accuracy</td>
+              <td><span class="badge badge-active">Active</span></td>
+            </tr>
+            <tr>
+              <td>Maintain appropriate behavior across all school settings for 30 days</td>
+              <td>LTO</td>
+              <td>30 consecutive days</td>
+              <td><span class="badge badge-pending">Pending</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="showToast('Exporting report as PDF...')">Export PDF</button>
+      <button class="add-btn" onclick="closeModal('viewAssessmentModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function saveForm(id) {
+    closeModal(id);
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = 'Saved successfully';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function filterTable(inputId, tbodyId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function openViewModal(title, client, date, type, by, status) {
+    document.getElementById('vTitle').textContent = title;
+    document.getElementById('vClient').textContent = client;
+    document.getElementById('vDate').textContent = date;
+    document.getElementById('vType').textContent = type;
+    document.getElementById('vBy').textContent = by;
+    document.getElementById('vStatus').textContent = status;
+    document.getElementById('viewAssessTitle').textContent = title;
+    switchTab('summary');
+    openModal('viewAssessmentModal');
+  }
+
+  function switchTab(tab) {
+    const tabs = ['summary','maladaptive','skills','stos'];
+    tabs.forEach(t => {
+      document.getElementById('panel-' + t).style.display = t === tab ? '' : 'none';
+      const btn = document.getElementById('tab-' + t);
+      if (btn) {
+        btn.style.color = t === tab ? '#2d7a4f' : '#6b8c7a';
+        btn.style.borderBottom = t === tab ? '2px solid #2d7a4f' : 'none';
+      }
+    });
+  }
+</script>
+</body>
+</html>

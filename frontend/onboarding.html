@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set up your workspace — Gilberto CRM</title>
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+<body class="page-onboarding" id="onboardingPage">
+  <div class="onb-ambient" aria-hidden="true">
+    <div class="onb-orb onb-orb--a"></div>
+    <div class="onb-orb onb-orb--b"></div>
+    <div class="onb-orb onb-orb--c"></div>
+  </div>
+
+  <div class="onb-wrap">
+    <div class="onb-topbar">
+      <div class="onb-brand">
+        <div class="onb-logo" aria-hidden="true">G</div>
+        <div>
+          <div>Gilberto</div>
+          <div style="font-size:0.7rem;font-weight:600;opacity:0.75;letter-spacing:0.12em;">ABA CARE CRM</div>
+        </div>
+      </div>
+      <button type="button" class="onb-exit" id="onbSignOut">Sign out</button>
+    </div>
+
+    <div class="onb-card" role="region" aria-label="Company setup">
+      <div class="onb-step-track" id="onbPills" aria-hidden="true">
+        <div class="onb-step-pill" data-pill="0"></div>
+        <div class="onb-step-pill" data-pill="1"></div>
+        <div class="onb-step-pill" data-pill="2"></div>
+        <div class="onb-step-pill" data-pill="3"></div>
+        <div class="onb-step-pill" data-pill="4"></div>
+      </div>
+
+      <div class="onb-content" id="onbSteps">
+        <div class="onb-step is-visible" data-step="0">
+          <p class="onb-kicker">Step 1 of 5</p>
+          <h2 class="onb-title">Let’s build your company workspace</h2>
+          <p class="onb-sub">A few quick questions so we can create a secure, dedicated dashboard for your organization. This takes about two minutes.</p>
+          <div class="onb-hero-illus" aria-hidden="true">
+            <span>🏢</span>
+            <span>🔒</span>
+            <span>📋</span>
+          </div>
+        </div>
+
+        <div class="onb-step" data-step="1">
+          <p class="onb-kicker">Step 2 of 5</p>
+          <h2 class="onb-title">Company identity</h2>
+          <p class="onb-sub">Use the legal or billing name and a display name for staff-facing screens.</p>
+          <div class="onb-field">
+            <label for="coLegal">Legal / registered company name</label>
+            <input id="coLegal" type="text" autocomplete="organization" placeholder="e.g. North River ABA Group LLC" />
+          </div>
+          <div class="onb-field">
+            <label for="coDisplay">Display name in Gilberto</label>
+            <input id="coDisplay" type="text" placeholder="e.g. North River ABA" />
+          </div>
+        </div>
+
+        <div class="onb-step" data-step="2">
+          <p class="onb-kicker">Step 3 of 5</p>
+          <h2 class="onb-title">Primary contact</h2>
+          <p class="onb-sub">Who we should contact for account and compliance questions (often the clinical director or owner).</p>
+          <div class="onb-row2">
+            <div class="onb-field">
+              <label for="ctFirstName">First name</label>
+              <input id="ctFirstName" type="text" autocomplete="given-name" placeholder="First name" />
+            </div>
+            <div class="onb-field">
+              <label for="ctLastName">Last name</label>
+              <input id="ctLastName" type="text" autocomplete="family-name" placeholder="Last name" />
+            </div>
+          </div>
+          <div class="onb-row2">
+            <div class="onb-field">
+              <label for="ctEmail">Work email</label>
+              <input id="ctEmail" type="email" autocomplete="email" placeholder="you@company.com" />
+            </div>
+            <div class="onb-field">
+              <label for="ctPhone">Phone</label>
+              <input id="ctPhone" type="tel" autocomplete="tel" placeholder="(555) 000-0000" />
+            </div>
+          </div>
+        </div>
+
+        <div class="onb-step" data-step="3">
+          <p class="onb-kicker">Step 4 of 5</p>
+          <h2 class="onb-title">Service footprint &amp; size</h2>
+          <p class="onb-sub">Helps us size defaults and support. You can change this later.</p>
+          <div class="onb-field">
+            <label for="coAddress">Main service or billing address (optional)</label>
+            <textarea id="coAddress" rows="2" placeholder="Street, city, state, ZIP"></textarea>
+          </div>
+          <div class="onb-field">
+            <label for="teamSize">Approximate team size</label>
+            <select id="teamSize">
+              <option value="">Select…</option>
+              <option value="1-5">1–5</option>
+              <option value="6-15">6–15</option>
+              <option value="16-40">16–40</option>
+              <option value="41+">41+</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="onb-step" data-step="4">
+          <p class="onb-kicker">Step 5 of 5</p>
+          <h2 class="onb-title">Review &amp; secure submission</h2>
+          <p class="onb-sub">We’ll spin up a fresh dashboard for <strong id="onbRecapName">your company</strong> and mark your org for team approval.</p>
+          <div class="onb-field">
+            <label for="notes">Anything we should know? (optional)</label>
+            <textarea id="notes" placeholder="Regions served, payers, go-live target date…"></textarea>
+          </div>
+          <label class="onb-check" for="ack">
+            <input type="checkbox" id="ack" />
+            <span>
+              I confirm the information is accurate. I understand access may be subject to org verification and
+              that Gilberto CRM is for authorized clinical and business use in line with our policies and applicable law
+              (including HIPAA, where it applies to how we will configure this workspace).
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <p id="onbStatus" class="onb-form-status" role="status" aria-live="polite"></p>
+
+      <div class="onb-nav">
+        <button type="button" class="onb-back" id="onbBack">Back</button>
+        <button type="button" class="onb-primary" id="onbNext">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="onbBursts" class="onb-ambient" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseConfig.js"></script>
+  <script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="onboarding.js"></script>
+</body>
+</html>

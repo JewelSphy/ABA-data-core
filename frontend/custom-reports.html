@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Reports - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .report-card { background: white; border: 1px solid #d4e4da; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 26px rgba(45,74,62,0.1); }
+    .report-card-head { padding: 11px 14px; color: white; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+    .report-card-content { padding: 16px; }
+    .report-icon { font-size: 28px; margin-bottom: 9px; }
+    .report-card h4 { font-size: 14px; font-weight: 700; color: #1f2d26; margin-bottom: 6px; }
+    .report-card p { font-size: 13px; color: #6b8c7a; margin-bottom: 16px; line-height: 1.5; }
+    .report-card-actions { display: flex; gap: 8px; }
+    .tone-pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+    .tone-yellow { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .tone-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .tone-green { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .tone-violet { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .tone-coral { background: linear-gradient(135deg, #f97316, #ea580c); }
+  </style>
+</head>
+<body class="page-reports">
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item active" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Custom Reports</h1>
+        <p>Build and run custom reports across client and session data</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('createReportModal')">+ Create Report</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div class="notice notice-info" style="margin-bottom:20px;">
+      Custom reports let you filter and export data by client, date range, behavior, and more.
+    </div>
+
+    <div class="report-grid">
+      <div class="report-card" style="grid-column:1/-1;">
+        <div class="report-card-head tone-blue">Custom Reports</div>
+        <div class="report-card-content">
+          <h4>No report templates loaded yet</h4>
+          <p>Filler templates were removed. Connect this page to backend report template endpoints before running reports.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Run Report Modal -->
+<div class="modal-overlay" id="runReportModal" onclick="if(event.target===this)closeModal('runReportModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="runReportTitle">Run Report</h3>
+      <button class="modal-close" onclick="closeModal('runReportModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Client</label>
+        <select>
+          <option>All Clients</option>
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date From</label>
+          <input type="date" />
+        </div>
+        <div class="form-group">
+          <label>Date To</label>
+          <input type="date" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Output Format</label>
+        <select>
+          <option>PDF</option>
+          <option>CSV</option>
+          <option>Excel</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('runReportModal')">Cancel</button>
+      <button class="add-btn" onclick="generateReport()">Generate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Report Modal -->
+<div class="modal-overlay" id="editReportModal" onclick="if(event.target===this)closeModal('editReportModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Report Template</h3>
+      <button class="modal-close" onclick="closeModal('editReportModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Report Name</label>
+        <input type="text" id="editReportName" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="editReportDesc" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Data Source</label>
+        <select>
+          <option>Sessions</option>
+          <option>Clients</option>
+          <option>Behaviors</option>
+          <option>Authorizations</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Filters</label>
+        <textarea rows="3" placeholder="Define filter criteria..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Output Format</label>
+        <select>
+          <option>PDF</option>
+          <option>CSV</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editReportModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editReportModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Report Modal -->
+<div class="modal-overlay" id="createReportModal" onclick="if(event.target===this)closeModal('createReportModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Create Custom Report</h3>
+      <button class="modal-close" onclick="closeModal('createReportModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Report Name</label>
+        <input type="text" placeholder="Enter a name for this report" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="3" placeholder="Describe what this report shows..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Data Source</label>
+        <select>
+          <option>Sessions</option>
+          <option>Clients</option>
+          <option>Behaviors</option>
+          <option>Authorizations</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Filters</label>
+        <textarea rows="3" placeholder="Define filter criteria..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Output Format</label>
+        <select>
+          <option>PDF</option>
+          <option>CSV</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('createReportModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('createReportModal')">Save Report</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function saveForm(id) {
+    closeModal(id);
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = 'Saved successfully';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function openRunModal(name) {
+    document.getElementById('runReportTitle').textContent = name;
+    openModal('runReportModal');
+  }
+
+  function openEditModal(name, desc) {
+    document.getElementById('editReportName').value = name;
+    document.getElementById('editReportDesc').value = desc;
+    openModal('editReportModal');
+  }
+
+  function generateReport() {
+    closeModal('runReportModal');
+    showToast('Generating report...');
+  }
+</script>
+</body>
+</html>

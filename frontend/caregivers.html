@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Caregivers and Lady Catelyns - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
+    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
+    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
+    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
+    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="ui-colorful">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item active" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Caregivers and Lady Catelyns</h1>
+        <p>Manage caregiver contacts and training status</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addCaregiverModal')">+ Add Caregiver</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="caregiverSearch" type="text" placeholder="Search caregivers..." oninput="filterTable('caregiverSearch','caregiverBody')"/>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Relationship</th>
+            <th>Linked Client</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Training Complete</th>
+            <th>Signature Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="caregiverBody">
+          <tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading caregivers...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Caregiver Modal -->
+<div class="modal-overlay" id="addCaregiverModal" onclick="if(event.target===this)closeModal('addCaregiverModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Caregiver</h3>
+      <button class="modal-close" onclick="closeModal('addCaregiverModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input id="cgFullName" type="text" placeholder="Enter full name"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Relationship</label>
+          <select id="cgRelationship">
+            <option>Parent</option>
+            <option>Lady Catelyn</option>
+            <option>Grandparent</option>
+            <option>Sibling</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Linked Client</label>
+          <select id="cgLinkedClient">
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone</label>
+          <input id="cgPhone" type="text" placeholder="555-0000"/>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="cgEmail" type="email" placeholder="name@example.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="cgNotes" rows="3" placeholder="Any additional notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addCaregiverModal')">Cancel</button>
+      <button class="add-btn" onclick="saveCaregiver()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Caregiver Modal -->
+<div class="modal-overlay" id="viewCaregiverModal" onclick="if(event.target===this)closeModal('viewCaregiverModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Caregiver Details</h3>
+      <button class="modal-close" onclick="closeModal('viewCaregiverModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Full Name</label><span id="viewCgName">—</span></div>
+        <div class="info-item"><label>Relationship</label><span id="viewCgRelationship">—</span></div>
+        <div class="info-item"><label>Linked Client</label><span id="viewCgClient">—</span></div>
+        <div class="info-item"><label>Phone</label><span id="viewCgPhone">—</span></div>
+        <div class="info-item"><label>Email</label><span id="viewCgEmail">—</span></div>
+        <div class="info-item"><label>Training Complete</label><span><span class="badge">N/A</span></span></div>
+        <div class="info-item"><label>Signature Status</label><span><span class="badge">N/A</span></span></div>
+        <div class="info-item"><label>Notes</label><span id="viewCgNotes">—</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewCaregiverModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function esc(v) { return String(v ?? '').replace(/'/g, "\\'"); }
+function splitName(full) {
+  const p = String(full || '').trim().split(/\s+/);
+  if (!p.length) return { first: '', last: '' };
+  return { first: p[0], last: p.slice(1).join(' ') || 'Caregiver' };
+}
+function openCaregiverView(name, relationship, client, phone, email, notes) {
+  document.getElementById('viewCgName').textContent = name || '—';
+  document.getElementById('viewCgRelationship').textContent = relationship || '—';
+  document.getElementById('viewCgClient').textContent = client || '—';
+  document.getElementById('viewCgPhone').textContent = phone || '—';
+  document.getElementById('viewCgEmail').textContent = email || '—';
+  document.getElementById('viewCgNotes').textContent = notes || '—';
+  openModal('viewCaregiverModal');
+}
+async function loadCaregiversTable() {
+  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) return;
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const tbody = document.getElementById('caregiverBody');
+  try {
+    const res = await jvmFetchCaregivers(orgId, null);
+    if (!res.ok) throw new Error('load failed');
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No caregivers saved yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((r) => {
+      const name = `${r.first_name || ''} ${r.last_name || ''}`.trim();
+      return `<tr>
+        <td>${name || '—'}</td>
+        <td>${r.relationship || '—'}</td>
+        <td>—</td>
+        <td>${r.phone || '—'}</td>
+        <td>${r.email || '—'}</td>
+        <td><span class="badge">N/A</span></td>
+        <td><span class="badge">N/A</span></td>
+        <td>
+          <button class="tbl-btn" onclick="openCaregiverView('${esc(name)}','${esc(r.relationship||'')}','','${esc(r.phone||'')}','${esc(r.email||'')}','')">View</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (_) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load caregivers.</td></tr>';
+  }
+}
+async function saveCaregiver() {
+  const fullName = document.getElementById('cgFullName').value.trim();
+  if (!fullName) { showToast('Please enter caregiver full name'); return; }
+  const name = splitName(fullName);
+  const payload = {
+    org_id: window.gilbertoCurrentOrg?.id || null,
+    first_name: name.first,
+    last_name: name.last,
+    relationship: document.getElementById('cgRelationship').value || null,
+    email: document.getElementById('cgEmail').value.trim() || null,
+    phone: document.getElementById('cgPhone').value.trim() || null,
+    status: 'active'
+  };
+  try {
+    const res = await jvmFetch('/api/caregivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const msg = typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'save failed';
+      showToast('Save failed: ' + msg);
+      return;
+    }
+    closeModal('addCaregiverModal');
+    showToast('Caregiver saved');
+    await loadCaregiversTable();
+  } catch (e) {
+    showToast('Save failed: ' + (e?.message || 'unknown error'));
+  }
+}
+document.addEventListener('DOMContentLoaded', function () {
+  loadCaregiversTable();
+});
+</script>
+</body>
+</html>

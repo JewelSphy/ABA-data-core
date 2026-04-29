@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your workspace — Gilberto CRM</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Workspace setup – extends style.css card design */
+    .ws-card { text-align: left; }
+
+    .ws-card h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a2e26;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .ws-card p {
+      font-size: 0.875rem;
+      color: #4a6358;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .ws-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    /* Override the broad button[type="button"] rule for workspace buttons */
+    .ws-btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #2d4a3e, #3d6350) !important;
+      color: #fff !important;
+      border: none !important;
+      border-radius: 10px !important;
+      padding: 13px 16px !important;
+      font-weight: 700 !important;
+      font-size: 0.93rem !important;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(45,74,62,0.25);
+      transition: transform 0.15s, box-shadow 0.2s !important;
+    }
+    .ws-btn-primary:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 10px 28px rgba(45,74,62,0.32) !important;
+    }
+
+    .ws-btn-ghost {
+      width: 100%;
+      background: #f4f7f5 !important;
+      border: 1.5px solid #c8ddd0 !important;
+      color: #2d4a3e !important;
+      border-radius: 10px !important;
+      padding: 12px 16px !important;
+      font-weight: 600 !important;
+      font-size: 0.9rem !important;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s !important;
+      box-shadow: none !important;
+      margin-top: 0 !important;
+    }
+    .ws-btn-ghost:hover {
+      background: #edf5f1 !important;
+      border-color: #a8cdb8 !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .ws-join {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #d4e4da;
+    }
+
+    .ws-join label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3d5248;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .ws-join input {
+      width: 100%;
+      border: 1.5px solid #c8ddd0;
+      border-radius: 9px;
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      margin-bottom: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #fafcfb;
+      color: #1f2d26;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ws-join input:focus {
+      outline: none;
+      border-color: #6b9e7e;
+      box-shadow: 0 0 0 3px rgba(107,158,126,0.15);
+      background: #fff;
+    }
+    .ws-join input::placeholder {
+      color: #a8c4b8;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    #wsStatus {
+      font-size: 0.8rem;
+      color: #b91c1c;
+      min-height: 0;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    #wsStatus:empty { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card ws-card">
+      <div class="card-header">
+        <div class="login-logo">
+          <svg class="login-logo-icon" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="50" height="50" rx="14" fill="rgba(255,255,255,0.12)"/>
+            <ellipse cx="37" cy="13" rx="5" ry="8" fill="rgba(107,158,126,0.9)" transform="rotate(-40 37 13)"/>
+            <text x="23" y="32" font-family="Georgia, serif" font-weight="700" font-style="italic" font-size="26" fill="white" text-anchor="middle">G</text>
+          </svg>
+          <div class="login-logo-text">
+            <span class="login-logo-name">Gilberto</span>
+            <span class="login-logo-sub">ABA Care CRM</span>
+          </div>
+        </div>
+        <div class="card-header-tagline">
+          <h1>Where should we put you?</h1>
+          <p>One login, multiple companies. Pick an option below — everything stays in the same database, separated by organization.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <h2>Create a new company</h2>
+        <p>We’ll walk you through a quick setup to create a fresh workspace just for your organization.</p>
+        <div class="ws-actions">
+          <button type="button" class="ws-btn-primary" id="wsCreate">Create a new company workspace</button>
+        </div>
+
+        <div class="ws-join">
+          <h2>Join an existing company</h2>
+          <p>
+            Have an <strong>8-character join code</strong> from your company admin? Enter it below to join their workspace.
+            Admins can find or generate the code under <strong>Invite your team</strong> in the dashboard.
+          </p>
+          <label for="joinCodeInput">Join code</label>
+          <input type="text" id="joinCodeInput" placeholder="E.g. A1B2C3D4" maxlength="12" autocomplete="one-time-code" />
+          <p id="wsStatus" role="status"></p>
+          <button type="button" class="ws-btn-ghost" id="wsJoin">Join with this code</button>
+        </div>
+
+        <p style="margin-top:24px;font-size:0.8rem;color:#6b8c7a;">Already set up? <a href="#" onclick="logout();return false;" style="color:#2d4a3e;font-weight:600;">Sign out</a> and sign back in.</p>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseConfig.js"></script>
+  <script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="workspace-setup.js"></script>
+</body>
+</html>

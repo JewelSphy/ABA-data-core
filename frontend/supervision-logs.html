@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supervision Logs - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="page-supervision">
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item active" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Supervision Logs</h1>
+        <p>Track BCBA supervision of RBTs and compliance status</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('newSupervisionModal')">+ New Supervision Log</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div class="notice notice-warn" style="margin-bottom:20px;">
+      RBTs must receive at least 5% of total service hours as supervision from a BCBA each month.
+    </div>
+
+    <div class="selection-grid" style="margin-bottom:18px;">
+      <div class="selection-card">
+        <div class="selection-head tone-pink">
+          Direct Supervision
+          <span class="badge" style="background:rgba(255,255,255,0.18);color:white;">8 logs</span>
+        </div>
+        <div class="selection-body">
+          <div class="selection-icon"><span class="sticker sticker-lg emoji-pin pin-blue" aria-hidden="true"></span></div>
+          <h4>In-Person Observation</h4>
+          <p>Track live coaching and implementation fidelity during active treatment sessions.</p>
+        </div>
+      </div>
+      <div class="selection-card">
+        <div class="selection-head tone-yellow">
+          Indirect Supervision
+          <span class="badge" style="background:rgba(255,255,255,0.18);color:white;">6 logs</span>
+        </div>
+        <div class="selection-body">
+          <div class="selection-icon"><span class="sticker sticker-lg emoji-book book-purple" aria-hidden="true"></span></div>
+          <h4>Records and Program Review</h4>
+          <p>Document treatment plan reviews, data QA checks, and documentation quality control.</p>
+        </div>
+      </div>
+      <div class="selection-card">
+        <div class="selection-head tone-blue">
+          Performance
+          <span class="badge" style="background:rgba(255,255,255,0.18);color:white;">5 staff</span>
+        </div>
+        <div class="selection-body">
+          <div class="selection-icon"><span class="sticker sticker-lg emoji-book book-green" aria-hidden="true"></span></div>
+          <h4>Competency Coaching</h4>
+          <p>Highlight strengths, teaching priorities, and action steps for each supervised RBT.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-box">
+      <div class="table-toolbar">
+        <div class="dashboard-strip" style="width:100%;">
+          <h3>Supervision Oversight Table</h3>
+          <div class="segmented">
+            <button class="small-btn active-blue">Month</button>
+            <button class="small-btn">Quarter</button>
+            <button class="small-btn">Year</button>
+          </div>
+        </div>
+        <div class="table-search">
+          <input class="search-input" id="supervisionSearch" type="text" placeholder="Search supervision logs..." oninput="filterTable('supervisionSearch','supervisionBody')" />
+        </div>
+      </div>
+
+      <div class="table-wrapper table-oversight">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>RBT</th>
+              <th>Supervisor (BCBA)</th>
+              <th>Date</th>
+              <th>Duration</th>
+              <th>Method</th>
+              <th>Session Hours This Month</th>
+              <th>Supervision %</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="supervisionBody">
+            <tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No supervision logs loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Supervision Log Modal -->
+<div class="modal-overlay" id="viewSupervisionModal" onclick="if(event.target===this)closeModal('viewSupervisionModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Supervision Log Details</h3>
+      <button class="modal-close" onclick="closeModal('viewSupervisionModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item">
+          <label>RBT</label>
+          <span id="sv-rbt">-</span>
+        </div>
+        <div class="info-item">
+          <label>Supervisor (BCBA)</label>
+          <span id="sv-bcba">-</span>
+        </div>
+        <div class="info-item">
+          <label>Date</label>
+          <span id="sv-date">-</span>
+        </div>
+        <div class="info-item">
+          <label>Duration</label>
+          <span id="sv-duration">-</span>
+        </div>
+        <div class="info-item">
+          <label>Method</label>
+          <span id="sv-method">-</span>
+        </div>
+        <div class="info-item">
+          <label>Session Hours This Month</label>
+          <span id="sv-hours">-</span>
+        </div>
+        <div class="info-item">
+          <label>Supervision Percentage</label>
+          <span id="sv-percent" style="font-weight:600;">-</span>
+        </div>
+        <div class="info-item">
+          <label>Status</label>
+          <span id="sv-status">-</span>
+        </div>
+      </div>
+
+      <div id="sv-requirement-box" style="margin-top:20px;padding:14px;border-radius:6px;font-size:13px;font-weight:600;">
+        <span id="sv-requirement-text"></span>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>Supervision Notes</label>
+        <p id="sv-notes" style="font-size:13px;color:#4a6b5a;line-height:1.6;">No supervision notes loaded yet.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewSupervisionModal')">Close</button>
+      <button class="add-btn" onclick="showToast('Log updated successfully')">Approve Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Supervision Log Modal -->
+<div class="modal-overlay" id="editSupervisionModal" onclick="if(event.target===this)closeModal('editSupervisionModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Supervision Log</h3>
+      <button class="modal-close" onclick="closeModal('editSupervisionModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>RBT</label>
+        <select id="edit-rbt">
+          <option>Tyrion Lannister</option>
+          <option>Brienne of Tarth</option>
+          <option>Samwell Tarly</option>
+          <option>Davos Seaworth</option>
+          <option>Gendry Baratheon</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Supervisor (BCBA)</label>
+        <select id="edit-bcba">
+          <option>Daenerys Targaryen</option>
+          <option>Jaime Lannister</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="edit-date" />
+      </div>
+      <div class="form-group">
+        <label>Duration</label>
+        <select id="edit-duration">
+          <option>30 min</option>
+          <option>60 min</option>
+          <option>90 min</option>
+          <option>120 min</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Method</label>
+        <select id="edit-method">
+          <option>In-Person</option>
+          <option>Video</option>
+          <option>Phone</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="3" placeholder="Add supervision notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editSupervisionModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editSupervisionModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Supervision Log Modal -->
+<div class="modal-overlay" id="newSupervisionModal" onclick="if(event.target===this)closeModal('newSupervisionModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Supervision Log</h3>
+      <button class="modal-close" onclick="closeModal('newSupervisionModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>RBT</label>
+        <select>
+          <option>Tyrion Lannister</option>
+          <option>Brienne of Tarth</option>
+          <option>Samwell Tarly</option>
+          <option>Davos Seaworth</option>
+          <option>Gendry Baratheon</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Supervisor (BCBA)</label>
+        <select>
+          <option>Daenerys Targaryen</option>
+          <option>Jaime Lannister</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" />
+      </div>
+      <div class="form-group">
+        <label>Duration</label>
+        <select>
+          <option>30 min</option>
+          <option>60 min</option>
+          <option>90 min</option>
+          <option>120 min</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Method</label>
+        <select>
+          <option>In-Person</option>
+          <option>Video</option>
+          <option>Phone</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="4" placeholder="Add supervision notes and observations..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('newSupervisionModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('newSupervisionModal')">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function saveForm(id) {
+    closeModal(id);
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = 'Saved successfully';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function filterTable(inputId, tbodyId) {
+    const q = document.getElementById(inputId).value.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function openViewSupervision(rbt, bcba, date, duration, method, hours, percent, status) {
+    document.getElementById('sv-rbt').textContent = rbt;
+    document.getElementById('sv-bcba').textContent = bcba;
+    document.getElementById('sv-date').textContent = date;
+    document.getElementById('sv-duration').textContent = duration;
+    document.getElementById('sv-method').textContent = method;
+    document.getElementById('sv-hours').textContent = hours;
+    document.getElementById('sv-percent').textContent = percent;
+    document.getElementById('sv-status').textContent = status;
+
+    const pct = parseFloat(percent);
+    const box = document.getElementById('sv-requirement-box');
+    const txt = document.getElementById('sv-requirement-text');
+    if (pct >= 5) {
+      box.style.background = '#e8f5e9';
+      box.style.border = '1px solid #a5d6a7';
+      box.style.color = '#2e7d32';
+      txt.textContent = 'Supervision Requirement Met: Yes - ' + percent + ' meets the 5% minimum.';
+    } else {
+      box.style.background = '#fff8e1';
+      box.style.border = '1px solid #ffe082';
+      box.style.color = '#c97a00';
+      txt.textContent = 'Supervision Requirement Met: No - ' + percent + ' does not yet meet the 5% minimum. Additional supervision is needed this month.';
+    }
+
+    openModal('viewSupervisionModal');
+  }
+
+  function openEditSupervision(rbt, bcba, date, duration, method) {
+    document.getElementById('edit-rbt').value = rbt;
+    document.getElementById('edit-bcba').value = bcba;
+    document.getElementById('edit-duration').value = duration;
+    document.getElementById('edit-method').value = method;
+    openModal('editSupervisionModal');
+  }
+</script>
+</body>
+</html>

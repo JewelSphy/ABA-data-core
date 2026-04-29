@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Barriers - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item active" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Barriers</h1><p>Document barriers that affect therapy progress</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addBarrierModal')">+ Add Barrier</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="barrierSearch" type="text" placeholder="Search barriers..." oninput="filterTable('barrierSearch','barrierBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="barrierTable">
+        <thead>
+          <tr>
+            <th>Barrier</th>
+            <th>Description</th>
+            <th>Client</th>
+            <th>Related Behavior</th>
+            <th>Impact Level</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="barrierBody">
+          <tr>
+            <td>Inconsistent Caregiver Implementation</td>
+            <td>Caregiver does not consistently follow behavior plan strategies at home</td>
+            <td>Jon Snow</td>
+            <td>Off-Task Behavior</td>
+            <td><span class="badge badge-inactive" style="background:#fdecea;color:#c0392b;">High</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBarrier('Inconsistent Caregiver Implementation','Caregiver does not consistently follow behavior plan strategies at home','Jon Snow','Off-Task Behavior','High')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBarrierModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>School Environment Triggers</td>
+            <td>Loud classroom environment increases frequency of problem behavior</td>
+            <td>Arya Stark</td>
+            <td>Verbal Aggression</td>
+            <td><span class="badge badge-pending" style="background:#fff8e1;color:#b7770d;">Medium</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBarrier('School Environment Triggers','Loud classroom environment increases frequency of problem behavior','Arya Stark','Verbal Aggression','Medium')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBarrierModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Medical Concerns</td>
+            <td>Ongoing medical condition affecting attention and compliance</td>
+            <td>Robb Stark</td>
+            <td>Non-Compliance</td>
+            <td><span class="badge badge-inactive" style="background:#fdecea;color:#c0392b;">High</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBarrier('Medical Concerns','Ongoing medical condition affecting attention and compliance','Robb Stark','Non-Compliance','High')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBarrierModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Limited Reinforcer Access</td>
+            <td>Client has restricted access to preferred items which limits reinforcement effectiveness</td>
+            <td>Sansa Stark</td>
+            <td>Self-Injurious Behavior</td>
+            <td><span class="badge badge-pending" style="background:#fff8e1;color:#b7770d;">Medium</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBarrier('Limited Reinforcer Access','Client has restricted access to preferred items which limits reinforcement effectiveness','Sansa Stark','Self-Injurious Behavior','Medium')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBarrierModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Language Barrier</td>
+            <td>Caregiver speaks limited English which affects training</td>
+            <td>Jon Snow</td>
+            <td>Elopement</td>
+            <td><span class="badge badge-active">Low</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBarrier('Language Barrier','Caregiver speaks limited English which affects training','Jon Snow','Elopement','Low')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBarrierModal')">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Barrier Modal -->
+<div class="modal-overlay" id="addBarrierModal" onclick="if(event.target===this)closeModal('addBarrierModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Barrier</h3>
+      <button class="modal-close" onclick="closeModal('addBarrierModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Barrier Name</label>
+        <input type="text" placeholder="Name this barrier"/>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="3" placeholder="Describe how this barrier affects therapy..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Related Behavior</label>
+          <select>
+            <option>Off-Task Behavior</option>
+            <option>Self-Injurious Behavior</option>
+            <option>Verbal Aggression</option>
+            <option>Elopement</option>
+            <option>Non-Compliance</option>
+            <option>Property Destruction</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Impact Level</label>
+        <select>
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addBarrierModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addBarrierModal')">Save Barrier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Barrier Modal -->
+<div class="modal-overlay" id="editBarrierModal" onclick="if(event.target===this)closeModal('editBarrierModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Barrier</h3>
+      <button class="modal-close" onclick="closeModal('editBarrierModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Barrier Name</label>
+        <input type="text" value="Inconsistent Caregiver Implementation"/>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="3">Caregiver does not consistently follow behavior plan strategies at home</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option selected>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Related Behavior</label>
+          <select>
+            <option selected>Off-Task Behavior</option>
+            <option>Self-Injurious Behavior</option>
+            <option>Verbal Aggression</option>
+            <option>Elopement</option>
+            <option>Non-Compliance</option>
+            <option>Property Destruction</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Impact Level</label>
+        <select>
+          <option selected>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editBarrierModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editBarrierModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Barrier Modal -->
+<div class="modal-overlay" id="viewBarrierModal" onclick="if(event.target===this)closeModal('viewBarrierModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Barrier Details</h3>
+      <button class="modal-close" onclick="closeModal('viewBarrierModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span>Barrier</span><strong id="vbar-name"></strong></div>
+        <div class="info-item"><span>Client</span><strong id="vbar-client"></strong></div>
+        <div class="info-item"><span>Related Behavior</span><strong id="vbar-behavior"></strong></div>
+        <div class="info-item"><span>Impact Level</span><strong id="vbar-impact"></strong></div>
+        <div class="info-item" style="grid-column:1/-1"><span>Description</span><strong id="vbar-desc"></strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewBarrierModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewBarrier(name, desc, client, behavior, impact) {
+  document.getElementById('vbar-name').textContent = name;
+  document.getElementById('vbar-desc').textContent = desc;
+  document.getElementById('vbar-client').textContent = client;
+  document.getElementById('vbar-behavior').textContent = behavior;
+  document.getElementById('vbar-impact').textContent = impact;
+  openModal('viewBarrierModal');
+}
+</script>
+</body>
+</html>

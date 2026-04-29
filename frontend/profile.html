@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="page-dashboard">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item active" onclick="goToPage('profile.html')">Profile</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Profile</h1>
+        <p>Manage your account, preferences, and contact information.</p>
+      </div>
+      <div class="top-actions">
+        <button class="small-btn" onclick="goToPage('dashboard.html')">Back to Dashboard</button>
+        <button class="add-btn" onclick="saveProfile()">Save Changes</button>
+      </div>
+    </header>
+
+    <section class="section-box" style="margin-bottom:16px;">
+      <div class="section-box-header">
+        <h3>Account Details</h3>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" value="Hand of the Realm" />
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <input type="text" value="Clinical Administrator" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" value="admin@gilbertocarecrm.com" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" value="(555) 015-2244" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Bio</label>
+        <textarea rows="4">Oversees compliance, supervision, and reporting workflows across all active ABA programs.</textarea>
+      </div>
+    </section>
+
+    <section class="section-box">
+      <div class="section-box-header">
+        <h3>Preferences</h3>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Default Calendar View</label>
+          <select>
+            <option>Month</option>
+            <option>Week</option>
+            <option>Day</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notification Digest</label>
+          <select>
+            <option>Daily</option>
+            <option>Weekly</option>
+            <option>Off</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Theme Saturation</label>
+          <select>
+            <option>Vibrant</option>
+            <option>Balanced</option>
+            <option>Calm</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Timezone</label>
+          <select>
+            <option>America/New_York</option>
+            <option>America/Chicago</option>
+            <option>America/Los_Angeles</option>
+          </select>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function saveProfile() {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:2px;font-size:13px;z-index:999;';
+  t.textContent = 'Profile saved';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+</script>
+</body>
+</html>

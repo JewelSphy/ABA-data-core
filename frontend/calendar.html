@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="page-calendar">
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item active" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+
+    <header class="topbar">
+      <div>
+        <h1>Calendar</h1>
+        <p>View and manage sessions, assessments, supervision and caregiver training.</p>
+      </div>
+      <div class="top-actions">
+        <button class="small-btn" onclick="goToToday()"><span class="icon-chip icon-calendar" aria-hidden="true"></span>Today</button>
+        <button class="add-btn" onclick="openModal('newSessionModal')"><span class="emoji-chip" aria-hidden="true">🗂️</span>New Session</button>
+        <div class="menu-wrap">
+          <button class="profile-chip menu-caret" aria-label="Profile menu" onclick="toggleTopMenu(event,'profileMenuCalendar')">
+            <span class="profile-badge">A</span>
+          </button>
+          <div class="top-menu" id="profileMenuCalendar">
+            <div class="top-menu-item"><strong>👤 Arya Account</strong></div>
+            <div class="top-menu-item" onclick="goToPage('profile.html')">🪪 Open profile page</div>
+            <div class="top-menu-item">🗓️ Calendar default: Month view</div>
+            <div class="top-menu-item" onclick="logout()">🚪 Sign out</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="calendar-panel" style="margin-bottom:20px;">
+      <div class="calendar-toolbar">
+        <!-- Navigation: year arrows + month arrows + label -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="small-btn" onclick="prevYear()" title="Previous year" style="font-size:12px;padding:5px 9px;">Prev Yr</button>
+          <button class="small-btn" onclick="prevMonth()" title="Previous month" style="font-size:12px;padding:5px 9px;">Prev</button>
+          <h3 id="calMonthLabel" style="min-width:148px;text-align:center;font-size:15px;">April 2026</h3>
+          <button class="small-btn" onclick="nextMonth()" title="Next month" style="font-size:12px;padding:5px 9px;">Next</button>
+          <button class="small-btn" onclick="nextYear()" title="Next year" style="font-size:12px;padding:5px 9px;">Next Yr</button>
+        </div>
+        <!-- View toggles -->
+        <div style="display:flex;gap:5px;">
+          <button class="small-btn" id="dayBtn" onclick="setView('day')">Day</button>
+          <button class="small-btn" id="weekBtn" onclick="setView('week')">Week</button>
+          <button class="small-btn active-blue" id="monthBtn" onclick="setView('month')">Month</button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div class="calendar-grid" id="calGrid" style="min-width: 680px;"></div>
+      </div>
+    </section>
+
+    <!-- TODAY'S SCHEDULE -->
+    <section class="section-box">
+      <div class="section-box-header">
+        <h3>Today's Schedule</h3>
+        <span style="font-size:12px;color:#6b8c7a;">April 25, 2026</span>
+      </div>
+      <div class="schedule-item">
+        <div>
+          <strong>📒 Behavior Treatment Session</strong>
+          <p>Client: Jon Snow &middot; Location: School &middot; RBT: The Hound</p>
+        </div>
+        <span>9:00 AM</span>
+      </div>
+      <div class="schedule-item">
+        <div>
+          <strong>👥 Supervision Log</strong>
+          <p>BCBA supervision required for session review</p>
+        </div>
+        <span>11:30 AM</span>
+      </div>
+      <div class="schedule-item">
+        <div>
+          <strong>📒 Assessment</strong>
+          <p>Client: Arya Stark &middot; Maladaptive behaviors, replacement skills, STOs and LTOs</p>
+        </div>
+        <span>2:00 PM</span>
+      </div>
+      <div class="schedule-item" style="border-bottom:none;">
+        <div>
+          <strong>👨‍👩‍👧 Family Training</strong>
+          <p>Client: Jon Snow &middot; Caregiver: Lady Catelyn</p>
+        </div>
+        <span>3:30 PM</span>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Event detail modal -->
+<div id="eventModal" class="modal-overlay" onclick="if(event.target===this)closeModal('eventModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Session Details</h3>
+      <button class="modal-close" onclick="closeModal('eventModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Type</label><span>Behavior Treatment Session</span></div>
+        <div class="info-item"><label>Client</label><span>Jon Snow</span></div>
+        <div class="info-item"><label>Date</label><span>April 1, 2026</span></div>
+        <div class="info-item"><label>Time</label><span>9:00 AM - 11:00 AM</span></div>
+        <div class="info-item"><label>Location</label><span>School</span></div>
+        <div class="info-item"><label>Assigned RBT</label><span>The Hound</span></div>
+        <div class="info-item"><label>Status</label><span><span class="badge badge-complete">Complete</span></span></div>
+        <div class="info-item"><label>Notes</label><span>Session note submitted</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('eventModal')">Close</button>
+      <button class="add-btn" onclick="goToPage('behavior-treatment-session.html')">Open Session Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Session modal -->
+<div id="newSessionModal" class="modal-overlay" onclick="if(event.target===this)closeModal('newSessionModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Session</h3>
+      <button class="modal-close" onclick="closeModal('newSessionModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select id="calNewClient"><option value="">Loading...</option></select>
+        </div>
+        <div class="form-group">
+          <label>Session Type</label>
+          <select id="calNewType">
+            <option value="behavior_treatment">Behavior Treatment</option>
+            <option value="assessment">Assessment</option>
+            <option value="supervision">Supervision</option>
+            <option value="caregiver_training">Caregiver Training</option>
+            <option value="family_training">Family Training</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Date</label><input id="calNewDate" type="date" /></div>
+        <div class="form-group"><label>Start Time</label><input id="calNewTime" type="time" value="09:00"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location (POS)</label>
+          <select id="calNewPos">
+            <option value="Home">Home</option>
+            <option value="School">School</option>
+            <option value="Clinic">Clinic</option>
+            <option value="Community">Community</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assigned RBT</label>
+          <select id="calNewStaff"><option value="">Loading...</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea id="calNewNotes" placeholder="Optional notes for this session"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('newSessionModal')">Cancel</button>
+      <button class="add-btn" id="calSaveBtn" onclick="createCalendarSession()">Save Session</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="dashboard.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script>
+// =============================================================================
+// calendar.html — inline controller
+// Live session data via loadCalendarSessions() (dashboard.js → Supabase)
+// Write operations routed through Java bridge (jvmSupabaseBridge.js)
+// =============================================================================
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DNAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Live session cache keyed by YYYY-MM-DD → array of session objects
+let calCache = {};
+let curYear  = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let curView  = 'month';
+const TODAY  = new Date();
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function dk(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function isToday(y, m, d) {
+  return y === TODAY.getFullYear() && m === TODAY.getMonth() && d === TODAY.getDate();
+}
+function updateLabel() {
+  document.getElementById('calMonthLabel').textContent = MONTHS[curMonth] + ' ' + curYear;
+}
+function eventMeta(type) {
+  const map = {
+    behavior_treatment: { icon: '📒', cls: 'event-behavior' },
+    behavior:           { icon: '📒', cls: 'event-behavior' },
+    assessment:         { icon: '📋', cls: 'event-assessment' },
+    supervision:        { icon: '👥', cls: 'event-supervision' },
+    family_training:    { icon: '👨‍👩‍👧', cls: 'event-family' },
+    family:             { icon: '👨‍👩‍👧', cls: 'event-family' },
+    caregiver_training: { icon: '👨‍👩‍👧', cls: 'event-family' },
+    admin:              { icon: '📌', cls: 'event-admin' },
+  };
+  return map[type] || { icon: '📌', cls: 'event-admin' };
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+
+async function refreshCalendarData() {
+  if (typeof loadCalendarSessions !== 'function') return;
+  const sessions = await loadCalendarSessions(curYear, curMonth);
+  calCache = {};
+  sessions.forEach(s => {
+    if (!calCache[s.date]) calCache[s.date] = [];
+    calCache[s.date].push(s);
+  });
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function prevYear()  { curYear--;  render(); }
+function nextYear()  { curYear++;  render(); }
+function prevMonth() { if (curMonth === 0) { curMonth = 11; curYear--; } else { curMonth--; } render(); }
+function nextMonth() { if (curMonth === 11) { curMonth = 0; curYear++; } else { curMonth++; } render(); }
+function goToToday() { curYear = TODAY.getFullYear(); curMonth = TODAY.getMonth(); render(); }
+
+function setView(v) {
+  curView = v;
+  ['day', 'week', 'month'].forEach(x => {
+    const el = document.getElementById(x + 'Btn');
+    if (el) el.classList.toggle('active-blue', x === v);
+  });
+  render();
+}
+
+// ── Main render (async — fetches fresh data then paints) ──────────────────────
+
+async function render() {
+  updateLabel();
+  await refreshCalendarData();
+  if (curView === 'month')     renderMonth();
+  else if (curView === 'week') renderWeek();
+  else                         renderDay();
+  renderTodaySchedule();
+}
+
+// ── Month view ────────────────────────────────────────────────────────────────
+
+function renderMonth() {
+  const grid  = document.getElementById('calGrid');
+  grid.style.gridTemplateColumns = 'repeat(7,1fr)';
+  const first = new Date(curYear, curMonth, 1).getDay();
+  const total = new Date(curYear, curMonth + 1, 0).getDate();
+  let h = DNAMES.map(d => `<div class="day-name">${d}</div>`).join('');
+  for (let i = 0; i < first; i++) h += `<div class="day-box" style="background:#fafafa;"></div>`;
+  for (let d = 1; d <= total; d++) {
+    const key = dk(curYear, curMonth, d);
+    const evs = calCache[key] || [];
+    const td  = isToday(curYear, curMonth, d);
+    h += `<div class="day-box ${td ? 'today' : ''}">
+      <strong${td ? ' style="color:#6b9e7e;"' : ''}>${d}</strong>
+      ${evs.map(e => {
+        const meta  = eventMeta(e.type);
+        const label = e.client ? e.title + ' — ' + e.client : e.title;
+        const eJson = encodeURIComponent(JSON.stringify(e));
+        return `<div class="event-card ${meta.cls}" onclick="openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${label}</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+  const trailing = (first + total) % 7 === 0 ? 0 : 7 - (first + total) % 7;
+  for (let i = 0; i < trailing; i++) h += `<div class="day-box" style="background:#fafafa;"></div>`;
+  grid.innerHTML = h;
+}
+
+// ── Week view ─────────────────────────────────────────────────────────────────
+
+function renderWeek() {
+  const grid = document.getElementById('calGrid');
+  grid.style.gridTemplateColumns = 'repeat(7,1fr)';
+  const ref  = new Date(curYear, curMonth, 1);
+  const sun  = new Date(ref);
+  sun.setDate(ref.getDate() - ref.getDay());
+  let h = DNAMES.map(d => `<div class="day-name">${d}</div>`).join('');
+  for (let d = 0; d < 7; d++) {
+    const dd  = new Date(sun); dd.setDate(sun.getDate() + d);
+    const key = dk(dd.getFullYear(), dd.getMonth(), dd.getDate());
+    const evs = calCache[key] || [];
+    const td  = isToday(dd.getFullYear(), dd.getMonth(), dd.getDate());
+    h += `<div class="day-box ${td ? 'today' : ''}" style="min-height:90px;">
+      <strong${td ? ' style="color:#6b9e7e;"' : ''}>${dd.getDate()} <span style="font-weight:400;font-size:10px;">${MONTHS[dd.getMonth()].slice(0, 3)}</span></strong>
+      ${evs.map(e => {
+        const meta  = eventMeta(e.type);
+        const eJson = encodeURIComponent(JSON.stringify(e));
+        return `<div class="event-card ${meta.cls}" onclick="openEventModal(decodeURIComponent('${eJson}'))"><span>${meta.icon}</span><span>${e.title}</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+  grid.innerHTML = h;
+}
+
+// ── Day view ──────────────────────────────────────────────────────────────────
+
+function renderDay() {
+  const grid = document.getElementById('calGrid');
+  grid.style.gridTemplateColumns = '1fr';
+  const d   = isToday(curYear, curMonth, TODAY.getDate()) ? TODAY.getDate() : 1;
+  const dow = new Date(curYear, curMonth, d).getDay();
+  const key = dk(curYear, curMonth, d);
+  const daySessions = (calCache[key] || []).slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  const SLOTS = [
+    '7:00 AM','7:30 AM','8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM',
+    '11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM',
+    '3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM',
+  ];
+
+  function slotFor(t) {
+    if (!t) return null;
+    const [hh, mm] = t.split(':').map(Number);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    return `${hh % 12 || 12}:${String(mm).padStart(2, '0')} ${ampm}`;
+  }
+  const slotMap = {};
+  daySessions.forEach(s => {
+    const slot = slotFor(s.startTime);
+    if (slot) { if (!slotMap[slot]) slotMap[slot] = []; slotMap[slot].push(s); }
+  });
+
+  let h = `<div class="day-name" style="grid-column:1/-1;text-align:left;padding:10px 14px;font-size:13px;">
+    ${DNAMES[dow]}, ${MONTHS[curMonth]} ${d}, ${curYear}</div>`;
+  SLOTS.forEach(slot => {
+    const evs = slotMap[slot] || [];
+    h += `<div style="display:flex;align-items:flex-start;gap:12px;padding:6px 14px;border-bottom:1px solid #f0f5f2;min-height:34px;">
+      <span style="font-size:11px;color:#6b8c7a;width:60px;flex-shrink:0;padding-top:2px;">${slot}</span>
+      <div style="flex:1;">${evs.map(e => {
+        const meta  = eventMeta(e.type);
+        const eJson = encodeURIComponent(JSON.stringify(e));
+        return `<div class="event-card ${meta.cls}" onclick="openEventModal(decodeURIComponent('${eJson}'))" style="display:inline-flex;"><span>${meta.icon}</span><span>${e.title}${e.client ? ' — ' + e.client : ''}</span></div>`;
+      }).join('')}</div>
+    </div>`;
+  });
+  grid.innerHTML = h;
+}
+
+// ── Today's Schedule section ──────────────────────────────────────────────────
+
+function renderTodaySchedule() {
+  const wrap = document.querySelector('.section-box');
+  if (!wrap) return;
+  const todayKey = dk(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+  const todayEvs = (calCache[todayKey] || []).slice().sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  const hdr = wrap.querySelector('.section-box-header span');
+  if (hdr) hdr.textContent = TODAY.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  wrap.querySelectorAll('.schedule-item').forEach(el => el.remove());
+
+  if (!todayEvs.length) {
+    wrap.insertAdjacentHTML('beforeend',
+      '<p style="padding:14px 18px;color:#6b8c7a;font-size:13px;">No sessions scheduled for today.</p>');
+    return;
+  }
+
+  function fmtT(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+  }
+
+  todayEvs.forEach((s, i) => {
+    const isLast = i === todayEvs.length - 1;
+    const time   = s.startTime ? fmtT(s.startTime) : '—';
+    const detail = [s.client ? 'Client: ' + s.client : null, s.staff ? 'RBT: ' + s.staff : null]
+      .filter(Boolean).join(' · ');
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="schedule-item"${isLast ? ' style="border-bottom:none;"' : ''}>
+        <div><strong>${s.title}</strong>${detail ? `<p>${detail}</p>` : ''}</div>
+        <span>${time}</span>
+      </div>`);
+  });
+}
+
+// ── Event detail modal ────────────────────────────────────────────────────────
+
+function openEventModal(eRaw) {
+  const e = typeof eRaw === 'string' ? JSON.parse(eRaw) : eRaw;
+  const m = document.getElementById('eventModal');
+  if (!m) return;
+  const fmtT = t => {
+    if (!t) return '—';
+    const [h, mi] = t.split(':').map(Number);
+    return `${h % 12 || 12}:${String(mi).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+  };
+  const items = m.querySelectorAll('.info-item span');
+  if (items.length >= 7) {
+    items[0].textContent = e.title  || '—';
+    items[1].textContent = e.client || '—';
+    items[2].textContent = e.date
+      ? new Date(e.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '—';
+    items[3].textContent = e.startTime
+      ? fmtT(e.startTime) + (e.endTime ? ' - ' + fmtT(e.endTime) : '')
+      : '—';
+    items[4].textContent = e.pos   || '—';
+    items[5].textContent = e.staff || '—';
+    items[6].innerHTML   = `<span class="badge ${e.status === 'complete' ? 'badge-complete' : 'badge-pending'}">${e.status || 'pending'}</span>`;
+  }
+  m.classList.add('open');
+}
+
+function openModal(id) {
+  document.getElementById(id)?.classList.add('open');
+  if (id === 'newSessionModal') void loadCalendarModalDropdowns();
+}
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+function calToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:9999;max-width:340px;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+// ── Load clients + staff into New Session dropdowns ───────────────────────────
+
+async function loadCalendarModalDropdowns() {
+  const org = window.gilbertoCurrentOrg;
+  const orgId = org?.id || null;
+  let clients = [];
+  let staff = [];
+
+  try {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled()) {
+      const [clientsRes, staffRes] = await Promise.all([
+        jvmFetchClients(orgId, 'active'),
+        jvmFetchStaff(orgId, 'active'),
+      ]);
+      clients = clientsRes.ok ? await clientsRes.json() : [];
+      staff   = staffRes.ok   ? await staffRes.json()   : [];
+    } else if (window.supabaseClient && org?.id) {
+      const [clientsRes, staffRes] = await Promise.all([
+        window.supabaseClient.from('clients').select('id, first_name, last_name').eq('org_id', org.id).eq('status', 'active').order('first_name'),
+        window.supabaseClient.from('staff').select('id, first_name, last_name').eq('org_id', org.id).eq('status', 'active').order('first_name'),
+      ]);
+      clients = clientsRes.data || [];
+      staff   = staffRes.data || [];
+    }
+  } catch (e) {
+    clients = [];
+    staff = [];
+  }
+
+  const clientSel = document.getElementById('calNewClient');
+  const staffSel  = document.getElementById('calNewStaff');
+
+  if (clientSel && clients.length) {
+    clientSel.innerHTML = '<option value="">Select client...</option>' +
+      clients.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name}</option>`).join('');
+  } else if (clientSel) {
+    clientSel.innerHTML = '<option value="">No active clients found</option>';
+  }
+
+  if (staffSel && staff.length) {
+    staffSel.innerHTML = '<option value="">Select RBT...</option>' +
+      staff.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name}</option>`).join('');
+  } else if (staffSel) {
+    staffSel.innerHTML = '<option value="">No active staff found</option>';
+  }
+
+  // Default date to today
+  const dateInput = document.getElementById('calNewDate');
+  if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+}
+
+// ── Save new session via bridge → re-render calendar ─────────────────────────
+
+async function createCalendarSession() {
+  const org = window.gilbertoCurrentOrg;
+  const orgId = org?.id || null;
+
+  const row = buildSessionInsertRow({
+    service_type:   document.getElementById('calNewType')?.value  || 'behavior_treatment',
+    session_date:   document.getElementById('calNewDate')?.value  || null,
+    start_time:     document.getElementById('calNewTime')?.value  || null,
+    pos:            document.getElementById('calNewPos')?.value   || null,
+    notes:          document.getElementById('calNewNotes')?.value || null,
+    client_id:      document.getElementById('calNewClient')?.value || null,
+    staff_id:       document.getElementById('calNewStaff')?.value  || null,
+    status:         'pending',
+    procedure_code: '97153',
+  }, orgId);
+
+  if (!row.session_date) { calToast('Please select a date.'); return; }
+
+  const btn = document.getElementById('calSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+  try {
+    if (jvmSupabaseRelayEnabled()) {
+      const res = await sessionJvmCreate(row);
+      if (!res.ok) {
+        const msg = await readJvmErrorResponse(res);
+        calToast('Save failed: ' + msg);
+        return;
+      }
+    } else {
+      if (!window.supabaseClient) { calToast('Supabase not ready'); return; }
+      const { error } = await window.supabaseClient.from('sessions').insert(row);
+      if (error) { calToast('Save failed: ' + error.message); return; }
+    }
+
+    closeModal('newSessionModal');
+    calToast('Session saved');
+    // Re-render calendar with fresh data
+    await render();
+  } catch (err) {
+    calToast('Save failed: ' + (err?.message || 'unknown error'));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Session'; }
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+// Kick off initial render; data loads async via refreshCalendarData()
+render();
+
+// Remove legacy EVENTS below — keeping only for reference during transition
+const _LEGACY_EVENTS_UNUSED = {
+  '2026-04-01':[
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Family Training', type:'family'},
+    {title:'Individual Supervision', type:'supervision'}
+  ],
+  '2026-04-02':[
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Assessment', type:'assessment'},
+    {title:'Session Notes Due', type:'admin'}
+  ],
+  '2026-04-03':[
+    {title:'Family Training', type:'family'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-05':[
+    {title:'Assessment', type:'assessment'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-06':[
+    {title:'Session Notes Due', type:'admin'},
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-08':[
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Family Training', type:'family'},
+    {title:'Assessment', type:'assessment'}
+  ],
+  '2026-04-09':[
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Service Report', type:'admin'}
+  ],
+  '2026-04-10':[
+    {title:'Monthly Report', type:'admin'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-12':[
+    {title:'Assessment', type:'assessment'},
+    {title:'Family Training', type:'family'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-13':[
+    {title:'Provider Review', type:'admin'},
+    {title:'Individual Supervision', type:'supervision'}
+  ],
+  '2026-04-15':[
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Assessment', type:'assessment'},
+    {title:'Family Training', type:'family'},
+    {title:'Session Notes Due', type:'admin'}
+  ],
+  '2026-04-17':[
+    {title:'Caregiver Signature', type:'admin'},
+    {title:'Family Training', type:'family'}
+  ],
+  '2026-04-19':[
+    {title:'Data Collection', type:'admin'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-21':[
+    {title:'Service Report', type:'admin'},
+    {title:'Individual Supervision', type:'supervision'}
+  ],
+  '2026-04-22':[
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Family Training', type:'family'},
+    {title:'Assessment', type:'assessment'}
+  ],
+  '2026-04-24':[
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Session Notes Due', type:'admin'}
+  ],
+  '2026-04-27':[
+    {title:'Assessment', type:'assessment'},
+    {title:'Family Training', type:'family'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+  '2026-04-29':[
+    {title:'Behavior Treatment Session', type:'behavior'},
+    {title:'Individual Supervision', type:'supervision'},
+    {title:'Family Training', type:'family'},
+    {title:'Monthly Report', type:'admin'}
+  ],
+  '2026-04-30':[
+    {title:'Monthly Report Due', type:'admin'},
+    {title:'Assessment', type:'assessment'},
+    {title:'Behavior Treatment Session', type:'behavior'}
+  ],
+};
+
+</script>
+</body>
+</html>

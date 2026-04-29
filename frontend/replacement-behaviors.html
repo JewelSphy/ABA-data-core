@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Replacement Behaviors - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item active" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Replacement Behaviors</h1><p>Track appropriate behaviors that replace problem behaviors</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addReplacementModal')">+ Add Replacement Behavior</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="rbSearch" type="text" placeholder="Search replacement behaviors..." oninput="filterTable('rbSearch','rbBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="rbTable">
+        <thead>
+          <tr>
+            <th>Replacement Behavior</th>
+            <th>Replaces</th>
+            <th>Client</th>
+            <th>Procedure</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="rbBody">
+          <tr>
+            <td>Asking for a break</td>
+            <td>Off-Task Behavior</td>
+            <td>Jon Snow</td>
+            <td>Functional Communication Training</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewRB('Asking for a break','Off-Task Behavior','Jon Snow','Functional Communication Training','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editReplacementModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Using words to express frustration</td>
+            <td>Verbal Aggression</td>
+            <td>Arya Stark</td>
+            <td>Verbal Behavior</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewRB('Using words to express frustration','Verbal Aggression','Arya Stark','Verbal Behavior','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editReplacementModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Requesting preferred items</td>
+            <td>Self-Injurious Behavior</td>
+            <td>Robb Stark</td>
+            <td>PECS / Mand Training</td>
+            <td><span class="badge badge-pending">Pending</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewRB('Requesting preferred items','Self-Injurious Behavior','Robb Stark','PECS / Mand Training','Pending')">View</button>
+              <button class="tbl-btn" onclick="openModal('editReplacementModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Waiting quietly with a visual timer</td>
+            <td>Non-Compliance</td>
+            <td>Sansa Stark</td>
+            <td>Visual Supports</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewRB('Waiting quietly with a visual timer','Non-Compliance','Sansa Stark','Visual Supports','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editReplacementModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Seeking adult attention appropriately</td>
+            <td>Elopement</td>
+            <td>Jon Snow</td>
+            <td>Differential Reinforcement</td>
+            <td><span class="badge badge-draft">Draft</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewRB('Seeking adult attention appropriately','Elopement','Jon Snow','Differential Reinforcement','Draft')">View</button>
+              <button class="tbl-btn" onclick="openModal('editReplacementModal')">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Replacement Behavior Modal -->
+<div class="modal-overlay" id="addReplacementModal" onclick="if(event.target===this)closeModal('addReplacementModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Replacement Behavior</h3>
+      <button class="modal-close" onclick="closeModal('addReplacementModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Replacement Behavior</label>
+        <input type="text" placeholder="Describe the replacement behavior"/>
+      </div>
+      <div class="form-group">
+        <label>Replaces</label>
+        <select>
+          <option>Off-Task Behavior</option>
+          <option>Verbal Aggression</option>
+          <option>Self-Injurious Behavior</option>
+          <option>Non-Compliance</option>
+          <option>Elopement</option>
+          <option>Property Destruction</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Procedure</label>
+        <input type="text" placeholder="e.g. Functional Communication Training"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addReplacementModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addReplacementModal')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Replacement Behavior Modal -->
+<div class="modal-overlay" id="editReplacementModal" onclick="if(event.target===this)closeModal('editReplacementModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Replacement Behavior</h3>
+      <button class="modal-close" onclick="closeModal('editReplacementModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Replacement Behavior</label>
+        <input type="text" value="Asking for a break"/>
+      </div>
+      <div class="form-group">
+        <label>Replaces</label>
+        <select>
+          <option selected>Off-Task Behavior</option>
+          <option>Verbal Aggression</option>
+          <option>Self-Injurious Behavior</option>
+          <option>Non-Compliance</option>
+          <option>Elopement</option>
+          <option>Property Destruction</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option selected>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option selected>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Procedure</label>
+        <input type="text" value="Functional Communication Training"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editReplacementModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editReplacementModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Replacement Behavior Modal -->
+<div class="modal-overlay" id="viewReplacementModal" onclick="if(event.target===this)closeModal('viewReplacementModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Replacement Behavior Details</h3>
+      <button class="modal-close" onclick="closeModal('viewReplacementModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span>Replacement Behavior</span><strong id="vrb-name"></strong></div>
+        <div class="info-item"><span>Replaces</span><strong id="vrb-replaces"></strong></div>
+        <div class="info-item"><span>Client</span><strong id="vrb-client"></strong></div>
+        <div class="info-item"><span>Procedure</span><strong id="vrb-procedure"></strong></div>
+        <div class="info-item"><span>Status</span><strong id="vrb-status"></strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewReplacementModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewRB(name, replaces, client, procedure, status) {
+  document.getElementById('vrb-name').textContent = name;
+  document.getElementById('vrb-replaces').textContent = replaces;
+  document.getElementById('vrb-client').textContent = client;
+  document.getElementById('vrb-procedure').textContent = procedure;
+  document.getElementById('vrb-status').textContent = status;
+  openModal('viewReplacementModal');
+}
+</script>
+</body>
+</html>

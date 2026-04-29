@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Behaviors - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
+    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
+    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
+    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
+    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="ui-colorful">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item active" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+  <main class="main-area">
+    <header class="topbar">
+      <div><h1>Behaviors</h1><p>Define target behaviors and their measurement criteria</p></div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('addBehaviorModal')">+ Add Behavior</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="behaviorSearch" type="text" placeholder="Search behaviors..." oninput="filterTable('behaviorSearch','behaviorsBody')"/>
+        </div>
+      </div>
+      <table class="data-table" id="behaviorsTable">
+        <thead>
+          <tr>
+            <th>Behavior</th>
+            <th>Definition</th>
+            <th>Category</th>
+            <th>Client</th>
+            <th>Measurement</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="behaviorsBody">
+          <tr>
+            <td>Off-Task Behavior</td>
+            <td>Engaging in activity other than the assigned task for more than 5 seconds</td>
+            <td>Maladaptive</td>
+            <td>Jon Snow</td>
+            <td>Frequency</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Off-Task Behavior','Engaging in activity other than the assigned task for more than 5 seconds','Maladaptive','Jon Snow','Frequency','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Self-Injurious Behavior</td>
+            <td>Any instance of hitting self with open hand or closed fist</td>
+            <td>Maladaptive</td>
+            <td>Arya Stark</td>
+            <td>Frequency</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Self-Injurious Behavior','Any instance of hitting self with open hand or closed fist','Maladaptive','Arya Stark','Frequency','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Verbal Aggression</td>
+            <td>Any instance of yelling or using offensive language toward another person</td>
+            <td>Maladaptive</td>
+            <td>Robb Stark</td>
+            <td>Frequency</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Verbal Aggression','Any instance of yelling or using offensive language toward another person','Maladaptive','Robb Stark','Frequency','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Elopement</td>
+            <td>Leaving the designated area without permission</td>
+            <td>Maladaptive</td>
+            <td>Sansa Stark</td>
+            <td>Duration</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Elopement','Leaving the designated area without permission','Maladaptive','Sansa Stark','Duration','Active')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Non-Compliance</td>
+            <td>Failure to follow a direct instruction within 5 seconds</td>
+            <td>Maladaptive</td>
+            <td>Jon Snow</td>
+            <td>Frequency</td>
+            <td><span class="badge badge-pending">Pending</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Non-Compliance','Failure to follow a direct instruction within 5 seconds','Maladaptive','Jon Snow','Frequency','Pending')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+          <tr>
+            <td>Property Destruction</td>
+            <td>Throwing, breaking, or damaging items</td>
+            <td>Maladaptive</td>
+            <td>Arya Stark</td>
+            <td>Frequency</td>
+            <td><span class="badge badge-draft">Draft</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openViewBehavior('Property Destruction','Throwing, breaking, or damaging items','Maladaptive','Arya Stark','Frequency','Draft')">View</button>
+              <button class="tbl-btn" onclick="openModal('editBehaviorModal')">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add Behavior Modal -->
+<div class="modal-overlay" id="addBehaviorModal" onclick="if(event.target===this)closeModal('addBehaviorModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Behavior</h3>
+      <button class="modal-close" onclick="closeModal('addBehaviorModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Behavior Name</label>
+        <input type="text" placeholder="Enter behavior name"/>
+      </div>
+      <div class="form-group">
+        <label>Definition</label>
+        <textarea rows="3" placeholder="Provide an operational definition..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select>
+            <option>Maladaptive</option>
+            <option>Replacement</option>
+            <option>Adaptive</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Measurement Type</label>
+          <select>
+            <option>Frequency</option>
+            <option>Duration</option>
+            <option>Rate</option>
+            <option>Intensity</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addBehaviorModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('addBehaviorModal')">Save Behavior</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Behavior Modal -->
+<div class="modal-overlay" id="editBehaviorModal" onclick="if(event.target===this)closeModal('editBehaviorModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Behavior</h3>
+      <button class="modal-close" onclick="closeModal('editBehaviorModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Behavior Name</label>
+        <input type="text" value="Off-Task Behavior"/>
+      </div>
+      <div class="form-group">
+        <label>Definition</label>
+        <textarea rows="3">Engaging in activity other than the assigned task for more than 5 seconds</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select>
+            <option selected>Maladaptive</option>
+            <option>Replacement</option>
+            <option>Adaptive</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option selected>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Measurement Type</label>
+          <select>
+            <option selected>Frequency</option>
+            <option>Duration</option>
+            <option>Rate</option>
+            <option>Intensity</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option selected>Active</option>
+            <option>Pending</option>
+            <option>Draft</option>
+            <option>Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editBehaviorModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('editBehaviorModal')">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Behavior Modal -->
+<div class="modal-overlay" id="viewBehaviorModal" onclick="if(event.target===this)closeModal('viewBehaviorModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Behavior Details</h3>
+      <button class="modal-close" onclick="closeModal('viewBehaviorModal')">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span>Behavior</span><strong id="vb-name"></strong></div>
+        <div class="info-item"><span>Category</span><strong id="vb-category"></strong></div>
+        <div class="info-item"><span>Client</span><strong id="vb-client"></strong></div>
+        <div class="info-item"><span>Measurement</span><strong id="vb-measurement"></strong></div>
+        <div class="info-item"><span>Status</span><strong id="vb-status"></strong></div>
+        <div class="info-item" style="grid-column:1/-1"><span>Definition</span><strong id="vb-definition"></strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="closeModal('viewBehaviorModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function openViewBehavior(name, def, category, client, measurement, status) {
+  document.getElementById('vb-name').textContent = name;
+  document.getElementById('vb-definition').textContent = def;
+  document.getElementById('vb-category').textContent = category;
+  document.getElementById('vb-client').textContent = client;
+  document.getElementById('vb-measurement').textContent = measurement;
+  document.getElementById('vb-status').textContent = status;
+  openModal('viewBehaviorModal');
+}
+</script>
+</body>
+</html>

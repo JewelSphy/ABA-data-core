@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clients - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .page-clients .topbar {
+      background: linear-gradient(120deg, rgba(41, 121, 255, 0.08), rgba(46, 204, 113, 0.08));
+      border: 1px solid #dbe8ef;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .page-clients .topbar h1 {
+      background: linear-gradient(90deg, #1d6fd8, #1f9e67);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .page-clients .table-wrapper {
+      border: 1px solid #dbe7e2;
+      border-radius: 14px;
+      box-shadow: 0 12px 26px rgba(22, 61, 48, 0.08);
+      background: linear-gradient(180deg, #ffffff, #fbfffd);
+    }
+    .page-clients .data-table thead th {
+      background: linear-gradient(90deg, #eef7ff, #effbf4);
+      color: #22493b;
+      border-bottom: 1px solid #d9e9df;
+    }
+    .page-clients .data-table tbody tr:hover {
+      background: linear-gradient(90deg, rgba(66, 133, 244, 0.08), rgba(46, 204, 113, 0.08));
+    }
+    .page-clients .add-btn {
+      background: linear-gradient(90deg, #2b73d2, #2ca66b);
+      border: none;
+      box-shadow: 0 10px 20px rgba(35, 93, 155, 0.2);
+    }
+    .page-clients .add-btn:hover {
+      background: linear-gradient(90deg, #225da8, #248558);
+      transform: translateY(-1px);
+    }
+    .page-clients .search-input {
+      border: 1px solid #cfe2db;
+      background: linear-gradient(180deg, #ffffff, #f8fcfa);
+    }
+    .page-clients .search-input:focus {
+      border-color: #6ea8ff;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.16);
+    }
+    .page-clients .badge-active {
+      background: linear-gradient(90deg, #23b36b, #2fd58e);
+      color: #fff;
+      border: none;
+    }
+    .page-clients .badge-expiring {
+      background: linear-gradient(90deg, #f5a623, #ffc14d);
+      color: #4b3200;
+      border: none;
+    }
+    .page-clients .badge-pending {
+      background: linear-gradient(90deg, #8aa1b7, #b0bfd0);
+      color: #1f3345;
+      border: none;
+    }
+    .client-pop {
+      border: 1px solid #dbe8e2;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #fbfffd 0%, #f7faff 100%);
+      box-shadow: 0 12px 28px rgba(24, 56, 44, 0.08);
+    }
+    .client-pop .modal-header h3 {
+      background: linear-gradient(90deg, #1f7a5a, #2c74b4);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+    .client-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: linear-gradient(90deg, #ecf8f1, #edf5ff);
+      border: 1px solid #d9ece2;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .client-hero-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1f3c31;
+    }
+    .client-hero-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .client-chip {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border: 1px solid #c8ddd2;
+      background: #f7fffb;
+      color: #285645;
+      font-weight: 700;
+    }
+    .client-quick-actions {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 14px;
+      flex-wrap: wrap;
+    }
+    .client-quick-btn {
+      border: 1px solid #c8ddd2;
+      background: linear-gradient(145deg, #f8fcff, #f3fbf6);
+      color: #275344;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: .18s ease;
+      font-weight: 600;
+    }
+    .client-quick-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(44,96,74,.12); }
+    #viewClientModal .info-item {
+      border: 1px solid #deebe5;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      transition: .15s ease;
+    }
+    #viewClientModal .info-item:hover {
+      border-color: #b9d8cb;
+      box-shadow: 0 6px 14px rgba(45,74,62,.08);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body class="page-clients">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions</button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures</button>
+    <p class="section-title">People</p>
+    <button class="nav-item active" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Clients</h1>
+        <p>Manage client profiles and assigned staff</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openAddClient()">+ Add Client</button>
+        <div class="user-pill" id="topbarUserPill">—</div>
+      </div>
+    </header>
+
+    <!-- Client stats strip -->
+    <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="background:#fff;border:1px solid #e2ece7;border-radius:10px;padding:14px 22px;min-width:110px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b8c7a;margin-bottom:4px;">Active</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1a2e26;" id="clientStatActive">—</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2ece7;border-radius:10px;padding:14px 22px;min-width:110px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b8c7a;margin-bottom:4px;">Inactive</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1a2e26;" id="clientStatInactive">—</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2ece7;border-radius:10px;padding:14px 22px;min-width:110px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b8c7a;margin-bottom:4px;">Discharged</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1a2e26;" id="clientStatDischarged">—</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2ece7;border-radius:10px;padding:14px 22px;min-width:110px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6b8c7a;margin-bottom:4px;">Total</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1a2e26;" id="clientStatTotal">—</div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="table-search">
+          <input class="search-input" id="clientSearch" type="text" placeholder="Search clients…" oninput="filterClients()"/>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Date of Birth</th>
+            <th>Diagnosis</th>
+            <th>Assigned RBT</th>
+            <th>Assigned BCBA</th>
+            <th>Auth Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="clientBody">
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">Loading clients…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- ── Add Client Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="addClientModal" onclick="if(event.target===this)closeModal('addClientModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Client</h3>
+      <button class="modal-close" onclick="closeModal('addClientModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="addFirstName" placeholder="First name"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="addLastName" placeholder="Last name"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" id="addDob"/>
+        </div>
+        <div class="form-group">
+          <label>Diagnosis</label>
+          <input type="text" id="addDiagnosis" placeholder="e.g. Autism Spectrum Disorder"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Assigned RBT</label>
+          <select id="addRbt"><option value="">— Loading staff… —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Assigned BCBA</label>
+          <select id="addBcba"><option value="">— Loading staff… —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Insurance Provider</label>
+          <input type="text" id="addInsurance" placeholder="e.g. Blue Cross Blue Shield"/>
+        </div>
+        <div class="form-group">
+          <label>Auth Status</label>
+          <select id="addAuthStatus">
+            <option value="active">Active</option>
+            <option value="expiring">Expiring</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="addEmail" placeholder="client@email.com"/>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="addPhone" placeholder="(555) 000-0000"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="3" id="addNotes" placeholder="Any additional notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('addClientModal')">Cancel</button>
+      <button class="add-btn" id="addSaveBtn" onclick="createClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── View Client Modal ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="viewClientModal" onclick="if(event.target===this)closeModal('viewClientModal')">
+  <div class="modal-box client-pop">
+    <div class="modal-header">
+      <h3>Client Details</h3>
+      <button class="modal-close" onclick="closeModal('viewClientModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="client-hero">
+        <div class="client-hero-name" id="viewNameHero">—</div>
+        <div class="client-hero-badges">
+          <span class="client-chip" id="viewStatusChip">Status: —</span>
+        </div>
+      </div>
+      <div class="client-quick-actions">
+        <button class="client-quick-btn" type="button" onclick="copyClientField('viewEmail','Email copied')">Copy Email</button>
+        <button class="client-quick-btn" type="button" onclick="copyClientField('viewPhone','Phone copied')">Copy Phone</button>
+        <button class="client-quick-btn" type="button" onclick="openEditFromView()">Edit Profile</button>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><label>Full Name</label><span id="viewName">—</span></div>
+        <div class="info-item"><label>Date of Birth</label><span id="viewDob">—</span></div>
+        <div class="info-item"><label>Diagnosis</label><span id="viewDiagnosis">—</span></div>
+        <div class="info-item"><label>Assigned RBT</label><span id="viewRbt">—</span></div>
+        <div class="info-item"><label>Assigned BCBA</label><span id="viewBcba">—</span></div>
+        <div class="info-item"><label>Insurance Provider</label><span id="viewInsurance">—</span></div>
+        <div class="info-item"><label>Email</label><span id="viewEmail">—</span></div>
+        <div class="info-item"><label>Phone</label><span id="viewPhone">—</span></div>
+        <div class="info-item"><label>Status</label><span id="viewStatus">—</span></div>
+        <div class="info-item" style="grid-column:1/-1"><label>Notes</label><span id="viewNotes">—</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewClientModal')">Close</button>
+      <button class="add-btn" onclick="openEditFromView()">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Client Modal ──────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="editClientModal" onclick="if(event.target===this)closeModal('editClientModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Edit Client</h3>
+      <button class="modal-close" onclick="closeModal('editClientModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" id="editFirstName"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" id="editLastName"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" id="editDob"/>
+        </div>
+        <div class="form-group">
+          <label>Diagnosis</label>
+          <input type="text" id="editDiagnosis"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Assigned RBT</label>
+          <select id="editRbt"><option value="">— None —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Assigned BCBA</label>
+          <select id="editBcba"><option value="">— None —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Insurance Provider</label>
+          <input type="text" id="editInsurance"/>
+        </div>
+        <div class="form-group">
+          <label>Auth Status</label>
+          <select id="editAuthStatus">
+            <option value="active">Active</option>
+            <option value="expiring">Expiring</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="editEmail"/>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="editPhone"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="editStatus">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="discharged">Discharged</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="3" id="editNotes"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('editClientModal')">Cancel</button>
+      <button class="add-btn" id="editSaveBtn" onclick="updateClient()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var _clientsData     = [];   // full list cached after load
+var _editingClientId = null; // set when edit modal is open
+var _staffById       = {};   // used to resolve assigned staff names
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal  (id) { document.getElementById (id).classList.add    ('open'); }
+function closeModal (id) { document.getElementById (id).classList.remove ('open'); }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function clientToast (msg) {
+  var t = document.createElement ('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:#fff;'
+    + 'padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;'
+    + 'box-shadow:0 4px 14px rgba(0,0,0,.18);';
+  t.textContent = msg;
+  document.body.appendChild (t);
+  setTimeout (function () { t.remove (); }, 2800);
+}
+function copyClientField(id, okMsg) {
+  var txt = (document.getElementById(id)?.textContent || '').trim();
+  if (!txt || txt === '—') { clientToast('Nothing to copy'); return; }
+  navigator.clipboard?.writeText(txt).then(
+    function () { clientToast(okMsg || 'Copied'); },
+    function () { clientToast('Copy failed'); }
+  );
+}
+
+// ── HTML safety ───────────────────────────────────────────────────────────────
+function esc (s) {
+  if (s == null || s === '') return '—';
+  return String (s)
+    .replace (/&/g, '&amp;').replace (/</g, '&lt;')
+    .replace (/>/g, '&gt;').replace (/"/g, '&quot;');
+}
+
+// ── Auth-status badge ─────────────────────────────────────────────────────────
+function authBadge (val) {
+  var map = { active:'badge-active', expiring:'badge-expiring', pending:'badge-pending', inactive:'badge-pending' };
+  var cls = map[val] || 'badge-pending';
+  var lbl = val ? val.charAt (0).toUpperCase () + val.slice (1) : '—';
+  return '<span class="badge ' + cls + '">' + lbl + '</span>';
+}
+
+// ── Load + render table ───────────────────────────────────────────────────────
+async function loadClientsTable () {
+  var org = window.gilbertoCurrentOrg;
+  if (!org || !org.id) return;
+
+  try {
+    var rows;
+    var staffRows = [];
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var sres = await jvmFetchStaff (org.id, null);
+      if (sres.ok) staffRows = await sres.json ();
+    } else if (window.supabaseClient) {
+      var sq = await window.supabaseClient.from ('staff')
+        .select ('id,first_name,last_name,status')
+        .eq ('org_id', org.id);
+      if (!sq.error) staffRows = sq.data || [];
+    }
+    _staffById = (staffRows || []).reduce(function (acc, s) {
+      var n = ((s.first_name || '') + ' ' + (s.last_name || '')).trim();
+      if (s.id) acc[s.id] = n || '—';
+      return acc;
+    }, {});
+
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var res = await jvmFetchClients (org.id);
+      if (!res.ok) throw new Error (await res.text ());
+      rows = await res.json ();
+    } else {
+      var q = await window.supabaseClient
+        .from ('clients')
+        .select ('id,first_name,last_name,date_of_birth,diagnosis,assigned_rbt_id,assigned_bcba_id,insurance_provider,email,phone,auth_status,notes,status,rbt:staff!assigned_rbt_id(id,first_name,last_name),bcba:staff!assigned_bcba_id(id,first_name,last_name)')
+        .eq ('org_id', org.id)
+        .order ('last_name', { ascending: true });
+      if (q.error) throw q.error;
+      rows = q.data || [];
+    }
+    _clientsData = rows;
+    renderClientsTable (rows);
+    loadClientStats (org.id);
+  } catch (e) {
+    console.warn ('loadClientsTable error:', e);
+    document.getElementById ('clientBody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:24px;color:#c0392b;">Failed to load clients: ' + esc (e.message) + '</td></tr>';
+  }
+}
+
+function renderClientsTable (rows) {
+  var tbody = document.getElementById ('clientBody');
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">'
+      + 'No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map (function (c) {
+    var name = esc (c.first_name + ' ' + c.last_name);
+    var dob  = c.date_of_birth
+      ? new Date (c.date_of_birth + 'T00:00:00').toLocaleDateString ('en-US', { month:'short', day:'numeric', year:'numeric' })
+      : '—';
+    var rbtNameRaw = c.rbt
+      ? ((c.rbt.first_name || '') + ' ' + (c.rbt.last_name || '')).trim()
+      : (_staffById[c.assigned_rbt_id] || '');
+    var bcbaNameRaw = c.bcba
+      ? ((c.bcba.first_name || '') + ' ' + (c.bcba.last_name || '')).trim()
+      : (_staffById[c.assigned_bcba_id] || '');
+    var rbt  = rbtNameRaw  ? esc (rbtNameRaw)  : '—';
+    var bcba = bcbaNameRaw ? esc (bcbaNameRaw) : '—';
+    return '<tr style="cursor:pointer;" title="Click to view client" onclick="openViewClient(\'' + c.id + '\')">'
+      + '<td>' + name + '</td>'
+      + '<td>' + dob + '</td>'
+      + '<td>' + esc (c.diagnosis) + '</td>'
+      + '<td>' + rbt + '</td>'
+      + '<td>' + bcba + '</td>'
+      + '<td>' + authBadge (c.auth_status) + '</td>'
+      + '<td>'
+        + '<button class="tbl-btn" onclick="event.stopPropagation();openViewClient(\'' + c.id + '\')">View</button> '
+        + '<button class="tbl-btn" onclick="event.stopPropagation();openEditClient(\'' + c.id + '\')">Edit</button>'
+      + '</td>'
+      + '</tr>';
+  }).join ('');
+}
+
+// ── Client stats strip ────────────────────────────────────────────────────────
+async function loadClientStats (orgId) {
+  try {
+    var stats;
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      stats = await jvmLoadClientStats (orgId);
+    } else {
+      stats = { active: 0, inactive: 0, discharged: 0, total: 0 };
+    }
+    var s = function (id, v) { var el = document.getElementById (id); if (el) el.textContent = v; };
+    s ('clientStatActive',     stats.active     || 0);
+    s ('clientStatInactive',   stats.inactive   || 0);
+    s ('clientStatDischarged', stats.discharged || 0);
+    s ('clientStatTotal',      stats.total      || 0);
+  } catch (e) { /* non-fatal */ }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+function filterClients () {
+  var q = (document.getElementById ('clientSearch').value || '').toLowerCase ();
+  var filtered = q
+    ? _clientsData.filter (function (c) {
+        return (c.first_name + ' ' + c.last_name + ' ' + (c.diagnosis || '')).toLowerCase ().includes (q);
+      })
+    : _clientsData;
+  renderClientsTable (filtered);
+}
+
+// ── View modal ────────────────────────────────────────────────────────────────
+var _viewingClientId = null;
+function openViewClient (clientId) {
+  var c = _clientsData.find (function (x) { return x.id === clientId; });
+  if (!c) return;
+  _viewingClientId = clientId;
+
+  var set = function (id, val) { var el = document.getElementById (id); if (el) el.textContent = val || '—'; };
+  set ('viewName',      c.first_name + ' ' + c.last_name);
+  set ('viewNameHero',  c.first_name + ' ' + c.last_name);
+  set ('viewDob',       c.date_of_birth ? new Date (c.date_of_birth + 'T00:00:00').toLocaleDateString ('en-US', { month:'long', day:'numeric', year:'numeric' }) : null);
+  set ('viewDiagnosis', c.diagnosis);
+  var rbtName = c.rbt
+    ? ((c.rbt.first_name || '') + ' ' + (c.rbt.last_name || '')).trim()
+    : (_staffById[c.assigned_rbt_id] || null);
+  var bcbaName = c.bcba
+    ? ((c.bcba.first_name || '') + ' ' + (c.bcba.last_name || '')).trim()
+    : (_staffById[c.assigned_bcba_id] || null);
+  set ('viewRbt',       rbtName);
+  set ('viewBcba',      bcbaName);
+  set ('viewInsurance', c.insurance_provider);
+  set ('viewEmail',     c.email);
+  set ('viewPhone',     c.phone);
+  set ('viewNotes',     c.notes);
+
+  var statEl = document.getElementById ('viewStatus');
+  if (statEl) statEl.textContent = c.status ? c.status.charAt (0).toUpperCase () + c.status.slice (1) : '—';
+  var statusChip = document.getElementById('viewStatusChip');
+  if (statusChip) statusChip.textContent = 'Status: ' + (c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—');
+
+  openModal ('viewClientModal');
+}
+
+function openEditFromView () {
+  closeModal ('viewClientModal');
+  if (_viewingClientId) openEditClient (_viewingClientId);
+}
+
+// ── Add modal ─────────────────────────────────────────────────────────────────
+function openAddClient () {
+  // Clear form
+  ['addFirstName','addLastName','addDob','addDiagnosis','addInsurance','addEmail','addPhone','addNotes'].forEach (function (id) {
+    var el = document.getElementById (id); if (el) el.value = '';
+  });
+  var a = document.getElementById ('addAuthStatus'); if (a) a.value = 'active';
+  loadStaffDropdowns ('addRbt', 'addBcba', null, null);
+  openModal ('addClientModal');
+}
+
+async function createClient () {
+  var org = window.gilbertoCurrentOrg;
+  if (!org || !org.id) { clientToast ('Organization not loaded — please reload.'); return; }
+
+  var row = buildClientInsertRow ({
+    first_name:         (document.getElementById ('addFirstName').value  || '').trim (),
+    last_name:          (document.getElementById ('addLastName').value   || '').trim (),
+    date_of_birth:      document.getElementById ('addDob').value         || null,
+    diagnosis:          (document.getElementById ('addDiagnosis').value  || '').trim (),
+    assigned_rbt_id:    document.getElementById ('addRbt').value         || null,
+    assigned_bcba_id:   document.getElementById ('addBcba').value        || null,
+    insurance_provider: (document.getElementById ('addInsurance').value  || '').trim (),
+    email:              (document.getElementById ('addEmail').value      || '').trim (),
+    phone:              (document.getElementById ('addPhone').value      || '').trim (),
+    auth_status:        document.getElementById ('addAuthStatus').value  || 'active',
+    notes:              (document.getElementById ('addNotes').value      || '').trim (),
+    status:             'active',
+  }, org.id);
+
+  if (!row.first_name || !row.last_name) {
+    clientToast ('First and last name are required.'); return;
+  }
+
+  var btn = document.getElementById ('addSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  try {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var res = await clientJvmCreate (row);
+      if (!res.ok) { clientToast ('Save failed: ' + await readJvmErrorResponse (res)); return; }
+    } else {
+      var r = await window.supabaseClient.from ('clients').insert (row);
+      if (r.error) { clientToast ('Save failed: ' + r.error.message); return; }
+    }
+    closeModal ('addClientModal');
+    clientToast ('Client added successfully');
+    await loadClientsTable ();
+  } catch (err) {
+    clientToast ('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Client'; }
+  }
+}
+
+// ── Edit modal ────────────────────────────────────────────────────────────────
+function openEditClient (clientId) {
+  var c = _clientsData.find (function (x) { return x.id === clientId; });
+  if (!c) return;
+  _editingClientId = clientId;
+
+  var set = function (id, val) { var el = document.getElementById (id); if (el) el.value = val || ''; };
+  set ('editFirstName', c.first_name);
+  set ('editLastName',  c.last_name);
+  set ('editDob',       c.date_of_birth || '');
+  set ('editDiagnosis', c.diagnosis);
+  set ('editInsurance', c.insurance_provider);
+  set ('editEmail',     c.email);
+  set ('editPhone',     c.phone);
+  set ('editNotes',     c.notes);
+
+  var as = document.getElementById ('editAuthStatus');
+  if (as) as.value = c.auth_status || 'active';
+  var ss = document.getElementById ('editStatus');
+  if (ss) ss.value = c.status || 'active';
+
+  loadStaffDropdowns ('editRbt', 'editBcba', c.assigned_rbt_id, c.assigned_bcba_id);
+  openModal ('editClientModal');
+}
+
+async function updateClient () {
+  if (!_editingClientId) return;
+
+  var patch = {
+    first_name:         (document.getElementById ('editFirstName').value || '').trim (),
+    last_name:          (document.getElementById ('editLastName').value  || '').trim (),
+    date_of_birth:      document.getElementById ('editDob').value        || null,
+    diagnosis:          (document.getElementById ('editDiagnosis').value || '').trim (),
+    assigned_rbt_id:    document.getElementById ('editRbt').value        || null,
+    assigned_bcba_id:   document.getElementById ('editBcba').value       || null,
+    insurance_provider: (document.getElementById ('editInsurance').value || '').trim (),
+    email:              (document.getElementById ('editEmail').value     || '').trim (),
+    phone:              (document.getElementById ('editPhone').value     || '').trim (),
+    auth_status:        document.getElementById ('editAuthStatus').value || 'active',
+    status:             document.getElementById ('editStatus').value     || 'active',
+    notes:              (document.getElementById ('editNotes').value     || '').trim (),
+  };
+
+  if (!patch.first_name || !patch.last_name) {
+    clientToast ('First and last name are required.'); return;
+  }
+
+  var btn = document.getElementById ('editSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  try {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var res = await clientJvmPatch (_editingClientId, patch);
+      if (!res.ok) { clientToast ('Update failed: ' + await readJvmErrorResponse (res)); return; }
+    } else {
+      var r = await window.supabaseClient.from ('clients').update (patch).eq ('id', _editingClientId);
+      if (r.error) { clientToast ('Update failed: ' + r.error.message); return; }
+    }
+    closeModal ('editClientModal');
+    clientToast ('Client updated');
+    await loadClientsTable ();
+  } catch (err) {
+    clientToast ('Update failed: ' + (err && err.message ? err.message : 'unknown error'));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
+}
+
+// ── Staff dropdowns ───────────────────────────────────────────────────────────
+async function loadStaffDropdowns (rbtElId, bcbaElId, selectedRbt, selectedBcba) {
+  var org = window.gilbertoCurrentOrg;
+  var staffRows = [];
+  try {
+    if (org && org.id) {
+      if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+        var res = await jvmFetchStaff (org.id, 'active');
+        if (res.ok) staffRows = await res.json ();
+      } else if (window.supabaseClient) {
+        var q = await window.supabaseClient.from ('staff')
+          .select ('id,first_name,last_name,role')
+          .eq ('org_id', org.id).eq ('status', 'active').order ('last_name');
+        staffRows = q.data || [];
+      }
+    }
+  } catch (e) { /* non-fatal */ }
+
+  var opts = '<option value="">— None —</option>'
+    + staffRows.map (function (s) {
+        var n = s.first_name + ' ' + s.last_name + (s.role ? ' (' + s.role + ')' : '');
+        return '<option value="' + s.id + '"' + (s.id === selectedRbt ? ' selected' : '') + '>' + esc (n) + '</option>';
+      }).join ('');
+
+  var optsB = '<option value="">— None —</option>'
+    + staffRows.map (function (s) {
+        var n = s.first_name + ' ' + s.last_name + (s.role ? ' (' + s.role + ')' : '');
+        return '<option value="' + s.id + '"' + (s.id === selectedBcba ? ' selected' : '') + '>' + esc (n) + '</option>';
+      }).join ('');
+
+  var rbtEl  = document.getElementById (rbtElId);
+  var bcbaEl = document.getElementById (bcbaElId);
+  if (rbtEl)  rbtEl.innerHTML  = opts;
+  if (bcbaEl) bcbaEl.innerHTML = optsB;
+}
+
+// ── Boot: loadClientsTable is called by applyWorkspaceWithOrg in dashboard.js ─
+window.loadClientsTable = loadClientsTable;
+
+</script>
+</body>
+</html>

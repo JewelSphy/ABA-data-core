@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gilberto - ABA Care CRM</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <!-- Dark header -->
+      <div class="card-header">
+        <div class="login-logo">
+          <svg class="login-logo-icon" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="50" height="50" rx="14" fill="rgba(255,255,255,0.12)"/>
+            <ellipse cx="37" cy="13" rx="5" ry="8" fill="rgba(107,158,126,0.9)" transform="rotate(-40 37 13)"/>
+            <text x="23" y="32" font-family="Georgia, serif" font-weight="700" font-style="italic" font-size="26" fill="white" text-anchor="middle">G</text>
+          </svg>
+          <div class="login-logo-text">
+            <span class="login-logo-name">Gilberto</span>
+            <span class="login-logo-sub">ABA Care CRM</span>
+          </div>
+        </div>
+        <div class="card-header-tagline">
+          <h1>Welcome back</h1>
+          <p>Sign in to your workspace to continue.</p>
+        </div>
+      </div>
+
+      <!--Form body -->
+      <div class="card-body">
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm">
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="you@example.com" />
+
+          <label>Password</label>
+          <input id="loginPassword" type="password" placeholder="Enter your password" />
+
+          <div style="display:flex;align-items:center;gap:8px;margin:-2px 0 12px;">
+            <input id="rememberEmail" type="checkbox" style="width:auto;margin:0;" />
+            <label for="rememberEmail" style="margin:0;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:#5f7a6d;">Remember email on this device</label>
+          </div>
+
+          <button id="loginBtn" type="button" onclick="login()">Log In</button>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form id="signupForm" class="hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <div>
+              <label>First Name</label>
+              <input id="signupFirstName" type="text" placeholder="First name" style="margin-bottom:0;" />
+            </div>
+            <div>
+              <label>Last Name</label>
+              <input id="signupLastName" type="text" placeholder="Last name" style="margin-bottom:0;" />
+            </div>
+          </div>
+
+          <label>Email</label>
+          <input id="signupEmail" type="email" placeholder="you@example.com" />
+
+          <label>Password</label>
+          <input id="signupPassword" type="password" placeholder="Create a password" />
+
+          <button id="signupBtn" type="button" onclick="signup()">Create Account</button>
+        </form>
+
+        <p id="authMessage" style="margin-top:12px;font-size:12px;color:#2d4a3e;min-height:18px;"></p>
+
+        <!-- TABS -->
+        <div class="tabs">
+          <button id="loginTab" class="active" onclick="showLogin()">Log In</button>
+          <button id="signupTab" onclick="showSignup()">Sign Up</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseConfig.js"></script>
+  <script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Graph Hub - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .graph-filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .graph-filter-bar label { font-size: 12px; color: #6b8c7a; margin-right: 4px; }
+    .graph-filter-bar select, .graph-filter-bar input[type="date"] {
+      border: 1px solid #d4e4da; border-radius: 5px; padding: 6px 10px; font-size: 13px; color: #1f2d26; background: white;
+    }
+    .graph-card { background: white; border: 1px solid #d4e4da; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+    .graph-card-header { padding: 16px 20px 12px; border-bottom: 1px solid #eef4f1; display: flex; justify-content: space-between; align-items: center; }
+    .graph-card-header h3 { font-size: 14px; font-weight: 700; color: #1f2d26; margin: 0; }
+    .graph-card-header span { font-size: 12px; color: #6b8c7a; }
+    .graph-card-body { padding: 12px 20px; overflow-x: auto; }
+    .graph-card-footer { padding: 12px 20px; border-top: 1px solid #eef4f1; display: flex; gap: 24px; align-items: center; }
+    .graph-stat { text-align: center; }
+    .graph-stat .label { font-size: 11px; color: #9dbfb0; text-transform: uppercase; letter-spacing: 0.4px; }
+    .graph-stat .value { font-size: 15px; font-weight: 700; color: #1f2d26; margin-top: 2px; }
+    .graph-stat .value.trend-down { color: #16a34a; }
+    .graph-stat .value.trend-up-good { color: #16a34a; }
+    .graph-footer-right { margin-left: auto; }
+    svg text { font-family: inherit; }
+  </style>
+</head>
+<body class="page-graphs">
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Cthe calients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Guardians</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item active" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Graph Hub</h1>
+        <p>Visual behavior graphs for tracking client progress over time</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Admin &#9662;</div>
+      </div>
+    </div>
+
+    <div style="padding: 24px;">
+
+      <div class="control-panel" style="margin-bottom: 24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size:15px;">Graph Control Panel</h3>
+          <div class="segmented">
+            <button class="small-btn active-blue">Data</button>
+            <button class="small-btn">Initial Observations</button>
+          </div>
+        </div>
+        <div class="control-grid">
+          <div class="control-group">
+            <label>Category</label>
+            <select id="categoryFilter">
+              <option>Maladaptive Behaviors</option>
+              <option>Replacement Behaviors</option>
+              <option>Skills</option>
+              <option>Family Training</option>
+              <option>RBT Competency</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Client</label>
+            <select id="clientFilter">
+              <option>All Clients</option>
+              <option>John Doe 1</option>
+              <option>John Doe 2</option>
+              <option>Jane Doe 1</option>
+              <option>Jane Doe 2</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Chart Type</label>
+            <select>
+              <option>Line</option>
+              <option>Bar</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Aggregation</label>
+            <select>
+              <option>Daily</option>
+              <option selected>Weekly</option>
+              <option>Monthly</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Interval By</label>
+            <select>
+              <option>Day</option>
+              <option selected>Week</option>
+              <option>Month</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>Split By STO</label>
+            <select>
+              <option>Yes</option>
+              <option selected>No</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>From</label>
+            <input type="date" id="dateFrom" value="2026-03-01" />
+          </div>
+          <div class="control-group">
+            <label>To</label>
+            <input type="date" id="dateTo" value="2026-04-25" />
+          </div>
+          <div class="control-group" style="display:flex;align-items:flex-end;">
+            <button class="add-btn" style="width:100%;" onclick="applyFilters()">Apply Controls</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph 1: Off-Task Behavior - John Doe -->
+      <!-- Data: 12,10,11,8,7,6,5,4 | range 4-12 | y = 20 + (12-v)/(8)*150 -->
+      <!-- y values: 12->20, 10->57.5, 11->38.75, 8->95, 7->113.75, 6->132.5, 5->151.25, 4->170 -->
+      <div class="graph-card" id="graph1">
+        <div class="graph-card-header">
+          <div>
+            <h3>Off-Task Behavior</h3>
+            <span>John Doe 1 - Frequency per session</span>
+          </div>
+          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
+        </div>
+        <div class="graph-card-body">
+          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
+            <!-- Grid lines -->
+            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="113.75" x2="580" y2="113.75" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
+            <line x1="40" y1="57.5" x2="580" y2="57.5" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
+
+            <!-- Baseline: value 12 -> y=20, red dashed -->
+            <line x1="40" y1="20" x2="580" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
+            <text x="585" y="23" font-size="9" fill="#ef4444">Baseline</text>
+
+            <!-- Target: value 2 -> y = 20 + (12-2)/8*150 = 20+187.5 = out of range, so cap near 170 -->
+            <!-- value 2 -> y=20+(10/8)*150=20+187.5 -> beyond chart, place at bottom label -->
+            <!-- Actually target 2 is below min visible, show a reference line below chart -->
+            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
+
+            <!-- Data line -->
+            <polyline points="40,20 118,57.5 196,38.75 274,95 352,113.75 430,132.5 508,151.25 580,170"
+              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <!-- Data point circles -->
+            <circle cx="40" cy="20" r="4" fill="#6b9e7e"/>
+            <circle cx="118" cy="57.5" r="4" fill="#6b9e7e"/>
+            <circle cx="196" cy="38.75" r="4" fill="#6b9e7e"/>
+            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
+            <circle cx="352" cy="113.75" r="4" fill="#6b9e7e"/>
+            <circle cx="430" cy="132.5" r="4" fill="#6b9e7e"/>
+            <circle cx="508" cy="151.25" r="4" fill="#6b9e7e"/>
+            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
+
+            <!-- X axis labels -->
+            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+
+            <!-- Y axis labels -->
+            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">12</text>
+            <text x="34" y="60" font-size="9" fill="#9dbfb0" text-anchor="end">10</text>
+            <text x="34" y="117" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
+            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">4</text>
+          </svg>
+        </div>
+        <div class="graph-card-footer">
+          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">4 / session</div></div>
+          <div class="graph-stat"><div class="label">Baseline</div><div class="value">12 / session</div></div>
+          <div class="graph-stat"><div class="label">Target</div><div class="value">2 / session</div></div>
+          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Decreasing</div></div>
+          <div class="graph-stat"><div class="label">Legend</div><div class="value" style="font-size:12px;">Green: actual · Red: baseline · Dashed green: target</div></div>
+        </div>
+      </div>
+
+      <!-- Graph 2: Verbal Aggression - Jane Doe -->
+      <!-- Data: 8,7,9,6,5,4,3,3 | range 3-9 | y=20+(9-v)/(6)*150 -->
+      <!-- 8->45, 7->70, 9->20, 6->95, 5->120, 4->145, 3->170, 3->170 -->
+      <div class="graph-card" id="graph2">
+        <div class="graph-card-header">
+          <div>
+            <h3>Verbal Aggression</h3>
+            <span>Jane Doe 1 - Frequency per session</span>
+          </div>
+          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
+        </div>
+        <div class="graph-card-body">
+          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
+            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
+
+            <!-- Baseline: 8 -> y=45 -->
+            <line x1="40" y1="45" x2="580" y2="45" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
+            <text x="585" y="48" font-size="9" fill="#ef4444">Baseline</text>
+
+            <!-- Target: 0 -> y=20+(9/6)*150=20+225 -> off chart, place below -->
+            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
+
+            <polyline points="40,45 118,70 196,20 274,95 352,120 430,145 508,170 580,170"
+              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <circle cx="40" cy="45" r="4" fill="#6b9e7e"/>
+            <circle cx="118" cy="70" r="4" fill="#6b9e7e"/>
+            <circle cx="196" cy="20" r="4" fill="#6b9e7e"/>
+            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
+            <circle cx="352" cy="120" r="4" fill="#6b9e7e"/>
+            <circle cx="430" cy="145" r="4" fill="#6b9e7e"/>
+            <circle cx="508" cy="170" r="4" fill="#6b9e7e"/>
+            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
+
+            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+
+            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">9</text>
+            <text x="34" y="48" font-size="9" fill="#9dbfb0" text-anchor="end">8</text>
+            <text x="34" y="98" font-size="9" fill="#9dbfb0" text-anchor="end">6</text>
+            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">3</text>
+          </svg>
+        </div>
+        <div class="graph-card-footer">
+          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">3 / session</div></div>
+          <div class="graph-stat"><div class="label">Baseline</div><div class="value">8 / session</div></div>
+          <div class="graph-stat"><div class="label">Target</div><div class="value">0 / session</div></div>
+          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Decreasing</div></div>
+        </div>
+      </div>
+
+      <!-- Graph 3: Requesting Break - John Doe (replacement behavior) -->
+      <!-- Data: 0,1,2,3,4,5,6,7 | range 0-7 | y=20+(7-v)/7*150 -->
+      <!-- 0->170, 1->148.57, 2->127.14, 3->105.71, 4->84.29, 5->62.86, 6->41.43, 7->20 -->
+      <div class="graph-card" id="graph3">
+        <div class="graph-card-header">
+          <div>
+            <h3>Requesting Break <span style="font-size:11px; color:#16a34a; font-weight:600;">(Replacement Behavior)</span></h3>
+            <span>John Doe 1 - Frequency per session</span>
+          </div>
+          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
+        </div>
+        <div class="graph-card-body">
+          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
+            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
+
+            <!-- Baseline: 0 -> y=170 -->
+            <line x1="40" y1="170" x2="580" y2="170" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+            <text x="585" y="173" font-size="9" fill="#ef4444">Baseline</text>
+
+            <!-- Target: 10 -> y=20+(7-10)/7*150 = off chart top, use y=10 -->
+            <line x1="40" y1="10" x2="580" y2="10" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+            <text x="585" y="13" font-size="9" fill="#6b9e7e">Target (10)</text>
+
+            <polyline points="40,170 118,148.57 196,127.14 274,105.71 352,84.29 430,62.86 508,41.43 580,20"
+              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <circle cx="40" cy="170" r="4" fill="#6b9e7e"/>
+            <circle cx="118" cy="148.57" r="4" fill="#6b9e7e"/>
+            <circle cx="196" cy="127.14" r="4" fill="#6b9e7e"/>
+            <circle cx="274" cy="105.71" r="4" fill="#6b9e7e"/>
+            <circle cx="352" cy="84.29" r="4" fill="#6b9e7e"/>
+            <circle cx="430" cy="62.86" r="4" fill="#6b9e7e"/>
+            <circle cx="508" cy="41.43" r="4" fill="#6b9e7e"/>
+            <circle cx="580" cy="20" r="4" fill="#6b9e7e"/>
+
+            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+
+            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">0</text>
+            <text x="34" y="108" font-size="9" fill="#9dbfb0" text-anchor="end">3</text>
+            <text x="34" y="65" font-size="9" fill="#9dbfb0" text-anchor="end">5</text>
+            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
+          </svg>
+        </div>
+        <div class="graph-card-footer">
+          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-up-good">7 / session</div></div>
+          <div class="graph-stat"><div class="label">Baseline</div><div class="value">0 / session</div></div>
+          <div class="graph-stat"><div class="label">Target</div><div class="value">10 / session</div></div>
+          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-up-good">Increasing</div></div>
+        </div>
+      </div>
+
+    
+      <div class="graph-card" id="graph4">
+        <div class="graph-card-header">
+          <div>
+            <h3>Non-Compliance</h3>
+            <span>Jane Doe 1 - Frequency per session</span>
+          </div>
+          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
+        </div>
+        <div class="graph-card-body">
+          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
+            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
+            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
+
+            <!-- Baseline: 10 -> y=20 -->
+            <line x1="40" y1="20" x2="580" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
+            <text x="585" y="23" font-size="9" fill="#ef4444">Baseline</text>
+
+            <!-- Target: 1 -> y=20+(10-1)/4*150=20+337.5 -> off chart, place below -->
+            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
+
+            <polyline points="40,20 118,57.5 196,20 274,95 352,57.5 430,132.5 508,170 580,170"
+              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <circle cx="40" cy="20" r="4" fill="#6b9e7e"/>
+            <circle cx="118" cy="57.5" r="4" fill="#6b9e7e"/>
+            <circle cx="196" cy="20" r="4" fill="#6b9e7e"/>
+            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
+            <circle cx="352" cy="57.5" r="4" fill="#6b9e7e"/>
+            <circle cx="430" cy="132.5" r="4" fill="#6b9e7e"/>
+            <circle cx="508" cy="170" r="4" fill="#6b9e7e"/>
+            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
+
+            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+
+            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">10</text>
+            <text x="34" y="60" font-size="9" fill="#9dbfb0" text-anchor="end">9</text>
+            <text x="34" y="98" font-size="9" fill="#9dbfb0" text-anchor="end">8</text>
+            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">6</text>
+          </svg>
+        </div>
+        <div class="graph-card-footer">
+          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">6 / session</div></div>
+          <div class="graph-stat"><div class="label">Baseline</div><div class="value">10 / session</div></div>
+          <div class="graph-stat"><div class="label">Target</div><div class="value">1 / session</div></div>
+          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Slowly Decreasing</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+
+  function applyFilters() {
+    const client = document.getElementById('clientFilter').value;
+    const graphs = {
+      graph1: 'John Doe 1',
+      graph2: 'Jane Doe 1',
+      graph3: 'John Doe 1',
+      graph4: 'Jane Doe 1'
+    };
+    Object.entries(graphs).forEach(([id, name]) => {
+      const el = document.getElementById(id);
+      if (client === 'All Clients' || client === name) {
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+    showToast('Filters applied');
+  }
+</script>
+</body>
+</html>

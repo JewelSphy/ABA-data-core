@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STOs / LTOs - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item active" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>STOs and LTOs</h1>
+        <p>Short term and long term objectives with progress tracking</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div style="padding: 24px;">
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn objectives-tab active" id="tab-stos" onclick="switchTab('objectives','tab-stos','panel-stos')">STOs</button>
+        <button class="tab-btn objectives-tab" id="tab-ltos" onclick="switchTab('objectives','tab-ltos','panel-ltos')">LTOs</button>
+      </div>
+
+      <!-- STO Panel -->
+      <div class="tab-panel objectives-panel active" id="panel-stos">
+
+        <div class="notice notice-info" style="margin-bottom: 16px;">
+          Short term objectives (STOs) are measurable steps toward achieving long term goals. They are typically achieved within 1 to 3 months.
+        </div>
+
+        <div class="table-toolbar">
+          <div class="table-search">
+            <input class="search-input" type="text" placeholder="Search STOs..." oninput="filterTable('stoTableBody', this.value)" />
+          </div>
+          <button class="add-btn" onclick="openModal('addSTOModal')">+ Add STO</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Objective</th>
+                <th>Client</th>
+                <th>LTO It Supports</th>
+                <th>Baseline</th>
+                <th>Target</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="stoTableBody">
+              <tr>
+                <td>Reduce off-task to 6 or fewer per session</td>
+                <td>Jon Snow</td>
+                <td>Increase on-task behavior to 90%</td>
+                <td>12/session</td>
+                <td>6/session</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:50%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">50%</span>
+                </td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openSTOModal('Reduce off-task to 6 or fewer per session','Jon Snow','Increase on-task behavior to 90%','12/session','6/session','50%','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('STO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Use words to request break 3 times per session</td>
+                <td>Arya Stark</td>
+                <td>Independent functional communication</td>
+                <td>0 times</td>
+                <td>3 times</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:70%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">70%</span>
+                </td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openSTOModal('Use words to request break 3 times per session','Arya Stark','Independent functional communication','0 times','3 times','70%','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('STO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Follow 1-step directions without prompt</td>
+                <td>Robb Stark</td>
+                <td>Follow multi-step directions independently</td>
+                <td>20%</td>
+                <td>100%</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:65%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">65%</span>
+                </td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openSTOModal('Follow 1-step directions without prompt','Robb Stark','Follow multi-step directions independently','20%','100%','65%','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('STO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Reduce SIB to 2 or fewer per week</td>
+                <td>Sansa Stark</td>
+                <td>Eliminate SIB across all settings</td>
+                <td>8/week</td>
+                <td>2/week</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:80%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">80%</span>
+                </td>
+                <td><span class="badge badge-complete">Complete</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openSTOModal('Reduce SIB to 2 or fewer per week','Sansa Stark','Eliminate SIB across all settings','8/week','2/week','80%','Complete')">View</button>
+                  <button class="tbl-btn" onclick="showToast('STO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Engage in parallel play for 5 minutes</td>
+                <td>Jon Snow</td>
+                <td>Cooperative peer interaction</td>
+                <td>0 min</td>
+                <td>5 min</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill warn" style="width:40%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">40%</span>
+                </td>
+                <td><span class="badge badge-pending">Pending</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openSTOModal('Engage in parallel play for 5 minutes','Jon Snow','Cooperative peer interaction','0 min','5 min','40%','Pending')">View</button>
+                  <button class="tbl-btn" onclick="showToast('STO updated')">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LTO Panel -->
+      <div class="tab-panel objectives-panel" id="panel-ltos">
+
+        <div class="notice notice-info" style="margin-bottom: 16px;">
+          Long term objectives (LTOs) are the overarching goals of the behavior plan. They are typically achieved within 6 to 12 months.
+        </div>
+
+        <div class="table-toolbar">
+          <div class="table-search">
+            <input class="search-input" type="text" placeholder="Search LTOs..." oninput="filterTable('ltoTableBody', this.value)" />
+          </div>
+          <button class="add-btn" onclick="openModal('addLTOModal')">+ Add LTO</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>LTO</th>
+                <th>Client</th>
+                <th>Target Behavior</th>
+                <th>STOs Linked</th>
+                <th>Overall Progress</th>
+                <th>Target Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ltoTableBody">
+              <tr>
+                <td>Increase on-task behavior to 90% of session</td>
+                <td>Jon Snow</td>
+                <td>Off-Task Behavior</td>
+                <td>3 STOs</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:55%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">55%</span>
+                </td>
+                <td>Dec 2026</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openLTOModal('Increase on-task behavior to 90% of session','Jon Snow','Off-Task Behavior','3 STOs','55%','Dec 2026','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('LTO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Independent functional communication</td>
+                <td>Arya Stark</td>
+                <td>Self-Injurious Behavior</td>
+                <td>2 STOs</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:65%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">65%</span>
+                </td>
+                <td>Sep 2026</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openLTOModal('Independent functional communication','Arya Stark','Self-Injurious Behavior','2 STOs','65%','Sep 2026','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('LTO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Follow multi-step directions independently</td>
+                <td>Robb Stark</td>
+                <td>Non-Compliance</td>
+                <td>2 STOs</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill warn" style="width:45%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">45%</span>
+                </td>
+                <td>Nov 2026</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openLTOModal('Follow multi-step directions independently','Robb Stark','Non-Compliance','2 STOs','45%','Nov 2026','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('LTO updated')">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>Eliminate SIB across all settings</td>
+                <td>Sansa Stark</td>
+                <td>SIB</td>
+                <td>3 STOs</td>
+                <td>
+                  <div class="progress-bar-wrap" style="min-width:100px;">
+                    <div class="progress-bar-fill" style="width:80%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#6b8c7a;">80%</span>
+                </td>
+                <td>Jul 2026</td>
+                <td><span class="badge badge-active">Active</span></td>
+                <td>
+                  <button class="tbl-btn" onclick="openLTOModal('Eliminate SIB across all settings','Sansa Stark','SIB','3 STOs','80%','Jul 2026','Active')">View</button>
+                  <button class="tbl-btn" onclick="showToast('LTO updated')">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- View STO Modal -->
+<div class="modal-overlay" id="viewSTOModal" onclick="if(event.target===this)closeModal('viewSTOModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>STO Details</h3>
+      <button class="modal-close" onclick="closeModal('viewSTOModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span class="label">Objective</span><span class="value" id="sto-obj"></span></div>
+        <div class="info-item"><span class="label">Client</span><span class="value" id="sto-client"></span></div>
+        <div class="info-item"><span class="label">LTO It Supports</span><span class="value" id="sto-lto"></span></div>
+        <div class="info-item"><span class="label">Baseline</span><span class="value" id="sto-baseline"></span></div>
+        <div class="info-item"><span class="label">Target</span><span class="value" id="sto-target"></span></div>
+        <div class="info-item"><span class="label">Status</span><span class="value" id="sto-status"></span></div>
+      </div>
+      <div style="margin-top: 16px;">
+        <label style="font-size:12px;color:#6b8c7a;display:block;margin-bottom:6px;">Progress</label>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="sto-progress-bar" style="width:0%;"></div>
+        </div>
+        <span style="font-size:12px;color:#6b8c7a;" id="sto-pct"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="showToast('STO updated'); closeModal('viewSTOModal')">Save Changes</button>
+      <button class="small-btn" onclick="closeModal('viewSTOModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- View LTO Modal -->
+<div class="modal-overlay" id="viewLTOModal" onclick="if(event.target===this)closeModal('viewLTOModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>LTO Details</h3>
+      <button class="modal-close" onclick="closeModal('viewLTOModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><span class="label">LTO</span><span class="value" id="lto-obj"></span></div>
+        <div class="info-item"><span class="label">Client</span><span class="value" id="lto-client"></span></div>
+        <div class="info-item"><span class="label">Target Behavior</span><span class="value" id="lto-behavior"></span></div>
+        <div class="info-item"><span class="label">STOs Linked</span><span class="value" id="lto-stos"></span></div>
+        <div class="info-item"><span class="label">Target Date</span><span class="value" id="lto-date"></span></div>
+        <div class="info-item"><span class="label">Status</span><span class="value" id="lto-status"></span></div>
+      </div>
+      <div style="margin-top: 16px;">
+        <label style="font-size:12px;color:#6b8c7a;display:block;margin-bottom:6px;">Overall Progress</label>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="lto-progress-bar" style="width:0%;"></div>
+        </div>
+        <span style="font-size:12px;color:#6b8c7a;" id="lto-pct"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="showToast('LTO updated'); closeModal('viewLTOModal')">Save Changes</button>
+      <button class="small-btn" onclick="closeModal('viewLTOModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add STO Modal -->
+<div class="modal-overlay" id="addSTOModal" onclick="if(event.target===this)closeModal('addSTOModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Add Short Term Objective</h3>
+      <button class="modal-close" onclick="closeModal('addSTOModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Objective Description</label>
+        <textarea rows="2" placeholder="Describe the measurable STO..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>LTO It Supports</label>
+          <select>
+            <option>Increase on-task behavior to 90%</option>
+            <option>Independent functional communication</option>
+            <option>Follow multi-step directions independently</option>
+            <option>Eliminate SIB across all settings</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Baseline</label>
+          <input type="text" placeholder="e.g. 12/session" />
+        </div>
+        <div class="form-group">
+          <label>Target</label>
+          <input type="text" placeholder="e.g. 6/session" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="showToast('STO added'); closeModal('addSTOModal')">Add STO</button>
+      <button class="small-btn" onclick="closeModal('addSTOModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add LTO Modal -->
+<div class="modal-overlay" id="addLTOModal" onclick="if(event.target===this)closeModal('addLTOModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Add Long Term Objective</h3>
+      <button class="modal-close" onclick="closeModal('addLTOModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>LTO Description</label>
+        <textarea rows="2" placeholder="Describe the long term goal..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Client</label>
+          <select>
+            <option>Jon Snow</option>
+            <option>Robb Stark</option>
+            <option>Arya Stark</option>
+            <option>Sansa Stark</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Behavior</label>
+          <select>
+            <option>Off-Task Behavior</option>
+            <option>Verbal Aggression</option>
+            <option>Non-Compliance</option>
+            <option>SIB</option>
+            <option>Elopement</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target Date</label>
+          <input type="month" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select>
+            <option>Active</option>
+            <option>Pending</option>
+            <option>Complete</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="add-btn" onclick="showToast('LTO added'); closeModal('addLTOModal')">Add LTO</button>
+      <button class="small-btn" onclick="closeModal('addLTOModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  function switchTab(group, tabId, panelId) {
+    document.querySelectorAll('.' + group + '-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.' + group + '-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+  function openSTOModal(obj, client, lto, baseline, target, pct, status) {
+    document.getElementById('sto-obj').textContent = obj;
+    document.getElementById('sto-client').textContent = client;
+    document.getElementById('sto-lto').textContent = lto;
+    document.getElementById('sto-baseline').textContent = baseline;
+    document.getElementById('sto-target').textContent = target;
+    document.getElementById('sto-status').textContent = status;
+    document.getElementById('sto-progress-bar').style.width = pct;
+    document.getElementById('sto-pct').textContent = pct + ' toward target';
+    openModal('viewSTOModal');
+  }
+  function openLTOModal(obj, client, behavior, stos, pct, date, status) {
+    document.getElementById('lto-obj').textContent = obj;
+    document.getElementById('lto-client').textContent = client;
+    document.getElementById('lto-behavior').textContent = behavior;
+    document.getElementById('lto-stos').textContent = stos;
+    document.getElementById('lto-date').textContent = date;
+    document.getElementById('lto-status').textContent = status;
+    document.getElementById('lto-progress-bar').style.width = pct;
+    document.getElementById('lto-pct').textContent = pct + ' overall progress';
+    openModal('viewLTOModal');
+  }
+  function filterTable(tbodyId, query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

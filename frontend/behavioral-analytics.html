@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Behavioral Analytics - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    /* Stat cards row */
+    .stat-cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: white; border: 1px solid #d4e4da; border-radius: 8px; padding: 18px 20px; }
+    .stat-card .stat-value { font-size: 26px; font-weight: 700; color: #1f2d26; margin-bottom: 4px; }
+    .stat-card .stat-label { font-size: 12px; color: #6b8c7a; font-weight: 500; }
+    .stat-card .stat-sub { font-size: 11px; color: #9dbfb0; margin-top: 2px; }
+
+    /* Chart containers */
+    .chart-section { margin-bottom: 24px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .chart-header h4 { font-size: 14px; font-weight: 700; color: #1f2d26; margin: 0; }
+    .chart-header .chart-client { font-size: 12px; color: #6b8c7a; margin-top: 3px; }
+    .chart-legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #6b8c7a; }
+    .legend-dot { width: 10px; height: 3px; border-radius: 2px; }
+    .legend-dash { width: 12px; height: 2px; border-top: 2px dashed; }
+
+    /* LTO cards (goal progress tab) */
+    .lto-card { background: white; border: 1px solid #d4e4da; border-left: 3px solid #6b9e7e; border-radius: 6px; padding: 20px; margin-bottom: 16px; }
+    .lto-card.needs-attention { border-left-color: #d97706; }
+    .lto-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .lto-title { font-size: 15px; font-weight: 700; color: #1f2d26; }
+    .lto-client { font-size: 12px; color: #6b8c7a; margin-top: 3px; }
+    .lto-meta { display: flex; gap: 16px; font-size: 12px; color: #6b8c7a; }
+    .lto-overall { margin-bottom: 16px; }
+    .lto-overall-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: #6b8c7a; }
+    .sto-list { border-top: 1px solid #eef4f1; padding-top: 12px; }
+    .sto-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; flex-wrap: wrap; gap: 6px; }
+    .sto-item-label { color: #2d4a3e; flex: 1; padding-right: 16px; min-width: 0; }
+    .sto-progress { display: flex; align-items: center; gap: 8px; min-width: 120px; flex-shrink: 0; }
+    .sto-pct { font-size: 12px; color: #6b8c7a; min-width: 30px; text-align: right; }
+    .status-badge-on-track { background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+    .status-badge-attention { background: #fef3c7; color: #d97706; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+
+    /* Insights grid */
+    .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .insight-card { background: white; border: 1px solid #d4e4da; border-radius: 6px; padding: 18px; }
+    .insight-icon { font-size: 20px; margin-bottom: 8px; }
+    .insight-title { font-size: 14px; font-weight: 700; color: #1f2d26; margin-bottom: 6px; }
+    .insight-desc { font-size: 13px; color: #4b6357; line-height: 1.6; margin-bottom: 10px; }
+
+    /* Filter bar */
+    .filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-bar label { font-size: 12px; color: #6b8c7a; }
+    .filter-bar select, .filter-bar input[type="date"] {
+      border: 1px solid #d4e4da; border-radius: 5px; padding: 6px 10px; font-size: 13px; color: #1f2d26; background: white;
+    }
+
+    /* Badge overrides for insights */
+    .badge-expiring { background: #fef3c7; color: #d97706; }
+
+    svg text { font-family: inherit; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item active" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Behavioral Analytics</h1>
+        <p>Visualize behavioral patterns extracted from submitted session notes, mapped against LTO and STO progress</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill">Arya</div>
+      </div>
+    </div>
+
+    <div style="padding: 24px;">
+
+      <!-- Filter Bar -->
+      <div class="section-box" style="margin-bottom: 20px;">
+        <div class="filter-bar">
+          <div>
+            <label>Client&nbsp;</label>
+            <select id="analyticsClient">
+              <option>All Clients</option>
+              <option>Jon Snow</option>
+              <option>Robb Stark</option>
+              <option>Arya Stark</option>
+              <option>Sansa Stark</option>
+            </select>
+          </div>
+          <div>
+            <label>From&nbsp;</label>
+            <input type="date" value="2026-01-27" />
+          </div>
+          <div>
+            <label>To&nbsp;</label>
+            <input type="date" value="2026-04-25" />
+          </div>
+          <div>
+            <label>Behavior&nbsp;</label>
+            <select>
+              <option>All Behaviors</option>
+              <option>Off-Task Behavior</option>
+              <option>Verbal Aggression</option>
+              <option>Non-Compliance</option>
+              <option>SIB</option>
+              <option>Elopement</option>
+            </select>
+          </div>
+          <button class="small-btn" onclick="applyAnalyticsFilters()">Apply</button>
+          <button class="add-btn" onclick="showToast('Exporting analytics report...')">Export Report</button>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stat-cards-row">
+        <div class="stat-card">
+          <div class="stat-value">48</div>
+          <div class="stat-label">Total Sessions Analyzed</div>
+          <div class="stat-sub">Past 90 days</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">312</div>
+          <div class="stat-label">Data Points Recorded</div>
+          <div class="stat-sub">Across all behaviors</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#16a34a;">4 of 5</div>
+          <div class="stat-label">Behaviors Trending Down</div>
+          <div class="stat-sub">Problem behaviors decreasing</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#16a34a;">6 of 7</div>
+          <div class="stat-label">Goals On Track</div>
+          <div class="stat-sub">STOs and LTOs combined</div>
+        </div>
+      </div>
+
+      <!-- Main Tabs -->
+      <div class="tab-bar">
+        <button class="tab-btn analytics-tab active" id="tab-trends" onclick="switchTab('analytics','tab-trends','panel-trends')">Trend Analysis</button>
+        <button class="tab-btn analytics-tab" id="tab-goals" onclick="switchTab('analytics','tab-goals','panel-goals')">Goal Progress</button>
+        <button class="tab-btn analytics-tab" id="tab-insights" onclick="switchTab('analytics','tab-insights','panel-insights')">Insights</button>
+      </div>
+
+      <!-- ======================== TREND ANALYSIS TAB ======================== -->
+      <div class="tab-panel analytics-panel active" id="panel-trends">
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size:15px;font-weight:700;color:#1f2d26;margin:0 0 4px;">Behavior Frequency Over Time</h3>
+          <p style="font-size:12px;color:#6b8c7a;margin:0;">Based on data extracted from submitted session notes over the past 12 weeks</p>
+        </div>
+
+        <!-- CHART 1: Off-Task Behavior - John Doe -->
+        <!-- Data: 12,11,10,11,9,8,7,6,5,5,4,4 | range 4-12 -->
+        <!-- Y scale: y = 20 + (12-v)/(12-4)*130 = 20 + (12-v)/8*130 -->
+        <!-- 12->20, 11->36.25, 10->52.5, 11->36.25, 9->68.75, 8->85, 7->101.25, 6->117.5, 5->133.75, 5->133.75, 4->150, 4->150 -->
+        <!-- X positions (12 pts, x: 60 to 780): 60,129,198,267,336,405,474,543,612,681,750,780 -->
+        <div class="section-box chart-section">
+          <div class="section-box-header">
+            <div class="chart-header" style="width:100%;">
+              <div>
+                <h4>Off-Task Behavior</h4>
+                <div class="chart-client">Jon Snow - Weekly frequency over 12 weeks</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 16px 20px; overflow-x: auto;">
+            <svg viewBox="0 0 840 180" width="100%" height="180" style="display:block;">
+              <!-- Subtle grid -->
+              <line x1="60" y1="20" x2="60" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="150" x2="780" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="85" x2="780" y2="85" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="52.5" x2="780" y2="52.5" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="117.5" x2="780" y2="117.5" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+
+              <!-- Baseline: value 12 -> y=20 -->
+              <line x1="60" y1="20" x2="780" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.65"/>
+              <text x="786" y="23" font-size="9" fill="#ef4444">Baseline (12)</text>
+
+              <!-- Target: value 2 -> y = 20+(12-2)/8*130 = 20+162.5 -> beyond range, show at y=158 -->
+              <line x1="60" y1="163" x2="780" y2="163" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+              <text x="786" y="166" font-size="9" fill="#6b9e7e">Target (2)</text>
+
+              <!-- Data polyline -->
+              <polyline points="60,20 129,36.25 198,52.5 267,36.25 336,68.75 405,85 474,101.25 543,117.5 612,133.75 681,133.75 750,150 780,150"
+                fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+              <!-- Fill area under curve -->
+              <polygon points="60,20 129,36.25 198,52.5 267,36.25 336,68.75 405,85 474,101.25 543,117.5 612,133.75 681,133.75 750,150 780,150 780,150 60,150"
+                fill="#6b9e7e" opacity="0.07"/>
+
+              <!-- Data points -->
+              <circle cx="60" cy="20" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="129" cy="36.25" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="198" cy="52.5" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="267" cy="36.25" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="336" cy="68.75" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="405" cy="85" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="474" cy="101.25" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="543" cy="117.5" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="612" cy="133.75" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="681" cy="133.75" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="750" cy="150" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="780" cy="150" r="4" fill="#6b9e7e" stroke="#6b9e7e" stroke-width="2"/>
+
+              <!-- X labels -->
+              <text x="60" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+              <text x="129" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+              <text x="198" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+              <text x="267" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+              <text x="336" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+              <text x="405" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+              <text x="474" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+              <text x="543" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+              <text x="612" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W9</text>
+              <text x="681" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W10</text>
+              <text x="750" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W11</text>
+              <text x="780" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W12</text>
+
+              <!-- Y labels -->
+              <text x="54" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">12</text>
+              <text x="54" y="55" font-size="9" fill="#9dbfb0" text-anchor="end">10</text>
+              <text x="54" y="88" font-size="9" fill="#9dbfb0" text-anchor="end">8</text>
+              <text x="54" y="121" font-size="9" fill="#9dbfb0" text-anchor="end">6</text>
+              <text x="54" y="153" font-size="9" fill="#9dbfb0" text-anchor="end">4</text>
+            </svg>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#6b9e7e; height:3px;"></div> Frequency</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#ef4444;"></div> Baseline</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#6b9e7e;"></div> Target</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHART 2: Verbal Aggression - Jane Doe -->
+        <!-- Data: 8,9,7,8,6,5,6,4,4,3,3,2 | range 2-9 -->
+        <!-- Y scale: y = 20 + (9-v)/(9-2)*130 = 20 + (9-v)/7*130 -->
+        <!-- 8->38.57, 9->20, 7->57.14, 8->38.57, 6->75.71, 5->94.29, 6->75.71, 4->112.86, 4->112.86, 3->131.43, 3->131.43, 2->150 -->
+        <div class="section-box chart-section">
+          <div class="section-box-header">
+            <div class="chart-header" style="width:100%;">
+              <div>
+                <h4>Verbal Aggression</h4>
+                <div class="chart-client">Arya Stark - Weekly frequency over 12 weeks</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 16px 20px; overflow-x: auto;">
+            <svg viewBox="0 0 840 180" width="100%" height="180" style="display:block;">
+              <line x1="60" y1="20" x2="60" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="150" x2="780" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="85" x2="780" y2="85" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="57" x2="780" y2="57" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="113" x2="780" y2="113" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+
+              <!-- Baseline: value 9 -> y=20 (approx, peak is 9) -->
+              <line x1="60" y1="20" x2="780" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.65"/>
+              <text x="786" y="23" font-size="9" fill="#ef4444">Baseline (9)</text>
+
+              <!-- Target: value 0 -> y = 20 + 9/7*130 = 20+167 -> off chart -->
+              <line x1="60" y1="163" x2="780" y2="163" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.4"/>
+              <text x="786" y="166" font-size="9" fill="#ea580c">Target (0)</text>
+
+              <polyline points="60,38.57 129,20 198,57.14 267,38.57 336,75.71 405,94.29 474,75.71 543,112.86 612,112.86 681,131.43 750,131.43 780,150"
+                fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+              <polygon points="60,38.57 129,20 198,57.14 267,38.57 336,75.71 405,94.29 474,75.71 543,112.86 612,112.86 681,131.43 750,131.43 780,150 780,150 60,150"
+                fill="#ea580c" opacity="0.05"/>
+
+              <circle cx="60" cy="38.57" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="129" cy="20" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="198" cy="57.14" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="267" cy="38.57" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="336" cy="75.71" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="405" cy="94.29" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="474" cy="75.71" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="543" cy="112.86" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="612" cy="112.86" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="681" cy="131.43" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="750" cy="131.43" r="4" fill="white" stroke="#ea580c" stroke-width="2"/>
+              <circle cx="780" cy="150" r="4" fill="#ea580c" stroke="#ea580c" stroke-width="2"/>
+
+              <text x="60" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+              <text x="129" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+              <text x="198" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+              <text x="267" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+              <text x="336" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+              <text x="405" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+              <text x="474" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+              <text x="543" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+              <text x="612" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W9</text>
+              <text x="681" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W10</text>
+              <text x="750" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W11</text>
+              <text x="780" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W12</text>
+
+              <text x="54" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">9</text>
+              <text x="54" y="58" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
+              <text x="54" y="88" font-size="9" fill="#9dbfb0" text-anchor="end">5</text>
+              <text x="54" y="115" font-size="9" fill="#9dbfb0" text-anchor="end">4</text>
+              <text x="54" y="153" font-size="9" fill="#9dbfb0" text-anchor="end">2</text>
+            </svg>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#ea580c; height:3px;"></div> Frequency</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#ef4444;"></div> Baseline</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#ea580c;"></div> Target</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHART 3: Requesting Break - John Doe (replacement behavior) -->
+        <!-- Data: 0,1,1,2,3,3,4,5,5,6,7,7 | range 0-7 -->
+        <!-- Y scale: y = 20 + (7-v)/(7-0)*130 = 20 + (7-v)/7*130 -->
+        <!-- 0->150, 1->131.43, 1->131.43, 2->112.86, 3->94.29, 3->94.29, 4->75.71, 5->57.14, 5->57.14, 6->38.57, 7->20, 7->20 -->
+        <div class="section-box chart-section">
+          <div class="section-box-header">
+            <div class="chart-header" style="width:100%;">
+              <div>
+                <h4>Requesting Break <span style="font-size:11px;color:#16a34a;font-weight:600;">(Replacement Behavior - higher is better)</span></h4>
+                <div class="chart-client">Jon Snow - Weekly frequency over 12 weeks</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 16px 20px; overflow-x: auto;">
+            <svg viewBox="0 0 840 180" width="100%" height="180" style="display:block;">
+              <line x1="60" y1="20" x2="60" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="150" x2="780" y2="150" stroke="#eef4f1" stroke-width="1"/>
+              <line x1="60" y1="85" x2="780" y2="85" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="57" x2="780" y2="57" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+              <line x1="60" y1="113" x2="780" y2="113" stroke="#f5f9f7" stroke-width="1" stroke-dasharray="3,4"/>
+
+              <!-- Baseline: 0 -> y=150 -->
+              <line x1="60" y1="150" x2="780" y2="150" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+              <text x="786" y="153" font-size="9" fill="#ef4444">Baseline (0)</text>
+
+              <!-- Target: 10 -> y = 20 + (7-10)/7*130 = 20-55.7 = below 20, show at top -->
+              <line x1="60" y1="12" x2="780" y2="12" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
+              <text x="786" y="15" font-size="9" fill="#6b9e7e">Target (10)</text>
+
+              <polyline points="60,150 129,131.43 198,131.43 267,112.86 336,94.29 405,94.29 474,75.71 543,57.14 612,57.14 681,38.57 750,20 780,20"
+                fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+              <polygon points="60,150 129,131.43 198,131.43 267,112.86 336,94.29 405,94.29 474,75.71 543,57.14 612,57.14 681,38.57 750,20 780,20 780,150 60,150"
+                fill="#6b9e7e" opacity="0.07"/>
+
+              <circle cx="60" cy="150" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="129" cy="131.43" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="198" cy="131.43" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="267" cy="112.86" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="336" cy="94.29" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="405" cy="94.29" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="474" cy="75.71" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="543" cy="57.14" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="612" cy="57.14" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="681" cy="38.57" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="750" cy="20" r="4" fill="white" stroke="#6b9e7e" stroke-width="2"/>
+              <circle cx="780" cy="20" r="4" fill="#6b9e7e" stroke="#6b9e7e" stroke-width="2"/>
+
+              <text x="60" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
+              <text x="129" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
+              <text x="198" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
+              <text x="267" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
+              <text x="336" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
+              <text x="405" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
+              <text x="474" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
+              <text x="543" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
+              <text x="612" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W9</text>
+              <text x="681" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W10</text>
+              <text x="750" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W11</text>
+              <text x="780" y="168" font-size="9" fill="#9dbfb0" text-anchor="middle">W12</text>
+
+              <text x="54" y="153" font-size="9" fill="#9dbfb0" text-anchor="end">0</text>
+              <text x="54" y="116" font-size="9" fill="#9dbfb0" text-anchor="end">2</text>
+              <text x="54" y="88" font-size="9" fill="#9dbfb0" text-anchor="end">4</text>
+              <text x="54" y="60" font-size="9" fill="#9dbfb0" text-anchor="end">5</text>
+              <text x="54" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
+            </svg>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#6b9e7e; height:3px;"></div> Frequency</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#ef4444;"></div> Baseline</div>
+              <div class="legend-item"><div class="legend-dash" style="border-color:#6b9e7e;"></div> Target</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ======================== END TREND ANALYSIS TAB ======================== -->
+
+      <!-- ======================== GOAL PROGRESS TAB ======================== -->
+      <div class="tab-panel analytics-panel" id="panel-goals">
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size:15px;font-weight:700;color:#1f2d26;margin:0 0 4px;">LTO and STO Progress</h3>
+          <p style="font-size:12px;color:#6b8c7a;margin:0;">Progress toward long and short term objectives based on submitted session data</p>
+        </div>
+
+        <!-- LTO Card 1 -->
+        <div class="lto-card">
+          <div class="lto-header">
+            <div>
+              <div class="lto-title">Increase On-Task Behavior to 90%</div>
+              <div class="lto-client">Jon Snow</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span class="status-badge-on-track">On Track</span>
+              <span style="font-size:12px;color:#9dbfb0;">Target: December 2026</span>
+            </div>
+          </div>
+          <div class="lto-overall">
+            <div class="lto-overall-label">
+              <span>Overall Progress</span>
+              <span style="font-weight:600;color:#1f2d26;">55%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:55%;"></div>
+            </div>
+          </div>
+          <div class="sto-list">
+            <div style="font-size:11px;color:#9dbfb0;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Associated STOs</div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 1: Reduce off-task to 8 or fewer per session</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:75%;"></div></div>
+                <span class="sto-pct">75%</span>
+              </div>
+            </div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 2: Reduce off-task to 4 or fewer per session</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill warn" style="width:35%;"></div></div>
+                <span class="sto-pct">35%</span>
+              </div>
+            </div>
+            <div class="sto-item" style="margin-bottom:0;">
+              <span class="sto-item-label">STO 3: Maintain below 2 for 4 consecutive weeks</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill danger" style="width:0%;"></div></div>
+                <span class="sto-pct">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LTO Card 2 -->
+        <div class="lto-card">
+          <div class="lto-header">
+            <div>
+              <div class="lto-title">Eliminate Verbal Aggression</div>
+              <div class="lto-client">Arya Stark</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span class="status-badge-on-track">On Track</span>
+              <span style="font-size:12px;color:#9dbfb0;">Target: September 2026</span>
+            </div>
+          </div>
+          <div class="lto-overall">
+            <div class="lto-overall-label">
+              <span>Overall Progress</span>
+              <span style="font-weight:600;color:#1f2d26;">72%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:72%;"></div>
+            </div>
+          </div>
+          <div class="sto-list">
+            <div style="font-size:11px;color:#9dbfb0;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Associated STOs</div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 1: Reduce verbal aggression to 5 or fewer per session</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:85%;"></div></div>
+                <span class="sto-pct">85%</span>
+              </div>
+            </div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 2: Reduce verbal aggression to 2 or fewer per session</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:60%;"></div></div>
+                <span class="sto-pct">60%</span>
+              </div>
+            </div>
+            <div class="sto-item" style="margin-bottom:0;">
+              <span class="sto-item-label">STO 3: Zero instances for 3 consecutive weeks</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill danger" style="width:0%;"></div></div>
+                <span class="sto-pct">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LTO Card 3 - needs attention -->
+        <div class="lto-card needs-attention">
+          <div class="lto-header">
+            <div>
+              <div class="lto-title">Independent Multi-Step Compliance</div>
+              <div class="lto-client">Jon Snow</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span class="status-badge-attention">Needs Attention</span>
+              <span style="font-size:12px;color:#9dbfb0;">Target: November 2026</span>
+            </div>
+          </div>
+          <div class="lto-overall">
+            <div class="lto-overall-label">
+              <span>Overall Progress</span>
+              <span style="font-weight:600;color:#1f2d26;">45%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill warn" style="width:45%;"></div>
+            </div>
+          </div>
+          <div class="sto-list">
+            <div style="font-size:11px;color:#9dbfb0;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Associated STOs</div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 1: Follow 1-step directions without prompt</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:65%;"></div></div>
+                <span class="sto-pct">65%</span>
+              </div>
+            </div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 2: Follow 2-step directions without prompt</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill warn" style="width:25%;"></div></div>
+                <span class="sto-pct">25%</span>
+              </div>
+            </div>
+            <div class="sto-item" style="margin-bottom:0;">
+              <span class="sto-item-label">STO 3: Follow 3-step directions independently</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill danger" style="width:0%;"></div></div>
+                <span class="sto-pct">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LTO Card 4 -->
+        <div class="lto-card">
+          <div class="lto-header">
+            <div>
+              <div class="lto-title">Functional Communication Without Prompting</div>
+              <div class="lto-client">Arya Stark</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span class="status-badge-on-track">On Track</span>
+              <span style="font-size:12px;color:#9dbfb0;">Target: October 2026</span>
+            </div>
+          </div>
+          <div class="lto-overall">
+            <div class="lto-overall-label">
+              <span>Overall Progress</span>
+              <span style="font-weight:600;color:#1f2d26;">68%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:68%;"></div>
+            </div>
+          </div>
+          <div class="sto-list">
+            <div style="font-size:11px;color:#9dbfb0;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Associated STOs</div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 1: Mand using picture exchange independently</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:90%;"></div></div>
+                <span class="sto-pct">90%</span>
+              </div>
+            </div>
+            <div class="sto-item">
+              <span class="sto-item-label">STO 2: Mand verbally without gestural prompt</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill" style="width:60%;"></div></div>
+                <span class="sto-pct">60%</span>
+              </div>
+            </div>
+            <div class="sto-item" style="margin-bottom:0;">
+              <span class="sto-item-label">STO 3: Mand verbally across 3 different settings</span>
+              <div class="sto-progress">
+                <div class="progress-bar-wrap" style="flex:1;"><div class="progress-bar-fill warn" style="width:35%;"></div></div>
+                <span class="sto-pct">35%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- ======================== END GOAL PROGRESS TAB ======================== -->
+
+      <!-- ======================== INSIGHTS TAB ======================== -->
+      <div class="tab-panel analytics-panel" id="panel-insights">
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size:15px;font-weight:700;color:#1f2d26;margin:0 0 4px;">Detected Patterns and Observations</h3>
+          <p style="font-size:12px;color:#6b8c7a;margin:0;">Patterns identified from session note data over the past 90 days</p>
+        </div>
+
+        <div class="notice notice-info" style="margin-bottom: 20px;">
+          Insights are generated from submitted session notes, ABC data, and behavior frequency trends. They update as new sessions are added.
+        </div>
+
+        <div class="insights-grid">
+
+          <div class="insight-card">
+            <div class="insight-icon">📉</div>
+            <div class="insight-title">Off-Task Behavior Declining</div>
+            <div class="insight-desc">Off-task behavior for Jon Snow has decreased by 67% over the past 12 weeks. The token economy intervention introduced in Week 3 correlates with the initial drop. Current frequency is 4 per session, down from a baseline of 12.</div>
+            <span class="badge badge-approved">Progress</span>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon">⚠️</div>
+            <div class="insight-title">Verbal Aggression Spike on Mondays</div>
+            <div class="insight-desc">Session notes from the past month show that verbal aggression for Arya Stark occurs 40% more frequently during Monday sessions. Environmental factors such as schedule changes or weekend transitions may be contributing.</div>
+            <span class="badge badge-expiring">Pattern</span>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon">✅</div>
+            <div class="insight-title">Replacement Behavior Increasing</div>
+            <div class="insight-desc">Jon Snow is independently requesting breaks using words in 70% of sessions, up from 0% at baseline. This replacement behavior is effectively reducing off-task incidents across all three session time slots.</div>
+            <span class="badge badge-approved">Progress</span>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon">🕐</div>
+            <div class="insight-title">Non-Compliance Plateau</div>
+            <div class="insight-desc">Non-compliance for Jon Snow has remained between 5 and 7 per session for the past 4 weeks with no significant change. Consider reviewing the current intervention approach with the supervising BCBA.</div>
+            <span class="badge badge-expiring">Attention Needed</span>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon">👥</div>
+            <div class="insight-title">Caregiver Consistency Improves Outcomes</div>
+            <div class="insight-desc">Sessions where a caregiver is present show 25% lower problem behavior frequency for Arya Stark compared to sessions without caregiver involvement. Continued caregiver training is recommended to maintain this effect.</div>
+            <span class="badge badge-approved">Progress</span>
+          </div>
+
+          <div class="insight-card">
+            <div class="insight-icon">🎯</div>
+            <div class="insight-title">STO 1 for Jon Snow Near Completion</div>
+            <div class="insight-desc">Jon Snow is on track to complete the first STO under the on-task LTO by the end of the month. Current frequency is 4 per session against a target of 6 or fewer. Mastery criteria should be reviewed before moving to STO 2.</div>
+            <span class="badge badge-complete">Goal Update</span>
+          </div>
+
+        </div>
+      </div>
+      <!-- ======================== END INSIGHTS TAB ======================== -->
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  function switchTab(group, tabId, panelId) {
+    document.querySelectorAll('.' + group + '-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.' + group + '-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+  function applyAnalyticsFilters() {
+    showToast('Filters applied');
+  }
+</script>
+</body>
+</html>

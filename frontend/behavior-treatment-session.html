@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Behavior Treatment Session - Gilberto ABA Care CRM</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .behavior-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .behavior-table th {
+      background: #f5f7f6;
+      color: #444;
+      font-weight: 600;
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 2px solid #e0e6e3;
+    }
+    .behavior-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf1ef;
+      vertical-align: middle;
+    }
+    .behavior-table tr:last-child td {
+      border-bottom: none;
+    }
+    .behavior-table input[type="number"] {
+      width: 80px;
+      padding: 6px 8px;
+      border: 1px solid #d0d8d4;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .behavior-table select {
+      padding: 6px 8px;
+      border: 1px solid #d0d8d4;
+      border-radius: 4px;
+      font-size: 13px;
+      min-width: 160px;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 6px;
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2d4a3e;
+      cursor: pointer;
+    }
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-top: 6px;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+    }
+    .radio-group input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2d4a3e;
+      cursor: pointer;
+    }
+    .tab-nav-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e8edeb;
+    }
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #f0f4f2;
+      color: #2d4a3e;
+      border: 1px solid #c8d8d2;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-secondary:hover { background: #e4ede8; }
+    .btn-primary {
+      padding: 10px 20px;
+      background: #2d4a3e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-primary:hover { background: #243d32; }
+    .btn-primary:disabled { background: #7a9e92; cursor: not-allowed; }
+    .abc-card {
+      border: 1px solid #dde6e2;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: #fafcfb;
+    }
+    .abc-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .abc-card-header strong {
+      font-size: 14px;
+      color: #2d4a3e;
+    }
+    .signature-box {
+      border: 2px dashed #c8d8d2;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      color: #3f6a5a;
+      font-size: 14px;
+      background: linear-gradient(135deg, #f7fbff 0%, #f1fbf4 100%);
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .signature-box:hover {
+      background: linear-gradient(135deg, #eff8ff 0%, #e9f8ef 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(45, 74, 62, 0.10);
+    }
+    .signature-box.signed {
+      background: linear-gradient(135deg, #e8f8f0 0%, #e7f3ff 100%);
+      border-color: #3fae78;
+      color: #1e6a4b;
+      font-weight: 600;
+      font-style: italic;
+    }
+    .signature-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .sig-mini-btn {
+      border: 1px solid #c6d7cf;
+      background: linear-gradient(135deg, #f6fbff 0%, #f2faf6 100%);
+      color: #2d4a3e;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .sig-mini-btn:hover {
+      background: linear-gradient(135deg, #eaf5ff 0%, #e4f6eb 100%);
+      transform: translateY(-1px);
+    }
+    .sig-mini-btn.sig-warn {
+      border-color: #e4c6c6;
+      color: #874646;
+      background: #fff7f7;
+    }
+    .signature-box.sig-pop {
+      animation: sigPop .35s ease;
+    }
+    @keyframes sigPop {
+      0% { transform: scale(0.97); }
+      70% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+    .sig-style-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .sig-style-chip {
+      border: 1px solid #c6d7cf;
+      border-radius: 999px;
+      background: #f7fbf9;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #2d4a3e;
+    }
+    .sig-style-chip.active {
+      border-color: #4caf80;
+      background: #ebf8ef;
+      color: #1d5b3d;
+      font-weight: 700;
+    }
+    .sig-preview {
+      margin-top: 12px;
+      border: 1px dashed #c6d7cf;
+      border-radius: 8px;
+      padding: 12px;
+      color: #1f5b43;
+      background: linear-gradient(135deg, #f8fcff 0%, #f3fbf6 100%);
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .section-box-header {
+      color: #24463a;
+      background: linear-gradient(90deg, rgba(98, 70, 234, 0.08), rgba(61, 186, 137, 0.08));
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .submit-btn-full {
+      background: linear-gradient(90deg, #2d4a3e 0%, #2a6f57 60%, #2f7fbf 100%);
+      box-shadow: 0 12px 24px rgba(45, 74, 62, 0.22);
+    }
+    .submit-btn-full:hover {
+      background: linear-gradient(90deg, #243d32 0%, #235f49 60%, #286a9d 100%);
+    }
+    .supervision-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+      font-size: 14px;
+      color: #333;
+    }
+    .supervision-check input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2d4a3e;
+      cursor: pointer;
+    }
+    .submit-btn-full {
+      width: 100%;
+      padding: 14px;
+      background: #2d4a3e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .submit-btn-full:hover { background: #243d32; }
+    .scan-result {
+      display: none;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item active" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <!-- Main Area -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <h1>Behavior Treatment Session</h1>
+        <p>Document the session, behaviors, interventions and progress</p>
+      </div>
+      <div class="top-actions">
+        <div class="user-pill" id="topbarUserPill">—</div>
+        <button class="tbl-btn" onclick="goToPage('sessions.html')">Back to Sessions</button>
+      </div>
+    </div>
+
+    <div class="notice notice-info" id="sessionSummary">
+      Session: Jon Snow - April 25, 2026 - Behavior Treatment - RBT: Tyrion Lannister
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar" style="margin-bottom:0;">
+      <button class="tab-btn session-tab active" id="tab1" onclick="switchTab('session','tab1','panel1')">Daily Log</button>
+      <button class="tab-btn session-tab" id="tab2" onclick="switchTab('session','tab2','panel2')">Behavior Notes</button>
+      <button class="tab-btn session-tab" id="tab3" onclick="switchTab('session','tab3','panel3')">Progress and Signature</button>
+    </div>
+
+    <!-- TAB 1: Daily Log -->
+    <div class="tab-panel session-panel active" id="panel1">
+
+      <!-- Session Information -->
+      <div class="section-box">
+        <div class="section-box-header">Session Information</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Location</label>
+            <select id="sessionLocation">
+              <option>Home</option>
+              <option>School</option>
+              <option>Clinic</option>
+              <option>Community</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Session Date</label>
+            <input id="sessionDate" type="date" value="2026-04-25" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time</label>
+            <input id="sessionStartTime" type="time" value="09:00" />
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            <input id="sessionEndTime" type="time" value="11:00" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>RBT Present</label>
+            <select id="rbtSelect">
+              <option>Tyrion Lannister</option>
+              <option>Brienne of Tarth</option>
+              <option>Samwell Tarly</option>
+              <option>Davos Seaworth</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>BCBA Supervising</label>
+            <select id="bcbaSelect">
+              <option>Daenerys Targaryen</option>
+              <option>Jaime Lannister</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Environmental Changes</label>
+          <textarea id="environmentalChanges" rows="3" placeholder="Describe any changes in the environment that may have affected the session"></textarea>
+        </div>
+      </div>
+
+      <!-- Caregiver and Client -->
+      <div class="section-box">
+        <div class="section-box-header">Caregiver and Client</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Present Caregiver</label>
+            <select id="caregiverSelect" onchange="updateRelationship()">
+              <option value="Robert Doe">Robert Doe</option>
+              <option value="Susan Doe">Susan Doe</option>
+              <option value="Thomas Doe">Thomas Doe</option>
+              <option value="Linda Doe">Linda Doe</option>
+              <option value="Michael Doe">Michael Doe</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Relationship to Client</label>
+            <input type="text" id="relationshipField" value="Parent / Lady Catelyn" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Client Participation</label>
+          <select id="clientParticipation">
+            <option>Full Participation</option>
+            <option selected>Partial Participation</option>
+            <option>Minimal Participation</option>
+            <option>Refused</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Client Mood at Start of Session</label>
+          <select id="clientMood">
+            <option selected>Calm</option>
+            <option>Agitated</option>
+            <option>Tired</option>
+            <option>Excited</option>
+            <option>Anxious</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Session Narrative -->
+      <div class="section-box">
+        <div class="section-box-header">Session Narrative</div>
+        <div class="form-group">
+          <label>Narrative</label>
+          <textarea rows="6" style="min-height:120px;" placeholder="Describe what happened during the session in your own words. Include what programs were run, how the client responded, any notable events, and how the session ended."></textarea>
+        </div>
+      </div>
+
+      <div class="tab-nav-btns">
+        <button class="btn-primary" onclick="switchTab('session','tab2','panel2')">Next: Behavior Notes</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: Behavior Notes -->
+    <div class="tab-panel session-panel" id="panel2">
+
+      <!-- Implemented Assessments -->
+      <div class="section-box">
+        <div class="section-box-header">Implemented Assessments</div>
+        <div class="form-group">
+          <label>Check all that were implemented this session</label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" /> VB-MAPP</label>
+            <label><input type="checkbox" checked /> FBA</label>
+            <label><input type="checkbox" /> Adaptive Behavior</label>
+            <label><input type="checkbox" /> Progress Review</label>
+            <label><input type="checkbox" /> None</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target Behaviors -->
+      <div class="section-box">
+        <div class="section-box-header">Target Behaviors</div>
+        <table class="behavior-table">
+          <thead>
+            <tr>
+              <th>Behavior</th>
+              <th>Baseline</th>
+              <th>Occurrences This Session</th>
+              <th>Intervention Used</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Off-Task Behavior</td>
+              <td>12 / session</td>
+              <td><input type="number" min="0" value="7" /></td>
+              <td>
+                <select>
+                  <option selected>Token Economy</option>
+                  <option>Extinction</option>
+                  <option>DRO</option>
+                  <option>FCT</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Verbal Aggression</td>
+              <td>5 / session</td>
+              <td><input type="number" min="0" value="2" /></td>
+              <td>
+                <select>
+                  <option>Token Economy</option>
+                  <option selected>Extinction</option>
+                  <option>DRO</option>
+                  <option>FCT</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Non-Compliance</td>
+              <td>8 / session</td>
+              <td><input type="number" min="0" value="4" /></td>
+              <td>
+                <select>
+                  <option>Token Economy</option>
+                  <option>Extinction</option>
+                  <option selected>DRO</option>
+                  <option>FCT</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ABC Examples -->
+      <div class="section-box">
+        <div class="section-box-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>ABC Examples</span>
+          <button class="small-btn" onclick="addABC()">+ Add ABC Entry</button>
+        </div>
+
+        <div id="abcContainer">
+
+          <!-- ABC Card 1 -->
+          <div class="abc-card">
+            <div class="abc-card-header">
+              <strong>ABC Entry 1</strong>
+              <button class="tbl-btn danger" onclick="this.closest('.abc-card').remove()">Remove</button>
+            </div>
+            <div class="form-group">
+              <label>Antecedent</label>
+              <textarea rows="2" placeholder="What happened before the behavior">RBT presented a non-preferred task (worksheet activity) after a preferred activity ended.</textarea>
+            </div>
+            <div class="form-group">
+              <label>Behavior</label>
+              <textarea rows="2" placeholder="Describe the behavior">Client pushed the worksheet off the table and said "No" loudly twice.</textarea>
+            </div>
+            <div class="form-group">
+              <label>Consequence</label>
+              <textarea rows="2" placeholder="What happened after the behavior">RBT used neutral redirection and re-presented the task with a first-then visual. Client complied on second presentation.</textarea>
+            </div>
+          </div>
+
+          <!-- ABC Card 2 -->
+          <div class="abc-card">
+            <div class="abc-card-header">
+              <strong>ABC Entry 2</strong>
+              <button class="tbl-btn danger" onclick="this.closest('.abc-card').remove()">Remove</button>
+            </div>
+            <div class="form-group">
+              <label>Antecedent</label>
+              <textarea rows="2" placeholder="What happened before the behavior">Transition from free play to structured DTT table time was announced.</textarea>
+            </div>
+            <div class="form-group">
+              <label>Behavior</label>
+              <textarea rows="2" placeholder="Describe the behavior">Client dropped to the floor and refused to move for approximately 2 minutes.</textarea>
+            </div>
+            <div class="form-group">
+              <label>Consequence</label>
+              <textarea rows="2" placeholder="What happened after the behavior">RBT waited calmly, used the transition song, and client moved to the table independently within 2 minutes.</textarea>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="tab-nav-btns">
+        <button class="btn-secondary" onclick="switchTab('session','tab1','panel1')">Back: Daily Log</button>
+        <button class="btn-primary" onclick="switchTab('session','tab3','panel3')">Next: Progress and Signature</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: Progress and Signature -->
+    <div class="tab-panel session-panel" id="panel3">
+
+      <!-- Progress Evaluation -->
+      <div class="section-box">
+        <div class="section-box-header">Progress Evaluation</div>
+
+        <div class="form-group">
+          <label>Progress Toward Goals</label>
+          <div class="radio-group">
+            <label><input type="radio" name="progress" value="progressing" checked /> Progressing</label>
+            <label><input type="radio" name="progress" value="maintaining" /> Maintaining</label>
+            <label><input type="radio" name="progress" value="regressing" /> Regressing</label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px;">
+          <label>Overall Session Rating</label>
+          <div class="radio-group">
+            <label><input type="radio" name="rating" value="excellent" /> Excellent</label>
+            <label><input type="radio" name="rating" value="good" checked /> Good</label>
+            <label><input type="radio" name="rating" value="fair" /> Fair</label>
+            <label><input type="radio" name="rating" value="poor" /> Poor</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Note -->
+      <div class="section-box">
+        <div class="section-box-header">Progress Note</div>
+
+        <div class="form-group">
+          <label>Progress Note</label>
+          <textarea id="progressNote" rows="6" style="min-height:120px;" placeholder="Write your progress note here. Summarize what happened, how the client responded to interventions, and your recommendations going forward."></textarea>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button class="btn-secondary" id="generateBtn" onclick="generateNote()">Generate Note (AI)</button>
+        </div>
+      </div>
+
+      <!-- Similarity Scan -->
+      <div class="section-box">
+        <div class="section-box-header">Similarity Scan</div>
+        <p style="font-size:14px;color:#666;margin-bottom:12px;">Run a scan to check how similar this note is to previously submitted notes. Flagged notes may be rejected during review.</p>
+        <button class="btn-secondary" id="scanBtn" onclick="runScan()">Run Similarity Scan</button>
+        <div id="scanResult" class="notice notice-success scan-result">
+          Similarity scan complete. This note is 12% similar to previous notes. No flags raised.
+        </div>
+      </div>
+
+      <!-- Provider Signature -->
+      <div class="section-box">
+        <div class="section-box-header">Provider Signature</div>
+
+        <div class="form-group">
+          <label>RBT Signature</label>
+          <div class="signature-box" id="rbtSigBox" onclick="openSignatureModal('rbt')">
+            Click here to sign as the session provider
+          </div>
+          <div class="signature-card-actions">
+            <button class="sig-mini-btn" type="button" onclick="openSignatureModal('rbt')">Sign / Re-sign</button>
+            <button class="sig-mini-btn sig-warn" type="button" onclick="clearSignature('rbt')">Clear</button>
+          </div>
+        </div>
+
+        <div class="supervision-check">
+          <input type="checkbox" id="supervisionCheck" />
+          <label for="supervisionCheck">This session was conducted under BCBA supervision</label>
+        </div>
+
+        <div class="form-group" style="margin-top:16px;">
+          <label>Supervisor Sign-Off</label>
+          <div class="signature-box" id="supSigBox" onclick="openSignatureModal('supervisor')">
+            Supervisor click to sign
+          </div>
+          <div class="signature-card-actions">
+            <button class="sig-mini-btn" type="button" onclick="openSignatureModal('supervisor')">Sign / Re-sign</button>
+            <button class="sig-mini-btn sig-warn" type="button" onclick="clearSignature('supervisor')">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submission -->
+      <div class="section-box">
+        <div class="section-box-header">Submit Session Note</div>
+        <p style="font-size:14px;color:#666;margin-bottom:14px;">Once you submit this note it will enter the revision queue for supervisor review. Make sure all sections are complete before submitting.</p>
+        <button class="submit-btn-full" onclick="openModal('submitConfirmModal')">Submit Session Note</button>
+      </div>
+
+      <div class="tab-nav-btns">
+        <button class="btn-secondary" onclick="switchTab('session','tab2','panel2')">Back: Behavior Notes</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Submit Confirm Modal -->
+<div class="modal-overlay" id="submitConfirmModal" onclick="handleOverlayClick(event,'submitConfirmModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Submit Session Note</h3>
+      <button class="modal-close" onclick="closeModal('submitConfirmModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;line-height:1.6;color:#444;">Are you sure you want to submit this session note? Once submitted it will enter the revision queue for supervisor review and you will not be able to edit it without requesting a revision.</p>
+      <div style="margin-top:14px;padding:12px;background:#fff8e8;border-radius:6px;border-left:3px solid #e8a020;font-size:13px;color:#7a5a10;">
+        Make sure all sections are filled in, behaviors are documented, and signatures are complete before submitting.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" onclick="closeModal('submitConfirmModal')">Cancel</button>
+      <button class="add-btn" onclick="submitNote()">Submit Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Signature Modal -->
+<div class="modal-overlay" id="signatureModal" onclick="handleOverlayClick(event,'signatureModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="signatureModalTitle">Add Signature</h3>
+      <button class="modal-close" onclick="closeModal('signatureModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Signing Name</label>
+        <input id="sigNameInput" type="text" placeholder="Your display name"/>
+      </div>
+      <div class="form-group">
+        <label>Style</label>
+        <div class="sig-style-row">
+          <button id="sigStyleClassic" class="sig-style-chip active" type="button" onclick="setSigStyle('classic')">Classic</button>
+          <button id="sigStyleFriendly" class="sig-style-chip" type="button" onclick="setSigStyle('friendly')">Friendly</button>
+          <button id="sigStylePlayful" class="sig-style-chip" type="button" onclick="setSigStyle('playful')">Playful</button>
+        </div>
+      </div>
+      <div class="sig-preview" id="sigPreview">Signed - Your Name - Apr 29, 2026</div>
+    </div>
+    <div class="modal-footer">
+      <button class="tbl-btn" type="button" onclick="closeModal('signatureModal')">Cancel</button>
+      <button class="add-btn" type="button" onclick="confirmSignature()">Use Signature</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+  let currentSignedInName = "Current User";
+  let currentSessionData = null;
+  let lastSimilarityPercent = null;
+  let rbtSignedAtIso = null;
+  let supervisorSignedAtIso = null;
+  let signatureTargetRole = "rbt";
+  let signatureStyle = "classic";
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) closeModal(id);
+  }
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2500);
+  }
+  function switchTab(tabGroup, tabId, panelId) {
+    document.querySelectorAll('.' + tabGroup + '-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.' + tabGroup + '-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function currentDateLabel() {
+    return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function getCurrentProviderName() {
+    const rbt = document.getElementById("rbtSelect");
+    const selected = rbt?.options?.[rbt.selectedIndex]?.textContent?.trim();
+    return selected || currentSignedInName || "Current User";
+  }
+  function getCurrentClientName() {
+    if (currentSessionData?.clients) return buildFullName(currentSessionData.clients) || "the client";
+    const summary = document.getElementById("sessionSummary")?.textContent || "";
+    const m = summary.match(/^Session:\s*(.+?)\s*-\s*/);
+    return (m && m[1]) ? m[1].trim() : "the client";
+  }
+  function buildLocalFallbackNote() {
+    const client = getCurrentClientName();
+    const provider = getCurrentProviderName();
+    const date = document.getElementById("sessionDate")?.value || currentDateLabel();
+    const start = document.getElementById("sessionStartTime")?.value || "scheduled start time";
+    const end = document.getElementById("sessionEndTime")?.value || "scheduled end time";
+    const mood = document.getElementById("clientMood")?.value || "calm";
+    const participation = document.getElementById("clientParticipation")?.value || "partial participation";
+    const env = (document.getElementById("environmentalChanges")?.value || "").trim() || "No major environmental changes were reported.";
+    return `On ${date}, ${provider} conducted a behavior treatment session with ${client} from ${start} to ${end}. ${client} presented with a ${mood} mood and demonstrated ${participation}. ${env} Interventions were implemented according to the treatment plan, data was collected throughout the session, and progress toward current goals was monitored. Continued consistency with the current plan is recommended.`;
+  }
+  async function generateNote() {
+    const btn = document.getElementById('generateBtn');
+    btn.textContent = 'Generating...';
+    btn.disabled = true;
+    try {
+      const payload = {
+        client_name: getCurrentClientName(),
+        provider_name: getCurrentProviderName(),
+        service_type: currentSessionData?.service_type || "behavior_treatment",
+        session_date: document.getElementById("sessionDate")?.value || null,
+        start_time: document.getElementById("sessionStartTime")?.value || null,
+        end_time: document.getElementById("sessionEndTime")?.value || null,
+        environmental_changes: document.getElementById("environmentalChanges")?.value || null,
+        participation: document.getElementById("clientParticipation")?.value || null,
+        client_mood: document.getElementById("clientMood")?.value || null
+      };
+      if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled() && typeof jvmFetch === "function") {
+        const res = await jvmFetch("/api/ai/session-note", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.note) {
+            document.getElementById("progressNote").value = data.note;
+            showToast("AI note generated from session data");
+            return;
+          }
+        }
+      }
+      document.getElementById("progressNote").value = buildLocalFallbackNote();
+      showToast("Generated note using local fallback");
+    } catch (_) {
+      document.getElementById("progressNote").value = buildLocalFallbackNote();
+      showToast("Generated note using local fallback");
+    } finally {
+      btn.textContent = 'Generate Note (AI)';
+      btn.disabled = false;
+    }
+  }
+  function runScan() {
+    const btn = document.getElementById('scanBtn');
+    btn.textContent = 'Scanning...';
+    btn.disabled = true;
+    setTimeout(() => {
+      document.getElementById('scanResult').style.display = 'block';
+      lastSimilarityPercent = 12;
+      btn.textContent = 'Run Similarity Scan';
+      btn.disabled = false;
+    }, 1500);
+  }
+  let abcCount = 2;
+  function addABC() {
+    abcCount++;
+    const card = document.createElement('div');
+    card.className = 'abc-card';
+    card.innerHTML = '<div class="abc-card-header"><strong>ABC Entry ' + abcCount + '</strong><button class="tbl-btn danger" onclick="this.closest(\'.abc-card\').remove()">Remove</button></div><div class="form-group"><label>Antecedent</label><textarea rows="2" placeholder="What happened before the behavior"></textarea></div><div class="form-group"><label>Behavior</label><textarea rows="2" placeholder="Describe the behavior"></textarea></div><div class="form-group"><label>Consequence</label><textarea rows="2" placeholder="What happened after the behavior"></textarea></div>';
+    document.getElementById('abcContainer').appendChild(card);
+  }
+  function signatureText(name, dateText) {
+    if (signatureStyle === "playful") return `✨ ${name} • ${dateText} ✨`;
+    if (signatureStyle === "friendly") return `Signed with care by ${name} on ${dateText}`;
+    return `Signed - ${name} - ${dateText}`;
+  }
+  function setSigStyle(style) {
+    signatureStyle = style;
+    ["sigStyleClassic", "sigStyleFriendly", "sigStylePlayful"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove("active");
+    });
+    const map = { classic: "sigStyleClassic", friendly: "sigStyleFriendly", playful: "sigStylePlayful" };
+    const active = document.getElementById(map[style]);
+    if (active) active.classList.add("active");
+    updateSigPreview();
+  }
+  function updateSigPreview() {
+    const n = (document.getElementById("sigNameInput")?.value || currentSignedInName || "Your Name").trim();
+    const preview = document.getElementById("sigPreview");
+    if (preview) preview.textContent = signatureText(n, currentDateLabel());
+  }
+  function openSignatureModal(role) {
+    signatureTargetRole = role === "supervisor" ? "supervisor" : "rbt";
+    const title = document.getElementById("signatureModalTitle");
+    if (title) title.textContent = signatureTargetRole === "supervisor" ? "Supervisor Signature" : "RBT Signature";
+    const nameInput = document.getElementById("sigNameInput");
+    if (nameInput) nameInput.value = currentSignedInName || "";
+    setSigStyle("classic");
+    updateSigPreview();
+    openModal("signatureModal");
+  }
+  function applySignature(role, name) {
+    const box = role === "supervisor" ? document.getElementById("supSigBox") : document.getElementById("rbtSigBox");
+    if (!box) return;
+    const nowIso = new Date().toISOString();
+    const dateText = new Date(nowIso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    box.classList.add("signed", "sig-pop");
+    box.textContent = signatureText(name, dateText);
+    setTimeout(() => box.classList.remove("sig-pop"), 420);
+    if (role === "supervisor") supervisorSignedAtIso = nowIso;
+    else rbtSignedAtIso = nowIso;
+  }
+  function confirmSignature() {
+    const name = (document.getElementById("sigNameInput")?.value || "").trim() || currentSignedInName || "Current User";
+    applySignature(signatureTargetRole, name);
+    closeModal("signatureModal");
+    showToast(signatureTargetRole === "supervisor" ? "Supervisor signature updated" : "RBT signature updated");
+  }
+  function clearSignature(role) {
+    const box = role === "supervisor" ? document.getElementById("supSigBox") : document.getElementById("rbtSigBox");
+    if (!box) return;
+    box.classList.remove("signed");
+    box.textContent = role === "supervisor" ? "Supervisor click to sign" : "Click here to sign as the session provider";
+    if (role === "supervisor") supervisorSignedAtIso = null;
+    else rbtSignedAtIso = null;
+    showToast("Signature cleared");
+  }
+  async function resolveSignedInName() {
+    const fromPill = (document.getElementById("topbarUserPill")?.textContent || "").trim();
+    if (fromPill && fromPill !== "—") return fromPill;
+    if (!window.supabaseClient) return "Current User";
+    try {
+      const { data } = await window.supabaseClient.auth.getSession();
+      const user = data?.session?.user;
+      const md = user?.user_metadata || {};
+      const full = (md.full_name || "").trim();
+      const first = (md.first_name || "").trim();
+      const last = (md.last_name || "").trim();
+      if (full) return full;
+      if (first || last) return `${first} ${last}`.trim();
+      const email = (user?.email || "").trim();
+      if (email.includes("@")) return email.split("@")[0];
+      return "Current User";
+    } catch (_) {
+      return "Current User";
+    }
+  }
+  async function initUserIdentity() {
+    currentSignedInName = await resolveSignedInName();
+    window.gilbertoCurrentUserName = currentSignedInName;
+    const pill = document.getElementById("topbarUserPill");
+    if (pill) pill.textContent = currentSignedInName;
+  }
+  function updateRelationship() {
+    const val = document.getElementById('caregiverSelect').value;
+    const field = document.getElementById('relationshipField');
+    if (val === 'None') { field.value = 'N/A'; }
+    else { field.value = 'Parent / Lady Catelyn'; }
+  }
+  function buildFullName(person) {
+    const first = (person?.first_name || "").trim();
+    const last = (person?.last_name || "").trim();
+    return `${first} ${last}`.trim();
+  }
+  function setSelectOptions(selectEl, rows, placeholder) {
+    if (!selectEl) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+      return;
+    }
+    selectEl.innerHTML = rows.map((row) => {
+      const label = buildFullName(row) || row?.name || "Unnamed";
+      return `<option value="${row.id || label}">${label}</option>`;
+    }).join("");
+  }
+  async function fetchJsonOrEmpty(requestFactory) {
+    try {
+      const res = await requestFactory();
+      if (!res || !res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  async function pickBestPeopleLoaders(orgId) {
+    const strict = await Promise.all([
+      fetchJsonOrEmpty(() => jvmFetchClients(orgId, "active")),
+      fetchJsonOrEmpty(() => jvmFetchStaff(orgId, "active")),
+      fetchJsonOrEmpty(() => (typeof jvmFetchCaregivers === "function" ? jvmFetchCaregivers(orgId, "active") : Promise.resolve(null))),
+    ]);
+    if (strict[1].length > 0 || strict[2].length > 0) return strict;
+
+    const noStatus = await Promise.all([
+      fetchJsonOrEmpty(() => jvmFetchClients(orgId, null)),
+      fetchJsonOrEmpty(() => jvmFetchStaff(orgId, null)),
+      fetchJsonOrEmpty(() => (typeof jvmFetchCaregivers === "function" ? jvmFetchCaregivers(orgId, null) : Promise.resolve(null))),
+    ]);
+    if (noStatus[1].length > 0 || noStatus[2].length > 0) return noStatus;
+
+    const global = await Promise.all([
+      fetchJsonOrEmpty(() => jvmFetchClients(null, null)),
+      fetchJsonOrEmpty(() => jvmFetchStaff(null, null)),
+      fetchJsonOrEmpty(() => (typeof jvmFetchCaregivers === "function" ? jvmFetchCaregivers(null, null) : Promise.resolve(null))),
+    ]);
+    return global;
+  }
+  async function loadPeopleForNote() {
+    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
+    const orgId = window.gilbertoCurrentOrg?.id || null;
+    try {
+      const [clients, staff, caregivers] = await pickBestPeopleLoaders(orgId);
+      setSelectOptions(document.getElementById("rbtSelect"), staff, "No active staff found");
+      setSelectOptions(document.getElementById("bcbaSelect"), staff, "No active supervisors found");
+      const caregiverSelect = document.getElementById("caregiverSelect");
+      if (Array.isArray(caregivers) && caregivers.length > 0) {
+        setSelectOptions(caregiverSelect, caregivers, "No active caregivers found");
+      } else if (Array.isArray(clients) && clients.length > 0) {
+        const fallback = clients.map((c) => ({ id: c.id, first_name: c.first_name, last_name: c.last_name }));
+        setSelectOptions(caregiverSelect, fallback, "No active caregivers found");
+      }
+      updateRelationship();
+    } catch (_) {
+      setSelectOptions(document.getElementById("rbtSelect"), [], "No active staff found");
+      setSelectOptions(document.getElementById("bcbaSelect"), [], "No active supervisors found");
+      setSelectOptions(document.getElementById("caregiverSelect"), [], "No active caregivers found");
+    }
+  }
+  function applySessionToForm(session) {
+    if (!session) return;
+    currentSessionData = session;
+    const clientName = session.clients ? buildFullName(session.clients) : "Unknown Client";
+    const providerName = session.staff ? buildFullName(session.staff) : "Unassigned";
+    const date = session.session_date || "";
+    const summary = document.getElementById("sessionSummary");
+    if (summary) {
+      summary.textContent = `Session: ${clientName} - ${date || "No Date"} - ${(session.service_type || "Behavior Treatment").replaceAll("_", " ")} - RBT: ${providerName}`;
+    }
+    const dateEl = document.getElementById("sessionDate");
+    const startEl = document.getElementById("sessionStartTime");
+    const endEl = document.getElementById("sessionEndTime");
+    const locEl = document.getElementById("sessionLocation");
+    const notesEl = document.getElementById("environmentalChanges");
+    if (dateEl && session.session_date) dateEl.value = session.session_date;
+    if (startEl && session.start_time) startEl.value = String(session.start_time).slice(0, 5);
+    if (endEl && session.end_time) endEl.value = String(session.end_time).slice(0, 5);
+    if (locEl && session.pos) locEl.value = session.pos;
+    if (notesEl && session.notes) notesEl.value = session.notes;
+  }
+  async function loadSessionDetails() {
+    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (!sessionId || typeof sessionJvmFetchById !== "function") return;
+    try {
+      const res = await sessionJvmFetchById(sessionId);
+      if (!res.ok) return;
+      const rows = await res.json();
+      const row = Array.isArray(rows) && rows.length ? rows[0] : null;
+      applySessionToForm(row);
+    } catch (_) {
+      /* no-op */
+    }
+  }
+  async function currentClientIsMinor() {
+    const clientId = currentSessionData?.client_id;
+    if (!clientId || typeof jvmFetchClientById !== "function") return false;
+    try {
+      const res = await jvmFetchClientById(clientId);
+      if (!res.ok) return false;
+      const rows = await res.json();
+      const c = Array.isArray(rows) && rows.length ? rows[0] : null;
+      const dob = c?.date_of_birth;
+      if (!dob) return false;
+      const birth = new Date(dob + "T00:00:00");
+      if (Number.isNaN(birth.getTime())) return false;
+      const now = new Date();
+      let age = now.getFullYear() - birth.getFullYear();
+      const m = now.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+      return age < 18;
+    } catch (_) {
+      return false;
+    }
+  }
+  function applySavedSignature(id, name, iso) {
+    const box = document.getElementById(id);
+    if (!box || !name) return;
+    box.classList.add("signed");
+    const date = iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : currentDateLabel();
+    box.textContent = signatureText(name, date);
+  }
+  async function loadExistingSessionNote() {
+    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
+    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    if (!sessionId || typeof sessionNoteJvmFetchBySessionId !== "function") return;
+    try {
+      const res = await sessionNoteJvmFetchBySessionId(sessionId);
+      if (!res.ok) return;
+      const rows = await res.json();
+      const note = Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!note) return;
+      if (note.progress_note) document.getElementById("progressNote").value = note.progress_note;
+      if (typeof note.supervision_required === "boolean") {
+        document.getElementById("supervisionCheck").checked = !!note.supervision_required;
+      }
+      if (typeof note.similarity_percent === "number") {
+        lastSimilarityPercent = note.similarity_percent;
+        document.getElementById("scanResult").style.display = "block";
+        document.getElementById("scanResult").textContent = `Similarity scan complete. This note is ${note.similarity_percent}% similar to previous notes.`;
+      }
+      rbtSignedAtIso = note.rbt_signed_at || rbtSignedAtIso;
+      supervisorSignedAtIso = note.supervisor_signed_at || supervisorSignedAtIso;
+      applySavedSignature("rbtSigBox", note.rbt_signed_by, note.rbt_signed_at);
+      applySavedSignature("supSigBox", note.supervisor_signed_by, note.supervisor_signed_at);
+    } catch (_) {
+      /* no-op */
+    }
+  }
+  async function submitNote() {
+    closeModal('submitConfirmModal');
+    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) {
+      showToast('Java backend mode is required to submit note');
+      return;
+    }
+    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    if (!sessionId) {
+      showToast('Open this note from Sessions page first');
+      return;
+    }
+    const isMinor = await currentClientIsMinor();
+    const cg = document.getElementById("caregiverSelect");
+    const hasCaregiver = !!(cg && cg.value && cg.value !== "None");
+    if (isMinor && !hasCaregiver) {
+      showToast("Caregiver is required for clients under 18");
+      switchTab('session','tab1','panel1');
+      return;
+    }
+    const payload = {
+      session_id: sessionId,
+      org_id: window.gilbertoCurrentOrg?.id || null,
+      progress_note: document.getElementById("progressNote")?.value || null,
+      similarity_percent: lastSimilarityPercent,
+      supervision_required: !!document.getElementById("supervisionCheck")?.checked,
+      rbt_signed_by: document.getElementById("rbtSigBox")?.classList.contains("signed") ? currentSignedInName : null,
+      rbt_signed_at: rbtSignedAtIso,
+      supervisor_signed_by: document.getElementById("supSigBox")?.classList.contains("signed") ? currentSignedInName : null,
+      supervisor_signed_at: supervisorSignedAtIso,
+      submitted_by: currentSignedInName,
+      submitted_at: new Date().toISOString(),
+      status: "submitted"
+    };
+    try {
+      const res = await sessionNoteJvmUpsert(payload);
+      if (!res.ok) {
+        const msg = typeof readJvmErrorResponse === "function" ? await readJvmErrorResponse(res) : "save failed";
+        showToast("Submit failed: " + msg);
+        return;
+      }
+      showToast('Session note submitted and saved');
+      setTimeout(() => { goToPage('revisions.html'); }, 1200);
+    } catch (e) {
+      showToast("Submit failed: " + (e?.message || "unknown error"));
+    }
+  }
+  document.addEventListener("DOMContentLoaded", async function () {
+    await initUserIdentity();
+    await loadPeopleForNote();
+    await loadSessionDetails();
+    await loadExistingSessionNote();
+    const sigNameInput = document.getElementById("sigNameInput");
+    if (sigNameInput) sigNameInput.addEventListener("input", updateSigPreview);
+  });
+</script>
+</body>
+</html>

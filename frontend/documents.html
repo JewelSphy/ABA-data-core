@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Documents - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
+    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
+    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
+    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
+    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+  </style>
+</head>
+<body class="ui-colorful">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item active" onclick="goToPage('documents.html')">Documents</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Documents</h1>
+        <p>Client and staff documents, uploads and expiration tracking</p>
+      </div>
+      <div class="top-actions">
+        <button class="add-btn" onclick="openModal('uploadDocModal')">+ Upload Document</button>
+        <div class="user-pill">Arya</div>
+      </div>
+    </header>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="filter-btn small-btn active-blue" onclick="filterDocs('all')">All</button>
+          <button class="filter-btn small-btn" onclick="filterDocs('expiring')">Expiring Soon</button>
+          <button class="filter-btn small-btn" onclick="filterDocs('expired')">Expired</button>
+        </div>
+        <div class="table-search">
+          <input class="search-input" id="docSearch" type="text" placeholder="Search documents..." oninput="filterTable('docSearch','docBody')"/>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Document Name</th>
+            <th>Type</th>
+            <th>Linked To</th>
+            <th>Upload Date</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="docBody">
+          <tr data-status="active">
+            <td>Consent Form</td>
+            <td>Consent Form</td>
+            <td>Jon Snow</td>
+            <td>Jan 5, 2026</td>
+            <td>Jan 5, 2027</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="active">
+            <td>Behavior Plan</td>
+            <td>Evaluation</td>
+            <td>Arya Stark</td>
+            <td>Feb 10, 2026</td>
+            <td>Feb 10, 2027</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="expiring">
+            <td>Insurance Certificate</td>
+            <td>Authorization</td>
+            <td>Provider One</td>
+            <td>Mar 1, 2026</td>
+            <td>Jun 1, 2026</td>
+            <td><span class="badge badge-expiring">Expiring</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="expired">
+            <td>Staff Agreement</td>
+            <td>Service Agreement</td>
+            <td>Tyrion Lannister</td>
+            <td>Jan 1, 2025</td>
+            <td>Jan 1, 2026</td>
+            <td><span class="badge badge-expired">Expired</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="active">
+            <td>Evaluation Report</td>
+            <td>Evaluation</td>
+            <td>Robb Stark</td>
+            <td>Dec 1, 2025</td>
+            <td>Dec 1, 2026</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="expiring">
+            <td>RBT Certificate</td>
+            <td>Certification</td>
+            <td>Brienne of Tarth</td>
+            <td>Mar 15, 2024</td>
+            <td>Mar 15, 2026</td>
+            <td><span class="badge badge-expiring">Expiring</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="active">
+            <td>Service Agreement</td>
+            <td>Service Agreement</td>
+            <td>Sansa Stark</td>
+            <td>Nov 1, 2025</td>
+            <td>Nov 1, 2026</td>
+            <td><span class="badge badge-active">Active</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+          <tr data-status="expired">
+            <td>Background Check</td>
+            <td>Authorization</td>
+            <td>Samwell Tarly</td>
+            <td>Jan 20, 2024</td>
+            <td>Jan 20, 2025</td>
+            <td><span class="badge badge-expired">Expired</span></td>
+            <td>
+              <button class="tbl-btn" onclick="openModal('viewDocModal')">View</button>
+              <button class="tbl-btn" onclick="showToast('Downloading document...')">Download</button>
+              <button class="tbl-btn danger" onclick="openModal('deleteDocModal')">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal-overlay" id="uploadDocModal" onclick="if(event.target===this)closeModal('uploadDocModal')">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <h3>Upload Document</h3>
+      <button class="modal-close" onclick="closeModal('uploadDocModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Document Name</label>
+          <input type="text" placeholder="e.g. Consent Form 2026"/>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select>
+            <option>Consent Form</option>
+            <option>Evaluation</option>
+            <option>Certification</option>
+            <option>Authorization</option>
+            <option>Service Agreement</option>
+            <option>Session Report</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Linked To</label>
+        <select>
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+          <option>The Hound</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Upload Date</label>
+          <input type="date"/>
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>File</label>
+        <input type="file"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('uploadDocModal')">Cancel</button>
+      <button class="add-btn" onclick="saveForm('uploadDocModal')">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Document Modal -->
+<div class="modal-overlay" id="viewDocModal" onclick="if(event.target===this)closeModal('viewDocModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Document Details</h3>
+      <button class="modal-close" onclick="closeModal('viewDocModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid">
+        <div class="info-item"><label>Document Name</label><span>Consent Form</span></div>
+        <div class="info-item"><label>Type</label><span>Consent Form</span></div>
+        <div class="info-item"><label>Linked To</label><span>Jon Snow</span></div>
+        <div class="info-item"><label>Upload Date</label><span>Jan 5, 2026</span></div>
+        <div class="info-item"><label>Expiry Date</label><span>Jan 5, 2027</span></div>
+        <div class="info-item"><label>Status</label><span><span class="badge badge-active">Active</span></span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('viewDocModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Document Modal -->
+<div class="modal-overlay" id="deleteDocModal" onclick="if(event.target===this)closeModal('deleteDocModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Delete Document</h3>
+      <button class="modal-close" onclick="closeModal('deleteDocModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice notice-warn">
+        Are you sure you want to delete this document? This cannot be undone.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="small-btn" onclick="closeModal('deleteDocModal')">Cancel</button>
+      <button class="tbl-btn danger" onclick="saveForm('deleteDocModal')">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js"></script>
+<script src="supabaseClient.js"></script>
+<script src="jvmSupabaseBridge.js"></script>
+<script src="dashboard.js"></script>
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function saveForm(id) {
+  closeModal(id);
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = 'Saved successfully';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+function filterTable(inputId, tbodyId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function filterDocs(status) {
+  document.querySelectorAll('#docBody tr').forEach(row => {
+    if (status === 'all') row.style.display = '';
+    else row.style.display = row.dataset.status === status ? '' : 'none';
+  });
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-blue'));
+  event.target.classList.add('active-blue');
+}
+</script>
+</body>
+</html>
