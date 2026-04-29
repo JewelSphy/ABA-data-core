@@ -18,4 +18,5 @@ window.AUTH_REDIRECT_URL = "http://127.0.0.1:5503/index.html";
   Java backend bridge — Calendar.java runs on this port.
   Set to empty string "" to disable and fall back to direct Supabase JS client.
 */
-window.JAVA_SUPABASE_BRIDGE = "http://127.0.0.1:8788";
+window.JAVA_SUPABASE_BRIDGE = "https://aba-data-core.onrender.com";
+window.JAVA_API_KEY = "gilberto-demo-key-2026-very-long";
