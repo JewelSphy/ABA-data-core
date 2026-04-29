@@ -398,9 +398,25 @@ async function loadGilbertoOrganization() {
 
 async function applyWorkspaceWithOrg() {
   await loadGilbertoOrganization();
+
+  // Preserve scroll position: async org injection can shift layout above,
+  // which feels like a "refresh" when you're far down on chart-heavy pages.
+  const scroller =
+    document.querySelector("main.main-area") ||
+    document.querySelector(".main-area") ||
+    document.scrollingElement;
+  const beforeTop = scroller ? scroller.scrollTop : 0;
+
   applyTopbarCompanyName();
   applyWorkspaceBanner();
   applyInviteTeamPanel();
+
+  if (scroller && beforeTop > 40) {
+    requestAnimationFrame(function () {
+      // Only restore if the browser shifted us upward.
+      if (scroller.scrollTop < beforeTop) scroller.scrollTop = beforeTop;
+    });
+  }
   // Fire page-specific data loaders after org is resolved
   void loadDashboardStats();
   void loadSessionsTable();
