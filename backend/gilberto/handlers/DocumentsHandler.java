@@ -44,7 +44,8 @@ public final class DocumentsHandler implements HttpHandler {
     if ( !JsonUtil.blank ( providerId ) ) { where.add ( "provider_id = ?" ); vals.add ( providerId ); }
     if ( !JsonUtil.blank ( status ) ) { where.add ( "status = ?" ); vals.add ( status ); }
     if ( !where.isEmpty () ) sql += " WHERE " + String.join ( " AND ", where );
-    sql += " ORDER BY upload_date DESC, created_at DESC LIMIT 500";
+    // Avoid ORDER BY created_at: some deployed DBs predate that column on documents.
+    sql += " ORDER BY upload_date DESC, id DESC LIMIT 500";
 
     try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
       for ( int i = 0; i < vals.size (); i++ ) ps.setString ( i + 1, vals.get ( i ) );
