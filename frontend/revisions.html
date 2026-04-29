@@ -11,6 +11,13 @@
     .review-stat { background:#fff; border:1px solid #d7e6dd; border-radius:10px; padding:8px 10px; min-width:130px; }
     .review-stat .k { font-size:11px; color:#6b8c7a; text-transform:uppercase; letter-spacing:.4px; }
     .review-stat .v { font-size:19px; font-weight:700; color:#1f2d26; line-height:1.2; }
+    .review-insights { display:grid; grid-template-columns: 1.4fr 1fr; gap:12px; margin-bottom:12px; }
+    .review-panel { background:#fff; border:1px solid #d8e7de; border-radius:12px; padding:12px; box-shadow:0 8px 22px rgba(28,48,39,.05); }
+    .review-panel h3 { font-size:13px; color:#203229; margin:0 0 8px; }
+    .review-chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .review-chip { border:1px solid #d5e6dc; background:#f8fcfa; border-radius:999px; padding:6px 10px; font-size:12px; color:#3f5b4e; font-weight:600; }
+    .review-feed { display:flex; flex-direction:column; gap:8px; max-height:130px; overflow:auto; }
+    .review-feed-item { border:1px solid #e1ede7; border-radius:8px; padding:7px 9px; font-size:12px; color:#4a6659; background:#fbfefd; }
     .review-board { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
     .review-col { background:#fff; border:1px solid #d9e8df; border-radius:12px; min-height:420px; display:flex; flex-direction:column; overflow:hidden; }
     .review-col-head { padding:10px 12px; font-size:12px; font-weight:700; color:#1f2d26; border-bottom:1px solid #e5f0ea; display:flex; justify-content:space-between; align-items:center; }
@@ -23,7 +30,7 @@
     .review-card .m { font-size:12px; color:#597568; margin-bottom:8px; line-height:1.45; }
     .review-card .a { display:flex; gap:6px; flex-wrap:wrap; }
     .review-empty { color:#7f988c; font-size:12px; padding:12px; border:1px dashed #dbe8e1; border-radius:8px; background:#fbfdfc; }
-    @media (max-width: 1050px) { .review-board { grid-template-columns:1fr; } }
+    @media (max-width: 1050px) { .review-insights, .review-board { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -96,6 +103,21 @@
       </div>
       <div class="table-search">
         <input class="search-input" id="revSearch" type="text" placeholder="Search by client, author, type..." oninput="renderRevisions(revisionRows)" />
+      </div>
+    </div>
+
+    <div class="review-insights">
+      <div class="review-panel">
+        <h3>Review Queue Snapshot</h3>
+        <div class="review-chip-row" id="queueSnapshot">
+          <div class="review-chip">No revision activity yet.</div>
+        </div>
+      </div>
+      <div class="review-panel">
+        <h3>Recent Decisions</h3>
+        <div class="review-feed" id="recentDecisions">
+          <div class="review-feed-item">No approvals or rejections yet.</div>
+        </div>
       </div>
     </div>
 
@@ -243,6 +265,8 @@
     const pending = [];
     const rejected = [];
     const approved = [];
+    const pendingDays = [];
+    const decisions = [];
     const q = (document.getElementById('revSearch')?.value || '').trim().toLowerCase();
     (rows || []).forEach(function (r) {
       const revStatus = normalizeRevisionStatus(r.status);
@@ -252,7 +276,15 @@
       const card = reviewCardHtml(r, revStatus, days);
       if (revStatus === 'rejected') rejected.push(card);
       else if (revStatus === 'approved') approved.push(card);
-      else pending.push(card);
+      else { pending.push(card); pendingDays.push(days); }
+      if (revStatus === 'approved' || revStatus === 'rejected') {
+        decisions.push({
+          client: r.client_name || 'Unknown client',
+          by: r.submitted_by || 'Unknown author',
+          status: revStatus,
+          date: fmtDate(r.updated_at || r.submitted_at)
+        });
+      }
     });
     const set = function (id, arr, emptyMsg) {
       const el = document.getElementById(id);
@@ -268,6 +300,27 @@
     document.getElementById('pendingHeadCount').textContent = String(pending.length);
     document.getElementById('rejectedHeadCount').textContent = String(rejected.length);
     document.getElementById('approvedHeadCount').textContent = String(approved.length);
+
+    const oldest = pendingDays.length ? Math.max.apply(null, pendingDays) : 0;
+    const avgPending = pendingDays.length ? Math.round(pendingDays.reduce(function (a, b) { return a + b; }, 0) / pendingDays.length) : 0;
+    const queueEl = document.getElementById('queueSnapshot');
+    if (queueEl) {
+      queueEl.innerHTML =
+        '<div class="review-chip">Oldest pending: ' + esc(String(oldest)) + ' day(s)</div>'
+        + '<div class="review-chip">Avg pending: ' + esc(String(avgPending)) + ' day(s)</div>'
+        + '<div class="review-chip">Review load: ' + esc(String(pending.length + rejected.length + approved.length)) + ' notes</div>';
+    }
+    const feedEl = document.getElementById('recentDecisions');
+    if (feedEl) {
+      const top = decisions.slice(0, 6);
+      feedEl.innerHTML = top.length
+        ? top.map(function (d) {
+            const label = d.status === 'approved' ? 'Approved' : 'Rejected';
+            return '<div class="review-feed-item"><strong>' + esc(label) + '</strong> · '
+              + esc(d.client) + ' · ' + esc(d.date) + '<br/>by ' + esc(d.by) + '</div>';
+          }).join('')
+        : '<div class="review-feed-item">No approvals or rejections yet.</div>';
+    }
   }
   async function loadRevisions() {
     try {
