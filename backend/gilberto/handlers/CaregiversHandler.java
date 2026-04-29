@@ -24,20 +24,25 @@ public final class CaregiversHandler implements HttpHandler {
     String m = ex.getRequestMethod ();
     if ( "GET".equalsIgnoreCase ( m ) ) { get ( ex ); return; }
     if ( "POST".equalsIgnoreCase ( m ) ) { post ( ex ); return; }
+    if ( "DELETE".equalsIgnoreCase ( m ) ) { delete ( ex ); return; }
     HttpUtil.err ( ex, 405, "Method not allowed" );
   }
 
   private void get ( HttpExchange ex ) throws IOException {
     Map<String, String> q = HttpUtil.queryParams ( ex );
+    String id = QueryUtil.eq ( q, "id" );
     String orgId = QueryUtil.eq ( q, "org_id" );
+    String clientId = QueryUtil.eq ( q, "client_id" );
     String status = QueryUtil.eq ( q, "status" );
-    String sql = "SELECT id, org_id, first_name, last_name, relationship, email, phone, status FROM caregivers";
+    String sql = "SELECT g.id, g.org_id, g.client_id, g.first_name, g.last_name, g.relationship, g.email, g.phone, g.notes, g.status, c.first_name AS client_first_name, c.last_name AS client_last_name FROM caregivers g LEFT JOIN clients c ON c.id = g.client_id";
     List<String> where = new ArrayList<> ();
     List<String> vals = new ArrayList<> ();
-    if ( !JsonUtil.blank ( orgId ) ) { where.add ( "org_id = ?" ); vals.add ( orgId ); }
-    if ( !JsonUtil.blank ( status ) ) { where.add ( "status = ?" ); vals.add ( status ); }
+    if ( !JsonUtil.blank ( id ) ) { where.add ( "g.id = ?" ); vals.add ( id ); }
+    if ( !JsonUtil.blank ( orgId ) ) { where.add ( "g.org_id = ?" ); vals.add ( orgId ); }
+    if ( !JsonUtil.blank ( clientId ) ) { where.add ( "g.client_id = ?" ); vals.add ( clientId ); }
+    if ( !JsonUtil.blank ( status ) ) { where.add ( "g.status = ?" ); vals.add ( status ); }
     if ( !where.isEmpty () ) sql += " WHERE " + String.join ( " AND ", where );
-    sql += " ORDER BY last_name ASC, first_name ASC";
+    sql += " ORDER BY g.last_name ASC, g.first_name ASC";
 
     try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
       for ( int i = 0; i < vals.size (); i++ ) ps.setString ( i + 1, vals.get ( i ) );
@@ -47,11 +52,14 @@ public final class CaregiversHandler implements HttpHandler {
           rows.add ( "{"
               + "\"id\":\"" + JsonUtil.esc ( rs.getString ( "id" ) ) + "\","
               + "\"org_id\":" + JsonUtil.strOrNull ( rs.getString ( "org_id" ) ) + ","
+              + "\"client_id\":" + JsonUtil.strOrNull ( rs.getString ( "client_id" ) ) + ","
               + "\"first_name\":" + JsonUtil.strOrNull ( rs.getString ( "first_name" ) ) + ","
               + "\"last_name\":" + JsonUtil.strOrNull ( rs.getString ( "last_name" ) ) + ","
               + "\"relationship\":" + JsonUtil.strOrNull ( rs.getString ( "relationship" ) ) + ","
               + "\"email\":" + JsonUtil.strOrNull ( rs.getString ( "email" ) ) + ","
               + "\"phone\":" + JsonUtil.strOrNull ( rs.getString ( "phone" ) ) + ","
+              + "\"notes\":" + JsonUtil.strOrNull ( rs.getString ( "notes" ) ) + ","
+              + "\"client\":{\"first_name\":" + JsonUtil.strOrNull ( rs.getString ( "client_first_name" ) ) + ",\"last_name\":" + JsonUtil.strOrNull ( rs.getString ( "client_last_name" ) ) + "},"
               + "\"status\":" + JsonUtil.strOrNull ( rs.getString ( "status" ) )
               + "}" );
         }
@@ -69,23 +77,41 @@ public final class CaregiversHandler implements HttpHandler {
     if ( JsonUtil.blank ( first ) || JsonUtil.blank ( last ) ) {
       HttpUtil.err ( ex, 400, "first_name and last_name are required" ); return;
     }
-    String sql = "INSERT INTO caregivers (id, org_id, first_name, last_name, relationship, email, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    String sql = "INSERT INTO caregivers (id, org_id, client_id, first_name, last_name, relationship, email, phone, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
       String id = UUID.randomUUID ().toString ();
       ps.setString ( 1, id );
       ps.setString ( 2, JsonUtil.field ( b, "org_id" ) );
-      ps.setString ( 3, first );
-      ps.setString ( 4, last );
-      ps.setString ( 5, JsonUtil.field ( b, "relationship" ) );
-      ps.setString ( 6, JsonUtil.field ( b, "email" ) );
-      ps.setString ( 7, JsonUtil.field ( b, "phone" ) );
-      ps.setString ( 8, JsonUtil.blank ( JsonUtil.field ( b, "status" ) ) ? "active" : JsonUtil.field ( b, "status" ) );
+      ps.setString ( 3, JsonUtil.field ( b, "client_id" ) );
+      ps.setString ( 4, first );
+      ps.setString ( 5, last );
+      ps.setString ( 6, JsonUtil.field ( b, "relationship" ) );
+      ps.setString ( 7, JsonUtil.field ( b, "email" ) );
+      ps.setString ( 8, JsonUtil.field ( b, "phone" ) );
+      ps.setString ( 9, JsonUtil.field ( b, "notes" ) );
+      ps.setString ( 10, JsonUtil.blank ( JsonUtil.field ( b, "status" ) ) ? "active" : JsonUtil.field ( b, "status" ) );
       ps.executeUpdate ();
       Audit.log ( ex, "create", "caregivers", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );
     } catch ( Exception e ) {
       Audit.log ( ex, "create", "caregivers", null, "error" );
       HttpUtil.err ( ex, 500, "Failed to create caregiver" );
+    }
+  }
+
+  private void delete ( HttpExchange ex ) throws IOException {
+    Map<String, String> q = HttpUtil.queryParams ( ex );
+    String id = QueryUtil.eq ( q, "id" );
+    if ( JsonUtil.blank ( id ) ) { HttpUtil.err ( ex, 400, "id=eq.<id> is required" ); return; }
+    String sql = "DELETE FROM caregivers WHERE id = ?";
+    try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
+      ps.setString ( 1, id );
+      ps.executeUpdate ();
+      Audit.log ( ex, "delete", "caregivers", id, "success" );
+      ex.sendResponseHeaders ( 204, -1 );
+    } catch ( Exception e ) {
+      Audit.log ( ex, "delete", "caregivers", id, "error" );
+      HttpUtil.err ( ex, 500, "Failed to delete caregiver" );
     }
   }
 }

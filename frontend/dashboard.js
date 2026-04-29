@@ -287,6 +287,19 @@ function applyUserIdentityPills() {
     el.title = name;
     el.setAttribute("aria-label", "Signed in as " + name);
   });
+  document.querySelectorAll(".profile-badge").forEach((el) => {
+    el.textContent = initial;
+    el.title = name;
+  });
+  document.querySelectorAll(".profile-chip-text small").forEach((el) => {
+    el.textContent = name;
+  });
+  document.querySelectorAll(".top-menu-item strong").forEach((el) => {
+    const t = (el.textContent || "").trim();
+    if (t.includes("Account") || t.startsWith("👤")) {
+      el.textContent = "👤 " + initial + " Account";
+    }
+  });
 }
 
 // Sidebar collapse — injected on every page so we don't have to touch each html file

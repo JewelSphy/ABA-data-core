@@ -89,7 +89,7 @@
           </tr>
         </thead>
         <tbody id="staffBody">
-          <tr><td colspan="6" style="text-align:center;padding:32px;color:#9eb3a8;">Loading staff…</td></tr>
+          <tr><td colspan="6" style="text-align:center;padding:32px;color:#9eb3a8;">No staff yet. Click <strong>+ Add Staff</strong> to get started.</td></tr>
         </tbody>
       </table>
     </div>
@@ -242,13 +242,17 @@ function esc (s) {
 // ── Load + render ─────────────────────────────────────────────────────────────
 async function loadStaffTable () {
   var org = window.gilbertoCurrentOrg;
-  if (!org || !org.id) return;
+  if (!org || !org.id) {
+    document.getElementById ('staffBody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:32px;color:#9eb3a8;">No staff yet. Click <strong>+ Add Staff</strong> to get started.</td></tr>';
+    return;
+  }
 
   try {
     var rows;
     if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
       var res = await jvmFetchStaff (org.id);
-      if (!res.ok) throw new Error (await res.text ());
+      if (!res.ok) throw new Error (typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse (res) : ('HTTP ' + res.status));
       rows = await res.json ();
     } else {
       var q = await window.supabaseClient
@@ -287,7 +291,7 @@ function renderStaffTable (rows) {
       + '<td>' + esc (s.email) + '</td>'
       + '<td>' + esc (s.phone) + '</td>'
       + '<td>' + statusBadge + '</td>'
-      + '<td><button class="tbl-btn" onclick="openEditStaff(\'' + s.id + '\')">Edit</button></td>'
+      + '<td><button class="tbl-btn" onclick="openEditStaff(\'' + s.id + '\')">Edit</button> <button class="tbl-btn" onclick="deleteStaff(\'' + s.id + '\')">Delete</button></td>'
       + '</tr>';
   }).join ('');
 }
@@ -398,6 +402,24 @@ async function updateStaff () {
     staffToast ('Update failed: ' + (err && err.message ? err.message : 'unknown error'));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
+}
+
+async function deleteStaff (staffId) {
+  if (!staffId) return;
+  if (!confirm('Delete this staff member?')) return;
+  try {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var res = await staffJvmDelete (staffId);
+      if (!res.ok) { staffToast ('Delete failed: ' + await readJvmErrorResponse (res)); return; }
+    } else if (window.supabaseClient) {
+      var r = await window.supabaseClient.from ('staff').delete ().eq ('id', staffId);
+      if (r.error) { staffToast ('Delete failed: ' + r.error.message); return; }
+    }
+    staffToast ('Staff member deleted');
+    await loadStaffTable ();
+  } catch (err) {
+    staffToast ('Delete failed: ' + (err && err.message ? err.message : 'unknown error'));
   }
 }
 

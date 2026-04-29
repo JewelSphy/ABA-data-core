@@ -31,11 +31,13 @@ CREATE TABLE IF NOT EXISTS staff (
 CREATE TABLE IF NOT EXISTS caregivers (
   id VARCHAR(36) PRIMARY KEY,
   org_id VARCHAR(64),
+  client_id VARCHAR(36) NULL,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
   relationship VARCHAR(100) NULL,
   email VARCHAR(150) NULL,
   phone VARCHAR(40) NULL,
+  notes TEXT NULL,
   status VARCHAR(32) NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

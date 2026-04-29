@@ -35,15 +35,53 @@ async function jvmHeaders () {
 async function jvmFetch (relPath, init0) {
   init0 = init0 || {};
   var base = window.JAVA_SUPABASE_BRIDGE.replace (/\/$/, "");
+  var method = (init0.method || "GET").toUpperCase();
+  var timeoutMs = Number(window.JAVA_API_TIMEOUT_MS || 15000);
 
   async function once () {
     var hdr = await jvmHeaders ();
     Object.assign (hdr, init0.headers || {});
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = null;
+    if (controller) {
+      timer = setTimeout(function () { controller.abort (); }, timeoutMs);
+    }
     var req = { method: init0.method || "GET", headers: hdr, mode: "cors", credentials: "omit" };
     if (init0.body !== undefined) req.body = init0.body;
-    return fetch (base + relPath, req);
+    if (controller) req.signal = controller.signal;
+    try {
+      return await fetch (base + relPath, req);
+    } finally {
+      if (timer) clearTimeout (timer);
+    }
   }
 
+  function canRetryStatus (status) {
+    return status === 502 || status === 503 || status === 504;
+  }
+
+  function sleep (ms) {
+    return new Promise (function (resolve) { setTimeout (resolve, ms); });
+  }
+
+  // Render free tier can cold-start and briefly return 502/503.
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      var res = await once ();
+      if (attempt === 0 && method === "GET" && canRetryStatus (res.status)) {
+        await sleep (700);
+        continue;
+      }
+      return res;
+    } catch (e) {
+      var isAbort = !!(e && (e.name === "AbortError"));
+      if (attempt === 0 && method === "GET" && isAbort) {
+        await sleep (700);
+        continue;
+      }
+      throw e;
+    }
+  }
   return once ();
 }
 
@@ -297,7 +335,7 @@ async function jvmFetchStaff (orgId, statusFilter) {
 }
 
 // ── Caregiver helpers ─────────────────────────────────────────────────────────
-var CAREGIVER_SELECT = "id,first_name,last_name,relationship,email,phone,status";
+var CAREGIVER_SELECT = "id,client_id,first_name,last_name,relationship,email,phone,notes,status,client:clients(first_name,last_name)";
 
 async function jvmFetchCaregivers (orgId, statusFilter) {
   var path = "/api/caregivers"
@@ -343,6 +381,10 @@ function staffJvmPatch (staffId, patchObj) {
 // DELETE — remove by UUID
 function staffJvmDelete (staffId) {
   return jvmFetch ("/api/staff?id=eq." + encodeURIComponent (staffId), { method: "DELETE" });
+}
+
+function caregiverJvmDelete (caregiverId) {
+  return jvmFetch ("/api/caregivers?id=eq." + encodeURIComponent (caregiverId), { method: "DELETE" });
 }
 
 // ── Error parser ──────────────────────────────────────────────────────────────

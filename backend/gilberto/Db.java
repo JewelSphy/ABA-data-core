@@ -24,9 +24,15 @@ public final class Db {
         if ( stmt.isEmpty () ) continue;
         st.execute ( stmt );
       }
+      ensureCaregiverColumns ( st );
     } catch ( Exception e ) {
       throw new IllegalStateException ( "Schema init failed: " + e.getMessage (), e );
     }
+  }
+
+  private static void ensureCaregiverColumns ( Statement st ) {
+    try { st.execute ( "ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS client_id VARCHAR(36) NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS notes TEXT NULL" ); } catch ( Exception ignored ) {}
   }
 
   public static String readSql ( String rel ) {

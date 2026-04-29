@@ -236,7 +236,7 @@
           </tr>
         </thead>
         <tbody id="clientBody">
-          <tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">Loading clients…</td></tr>
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>
         </tbody>
       </table>
     </div>
@@ -309,6 +309,33 @@
       <div class="form-group">
         <label>Notes</label>
         <textarea rows="3" id="addNotes" placeholder="Any additional notes…"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Optional Caregiver Name</label>
+          <input type="text" id="addCgName" placeholder="Leave blank if none"/>
+        </div>
+        <div class="form-group">
+          <label>Caregiver Relationship</label>
+          <select id="addCgRelationship">
+            <option value="">— Select relationship —</option>
+            <option>Parent</option>
+            <option>Grandparent</option>
+            <option>Sibling</option>
+            <option>Legal Guardian</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Caregiver Phone</label>
+          <input type="tel" id="addCgPhone" placeholder="(555) 000-0000"/>
+        </div>
+        <div class="form-group">
+          <label>Caregiver Email</label>
+          <input type="email" id="addCgEmail" placeholder="caregiver@email.com"/>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -450,6 +477,7 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 var _clientsData     = [];   // full list cached after load
 var _editingClientId = null; // set when edit modal is open
+var _viewingClientId = null;
 var _staffById       = {};   // used to resolve assigned staff names
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
@@ -494,7 +522,11 @@ function authBadge (val) {
 // ── Load + render table ───────────────────────────────────────────────────────
 async function loadClientsTable () {
   var org = window.gilbertoCurrentOrg;
-  if (!org || !org.id) return;
+  if (!org || !org.id) {
+    document.getElementById ('clientBody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>';
+    return;
+  }
 
   try {
     var rows;
@@ -516,7 +548,7 @@ async function loadClientsTable () {
 
     if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
       var res = await jvmFetchClients (org.id);
-      if (!res.ok) throw new Error (await res.text ());
+      if (!res.ok) throw new Error (typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse (res) : ('HTTP ' + res.status));
       rows = await res.json ();
     } else {
       var q = await window.supabaseClient
@@ -566,7 +598,8 @@ function renderClientsTable (rows) {
       + '<td>' + authBadge (c.auth_status) + '</td>'
       + '<td>'
         + '<button class="tbl-btn" onclick="event.stopPropagation();openViewClient(\'' + c.id + '\')">View</button> '
-        + '<button class="tbl-btn" onclick="event.stopPropagation();openEditClient(\'' + c.id + '\')">Edit</button>'
+        + '<button class="tbl-btn" onclick="event.stopPropagation();openEditClient(\'' + c.id + '\')">Edit</button> '
+        + '<button class="tbl-btn" onclick="event.stopPropagation();deleteClient(\'' + c.id + '\')">Delete</button>'
       + '</td>'
       + '</tr>';
   }).join ('');
@@ -601,7 +634,6 @@ function filterClients () {
 }
 
 // ── View modal ────────────────────────────────────────────────────────────────
-var _viewingClientId = null;
 function openViewClient (clientId) {
   var c = _clientsData.find (function (x) { return x.id === clientId; });
   if (!c) return;
@@ -641,10 +673,11 @@ function openEditFromView () {
 // ── Add modal ─────────────────────────────────────────────────────────────────
 function openAddClient () {
   // Clear form
-  ['addFirstName','addLastName','addDob','addDiagnosis','addInsurance','addEmail','addPhone','addNotes'].forEach (function (id) {
+  ['addFirstName','addLastName','addDob','addDiagnosis','addInsurance','addEmail','addPhone','addNotes','addCgName','addCgPhone','addCgEmail'].forEach (function (id) {
     var el = document.getElementById (id); if (el) el.value = '';
   });
   var a = document.getElementById ('addAuthStatus'); if (a) a.value = 'active';
+  var rel = document.getElementById ('addCgRelationship'); if (rel) rel.value = '';
   loadStaffDropdowns ('addRbt', 'addBcba', null, null);
   openModal ('addClientModal');
 }
@@ -676,12 +709,37 @@ async function createClient () {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
   try {
+    var createdClientId = null;
     if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
       var res = await clientJvmCreate (row);
       if (!res.ok) { clientToast ('Save failed: ' + await readJvmErrorResponse (res)); return; }
+      var created = await res.json();
+      createdClientId = Array.isArray(created) && created.length ? created[0].id : null;
     } else {
       var r = await window.supabaseClient.from ('clients').insert (row);
       if (r.error) { clientToast ('Save failed: ' + r.error.message); return; }
+      createdClientId = (r.data && r.data[0] && r.data[0].id) ? r.data[0].id : null;
+    }
+
+    var cgName = (document.getElementById ('addCgName').value || '').trim ();
+    if (cgName && createdClientId) {
+      var n = cgName.split (/\s+/);
+      var cgPayload = {
+        org_id: org.id,
+        client_id: createdClientId,
+        first_name: n[0] || 'Caregiver',
+        last_name: n.slice(1).join(' ') || 'Contact',
+        relationship: document.getElementById('addCgRelationship').value || null,
+        phone: (document.getElementById('addCgPhone').value || '').trim() || null,
+        email: (document.getElementById('addCgEmail').value || '').trim() || null,
+        status: 'active'
+      };
+      var cgRes = await jvmFetch('/api/caregivers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cgPayload)
+      });
+      if (!cgRes.ok) clientToast ('Client saved, but caregiver did not save.');
     }
     closeModal ('addClientModal');
     clientToast ('Client added successfully');
@@ -690,6 +748,24 @@ async function createClient () {
     clientToast ('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Client'; }
+  }
+}
+
+async function deleteClient (clientId) {
+  if (!clientId) return;
+  if (!confirm('Delete this client?')) return;
+  try {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+      var res = await clientJvmDelete (clientId);
+      if (!res.ok) { clientToast ('Delete failed: ' + await readJvmErrorResponse (res)); return; }
+    } else if (window.supabaseClient) {
+      var r = await window.supabaseClient.from ('clients').delete ().eq ('id', clientId);
+      if (r.error) { clientToast ('Delete failed: ' + r.error.message); return; }
+    }
+    clientToast ('Client deleted');
+    await loadClientsTable ();
+  } catch (err) {
+    clientToast ('Delete failed: ' + (err && err.message ? err.message : 'unknown error'));
   }
 }
 

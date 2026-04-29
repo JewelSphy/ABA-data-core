@@ -67,7 +67,7 @@
       </div>
       <div class="top-actions">
         <button class="add-btn" onclick="openModal('addCaregiverModal')">+ Add Caregiver</button>
-        <div class="user-pill">Arya</div>
+        <div class="user-pill">—</div>
       </div>
     </header>
 
@@ -91,7 +91,7 @@
           </tr>
         </thead>
         <tbody id="caregiverBody">
-          <tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading caregivers...</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No caregivers yet. Click <strong>+ Add Caregiver</strong> to get started.</td></tr>
         </tbody>
       </table>
     </div>
@@ -114,6 +114,7 @@
         <div class="form-group">
           <label>Relationship</label>
           <select id="cgRelationship">
+            <option value="">— Select relationship —</option>
             <option>Parent</option>
             <option>Lady Catelyn</option>
             <option>Grandparent</option>
@@ -124,10 +125,7 @@
         <div class="form-group">
           <label>Linked Client</label>
           <select id="cgLinkedClient">
-            <option>Jon Snow</option>
-            <option>Robb Stark</option>
-            <option>Arya Stark</option>
-            <option>Sansa Stark</option>
+            <option value="">— No linked client —</option>
           </select>
         </div>
       </div>
@@ -184,7 +182,10 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'addCaregiverModal') loadClientOptionsForCaregivers();
+}
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function showToast(msg) {
   const t = document.createElement('div');
@@ -200,6 +201,7 @@ function filterTable(inputId, tbodyId) {
   });
 }
 function esc(v) { return String(v ?? '').replace(/'/g, "\\'"); }
+let caregiverClientMap = {};
 function splitName(full) {
   const p = String(full || '').trim().split(/\s+/);
   if (!p.length) return { first: '', last: '' };
@@ -215,12 +217,19 @@ function openCaregiverView(name, relationship, client, phone, email, notes) {
   openModal('viewCaregiverModal');
 }
 async function loadCaregiversTable() {
-  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) return;
   const orgId = window.gilbertoCurrentOrg?.id || null;
   const tbody = document.getElementById('caregiverBody');
+  if (!orgId) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No caregivers yet. Click <strong>+ Add Caregiver</strong> to get started.</td></tr>';
+    return;
+  }
+  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No caregivers yet. Click <strong>+ Add Caregiver</strong> to get started.</td></tr>';
+    return;
+  }
   try {
     const res = await jvmFetchCaregivers(orgId, null);
-    if (!res.ok) throw new Error('load failed');
+    if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     const rows = await res.json();
     if (!Array.isArray(rows) || !rows.length) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No caregivers saved yet.</td></tr>';
@@ -228,22 +237,42 @@ async function loadCaregiversTable() {
     }
     tbody.innerHTML = rows.map((r) => {
       const name = `${r.first_name || ''} ${r.last_name || ''}`.trim();
+      const linkedClient = r.client
+        ? `${r.client.first_name || ''} ${r.client.last_name || ''}`.trim()
+        : '';
       return `<tr>
         <td>${name || '—'}</td>
         <td>${r.relationship || '—'}</td>
-        <td>—</td>
+        <td>${linkedClient || '—'}</td>
         <td>${r.phone || '—'}</td>
         <td>${r.email || '—'}</td>
         <td><span class="badge">N/A</span></td>
         <td><span class="badge">N/A</span></td>
         <td>
-          <button class="tbl-btn" onclick="openCaregiverView('${esc(name)}','${esc(r.relationship||'')}','','${esc(r.phone||'')}','${esc(r.email||'')}','')">View</button>
+          <button class="tbl-btn" onclick="openCaregiverView('${esc(name)}','${esc(r.relationship||'')}','${esc(linkedClient)}','${esc(r.phone||'')}','${esc(r.email||'')}','${esc(r.notes||'')}')">View</button>
+          <button class="tbl-btn" onclick="deleteCaregiver('${r.id}')">Delete</button>
         </td>
       </tr>`;
     }).join('');
-  } catch (_) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load caregivers.</td></tr>';
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load caregivers: ' + String(e?.message || 'unknown error') + '</td></tr>';
   }
+}
+async function loadClientOptionsForCaregivers() {
+  const sel = document.getElementById('cgLinkedClient');
+  if (!sel || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) return;
+  const orgId = window.gilbertoCurrentOrg?.id || null;
+  try {
+    const res = await jvmFetchClients(orgId, null);
+    if (!res.ok) return;
+    const clients = await res.json();
+    caregiverClientMap = {};
+    clients.forEach((c) => { caregiverClientMap[c.id] = `${c.first_name || ''} ${c.last_name || ''}`.trim(); });
+    sel.innerHTML = '<option value="">— No linked client —</option>' + clients.map((c) => {
+      const n = `${c.first_name || ''} ${c.last_name || ''}`.trim();
+      return `<option value="${c.id}">${n || c.id}</option>`;
+    }).join('');
+  } catch (_) {}
 }
 async function saveCaregiver() {
   const fullName = document.getElementById('cgFullName').value.trim();
@@ -254,8 +283,10 @@ async function saveCaregiver() {
     first_name: name.first,
     last_name: name.last,
     relationship: document.getElementById('cgRelationship').value || null,
+    client_id: document.getElementById('cgLinkedClient').value || null,
     email: document.getElementById('cgEmail').value.trim() || null,
     phone: document.getElementById('cgPhone').value.trim() || null,
+    notes: document.getElementById('cgNotes').value.trim() || null,
     status: 'active'
   };
   try {
@@ -270,10 +301,32 @@ async function saveCaregiver() {
       return;
     }
     closeModal('addCaregiverModal');
+    document.getElementById('cgFullName').value = '';
+    document.getElementById('cgRelationship').value = '';
+    document.getElementById('cgLinkedClient').value = '';
+    document.getElementById('cgEmail').value = '';
+    document.getElementById('cgPhone').value = '';
+    document.getElementById('cgNotes').value = '';
     showToast('Caregiver saved');
     await loadCaregiversTable();
   } catch (e) {
     showToast('Save failed: ' + (e?.message || 'unknown error'));
+  }
+}
+async function deleteCaregiver(id) {
+  if (!id) return;
+  if (!confirm('Delete this caregiver?')) return;
+  try {
+    const res = await caregiverJvmDelete(id);
+    if (!res.ok) {
+      const msg = typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'delete failed';
+      showToast('Delete failed: ' + msg);
+      return;
+    }
+    showToast('Caregiver deleted');
+    await loadCaregiversTable();
+  } catch (e) {
+    showToast('Delete failed: ' + (e?.message || 'unknown error'));
   }
 }
 document.addEventListener('DOMContentLoaded', function () {
