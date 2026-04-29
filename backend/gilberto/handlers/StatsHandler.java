@@ -58,11 +58,15 @@ public final class StatsHandler {
         long sessionsWeek = ( weekStart == null || weekEnd == null || weekStart.isBlank () || weekEnd.isBlank () )
             ? 0
             : count3 ( c, "SELECT COUNT(*) FROM sessions WHERE org_id = ? AND session_date >= ? AND session_date <= ?", orgId, weekStart, weekEnd );
+        long missingClientDocs = count ( c,
+            "SELECT COUNT(*) FROM documents WHERE org_id = ? AND client_id IS NOT NULL AND requirement_key IS NOT NULL AND status = 'missing'",
+            orgId );
         HttpUtil.json ( ex, 200, "{"
             + "\"active_clients\":" + activeClients + ","
             + "\"sessions_today\":" + sessionsToday + ","
             + "\"pending_revisions\":" + pendingRevisions + ","
-            + "\"sessions_week\":" + sessionsWeek
+            + "\"sessions_week\":" + sessionsWeek + ","
+            + "\"missing_client_documents\":" + missingClientDocs
             + "}" );
       } catch ( Exception e ) {
         HttpUtil.err ( ex, 500, "Failed to load dashboard stats" );

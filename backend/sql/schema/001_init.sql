@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS providers (
 CREATE TABLE IF NOT EXISTS documents (
   id VARCHAR(36) PRIMARY KEY,
   org_id VARCHAR(64) NULL,
+  client_id VARCHAR(36) NULL,
+  requirement_key VARCHAR(80) NULL,
   provider_id VARCHAR(36) NULL,
   doc_name VARCHAR(200) NOT NULL,
   doc_type VARCHAR(80) NULL,

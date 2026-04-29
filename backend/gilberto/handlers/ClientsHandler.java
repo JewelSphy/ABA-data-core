@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import gilberto.Audit;
 import gilberto.Db;
+import gilberto.RequiredClientDocuments;
 import gilberto.HttpUtil;
 import gilberto.JsonUtil;
 import gilberto.QueryUtil;
@@ -103,6 +104,7 @@ public final class ClientsHandler implements HttpHandler {
       ps.setString ( 13, JsonUtil.field ( b, "notes" ) );
       ps.setString ( 14, safeOrDefault ( JsonUtil.field ( b, "status" ), "active" ) );
       ps.executeUpdate ();
+      RequiredClientDocuments.seedForClient ( c, org, id, first, last );
       Audit.log ( ex, "create", "clients", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );
     } catch ( Exception e ) {

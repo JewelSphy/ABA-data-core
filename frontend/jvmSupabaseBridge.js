@@ -130,7 +130,28 @@ async function jvmLoadDashboardStats (orgId, today, weekStart, weekEnd) {
     + "&week_end="   + encodeURIComponent (weekEnd);
   var res = await jvmFetch (path, { method: "GET" });
   if (!res.ok) throw new Error ("dashboard-stats failed: " + res.status);
-  return res.json (); // { active_clients, sessions_today, pending_revisions, sessions_week }
+  return res.json (); // includes missing_client_documents when backend supports it
+}
+
+function documentJvmEnsureOrgRequirements (orgId) {
+  if (!orgId) return Promise.resolve (null);
+  return jvmFetch ("/api/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify ({
+      action: "ensure_organization_requirements",
+      org_id: orgId
+    })
+  });
+}
+
+/** Save new document OR update existing row (pass id). */
+function documentJvmUpsert (rowObj) {
+  return jvmFetch ("/api/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify (rowObj || {})
+  });
 }
 
 // ── Session-specific helpers ──────────────────────────────────────────────────
@@ -417,11 +438,7 @@ function documentJvmFetch (orgId, providerId) {
 }
 
 function documentJvmCreate (rowObj) {
-  return jvmFetch ("/api/documents", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify (rowObj || {})
-  });
+  return documentJvmUpsert (rowObj);
 }
 
 function documentJvmDelete (docId) {

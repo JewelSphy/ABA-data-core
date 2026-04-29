@@ -25,6 +25,7 @@ public final class Db {
         st.execute ( stmt );
       }
       ensureCaregiverColumns ( st );
+      ensureDocumentColumns ( st );
     } catch ( Exception e ) {
       throw new IllegalStateException ( "Schema init failed: " + e.getMessage (), e );
     }
@@ -33,6 +34,12 @@ public final class Db {
   private static void ensureCaregiverColumns ( Statement st ) {
     try { st.execute ( "ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS client_id VARCHAR(36) NULL" ); } catch ( Exception ignored ) {}
     try { st.execute ( "ALTER TABLE caregivers ADD COLUMN IF NOT EXISTS notes TEXT NULL" ); } catch ( Exception ignored ) {}
+  }
+
+  private static void ensureDocumentColumns ( Statement st ) {
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS client_id VARCHAR(36) NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS requirement_key VARCHAR(80) NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE documents ADD INDEX idx_documents_client (client_id)" ); } catch ( Exception ignored ) {}
   }
 
   public static String readSql ( String rel ) {

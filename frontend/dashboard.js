@@ -605,6 +605,26 @@ function maybeSetupToast() {
    DASHBOARD STATS — routes through Java bridge when available,
    falls back to direct Supabase JS client
    ============================================================ */
+function applyDocumentComplianceBanner(stats) {
+  const el = document.getElementById("docComplianceBanner");
+  if (!el) return;
+  const n =
+    typeof stats?.missing_client_documents === "number" ? stats.missing_client_documents : 0;
+  if (n <= 0) {
+    el.style.display = "none";
+    el.innerHTML = "";
+    return;
+  }
+  el.style.display = "block";
+  el.innerHTML =
+    "<strong>Client document gaps</strong> — " +
+    n +
+    " required document slot" +
+    (n === 1 ? " is" : "s are") +
+    " still missing an upload. " +
+    "<a href=\"documents.html\" style=\"color:inherit;font-weight:700;text-decoration:underline;\">Review Documents</a>";
+}
+
 async function loadDashboardStats() {
   if (!document.body.classList.contains("page-dashboard")) return;
   const org = window.gilbertoCurrentOrg;
@@ -619,12 +639,18 @@ async function loadDashboardStats() {
   // ── Route through Java bridge (single aggregated call) ──────────────────
   if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) {
     try {
+      if (typeof documentJvmEnsureOrgRequirements === "function") {
+        await documentJvmEnsureOrgRequirements(orgId).catch(function () {
+          /* non-fatal */
+        });
+      }
       const stats = await jvmLoadDashboardStats(orgId, today, weekStart, weekEnd);
       const clamp = v => (typeof v === "number" && v >= 0) ? v : 0;
       set("statActiveClients",    clamp(stats.active_clients));
       set("statSessionsToday",    clamp(stats.sessions_today));
       set("statPendingRevisions", clamp(stats.pending_revisions));
       set("statSessionsWeek",     clamp(stats.sessions_week));
+      applyDocumentComplianceBanner(stats);
       return;
     } catch (e) {
       console.warn("loadDashboardStats bridge error, falling back:", e);

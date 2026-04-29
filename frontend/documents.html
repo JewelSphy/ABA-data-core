@@ -13,6 +13,9 @@
     .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
     .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
     .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
+    .doc-section-head { margin: 18px 0 8px; }
+    .doc-section-head h2 { font-size: 15px; color: #1f2d26; margin: 0 0 4px; }
+    .doc-section-head p { font-size: 12px; color: #597568; margin: 0; line-height: 1.45; }
   </style>
 </head>
 <body class="ui-colorful">
@@ -63,24 +66,52 @@
     <header class="topbar">
       <div>
         <h1>Documents</h1>
-        <p>Client and staff documents, uploads and expiration tracking</p>
+        <p>Required client paperwork, uploads, expirations, and organizational files</p>
       </div>
       <div class="top-actions">
-        <button class="add-btn" onclick="openModal('uploadDocModal')">+ Upload Document</button>
+        <button class="add-btn" type="button" onclick="openNewDocument()">+ Upload Document</button>
         <div class="user-pill">—</div>
       </div>
     </header>
 
+    <div id="docComplianceTop" class="notice notice-warn" role="alert" style="display:none;margin-bottom:12px;"></div>
+
     <div class="table-wrapper">
       <div class="table-toolbar">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button class="filter-btn small-btn active-blue" onclick="filterDocs('all')">All</button>
-          <button class="filter-btn small-btn" onclick="filterDocs('expiring')">Expiring Soon</button>
-          <button class="filter-btn small-btn" onclick="filterDocs('expired')">Expired</button>
+          <button class="filter-btn small-btn active-blue" type="button" onclick="filterDocs(event,'all')">All</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'missing')">Missing uploads</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expiring')">Expiring Soon</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expired')">Expired</button>
+          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'active')">Active only</button>
         </div>
         <div class="table-search">
-          <input class="search-input" id="docSearch" type="text" placeholder="Search documents..." oninput="filterTable('docSearch','docBody')"/>
+          <input class="search-input" id="docSearch" type="text" placeholder="Search documents..." oninput="filterDocTables()"/>
         </div>
+      </div>
+
+      <div class="doc-section-head">
+        <h2>Required client documentation</h2>
+        <p>New clients automatically get five placeholders (Consent, Authorization, Service Agreement, Evaluation, Certification). Upload content or paste text to clear each requirement.</p>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Document Name</th>
+            <th>Type</th>
+            <th>Client</th>
+            <th>Upload Date</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="docBodyRequired"><tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
+      </table>
+
+      <div class="doc-section-head">
+        <h2>Administrative &amp; other uploads</h2>
+        <p>Optional staff uploads, providers, legacy records, or files not tied to a client requirement.</p>
       </div>
       <table class="data-table">
         <thead>
@@ -94,9 +125,7 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="docBody">
-          <tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>
-        </tbody>
+        <tbody id="docBodyOther"><tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -106,10 +135,11 @@
 <div class="modal-overlay" id="uploadDocModal" onclick="if(event.target===this)closeModal('uploadDocModal')">
   <div class="modal-box wide">
     <div class="modal-header">
-      <h3>Upload Document</h3>
+      <h3 id="uploadDocModalTitle">Upload document</h3>
       <button class="modal-close" onclick="closeModal('uploadDocModal')">&times;</button>
     </div>
     <div class="modal-body">
+      <input type="hidden" id="editDocId" value=""/>
       <div class="form-row">
         <div class="form-group">
           <label>Document Name</label>
@@ -145,12 +175,12 @@
       </div>
       <div class="form-group">
         <label>Document Content</label>
-        <textarea id="docContentInput" rows="4" placeholder="Paste or type document content here so it is stored and viewable."></textarea>
+        <textarea id="docContentInput" rows="4" placeholder="Paste or type document content here so it is stored and viewable. Required slots clear when you save with text or an upload date."></textarea>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="small-btn" onclick="closeModal('uploadDocModal')">Cancel</button>
-      <button class="add-btn" onclick="saveDocument()">Upload</button>
+      <button type="button" class="small-btn" onclick="closeModal('uploadDocModal')">Cancel</button>
+      <button type="button" class="add-btn" onclick="saveDocument()">Save</button>
     </div>
   </div>
 </div>
@@ -174,7 +204,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="small-btn" onclick="closeModal('viewDocModal')">Close</button>
+      <button type="button" class="small-btn" onclick="closeModal('viewDocModal')">Close</button>
     </div>
   </div>
 </div>
@@ -192,8 +222,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="small-btn" onclick="closeModal('deleteDocModal')">Cancel</button>
-      <button class="tbl-btn danger" onclick="confirmDeleteDoc()">Delete</button>
+      <button type="button" class="small-btn" onclick="closeModal('deleteDocModal')">Cancel</button>
+      <button type="button" class="tbl-btn danger" onclick="confirmDeleteDoc()">Delete</button>
     </div>
   </div>
 </div>
@@ -215,7 +245,7 @@ function showToast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, "\\'"); }
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, "&#039;"); }
 function fmtDate(v) { if (!v) return '—'; const d = new Date(String(v) + 'T00:00:00'); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function statusFor(expiry) {
   if (!expiry) return 'active';
@@ -227,59 +257,181 @@ function statusFor(expiry) {
   if (days <= 45) return 'expiring';
   return 'active';
 }
+function normStatus(s) { return String(s || '').toLowerCase(); }
 function statusBadge(s) {
-  const v = String(s || 'active').toLowerCase();
+  const v = normStatus(s);
+  if (v === 'missing') return '<span class="badge badge-pending">Awaiting upload</span>';
   if (v === 'expired') return '<span class="badge badge-expired">Expired</span>';
   if (v === 'expiring') return '<span class="badge badge-expiring">Expiring</span>';
-  return '<span class="badge badge-active">Active</span>';
+  return '<span class="badge badge-active">' + (v === 'active' ? 'Active' : esc(s || 'Active')) + '</span>';
 }
+
+function classifyDoc(d) {
+  if (!d) return 'other';
+  if (d.provider_id) return 'other';
+  if (d.client_id || d.requirement_key) return 'required';
+  return 'other';
+}
+
+function splitAndSort(rows) {
+  const req = [];
+  const other = [];
+  (rows || []).forEach((d) => {
+    const c = classifyDoc(d);
+    if (c === 'required') req.push(d);
+    else other.push(d);
+  });
+  req.sort((a, b) => {
+    const ma = normStatus(a.status) === 'missing' ? 0 : 1;
+    const mb = normStatus(b.status) === 'missing' ? 0 : 1;
+    if (ma !== mb) return ma - mb;
+    const ln = (x) => String(x.linked_name || '');
+    const co = ln(a).localeCompare(ln(b));
+    if (co !== 0) return co;
+    return String(a.doc_type || '').localeCompare(String(b.doc_type || ''));
+  });
+  other.sort((a, b) => String(a.doc_name || '').localeCompare(String(b.doc_name || '')));
+  return { req, other };
+}
+
+function rowHtml(d) {
+  const st = normStatus(d.status) || 'active';
+  const del = `<button type="button" class="tbl-btn danger" onclick="openDeleteDoc('${esc(d.id)}')">Delete</button>`;
+  const edit = `<button type="button" class="tbl-btn" onclick="openEditDoc('${esc(d.id)}')">Upload / Edit</button>`;
+  return `<tr class="doc-filter-row" data-status="${esc(st)}">
+    <td>${esc(d.doc_name || '—')}</td>
+    <td>${esc(d.doc_type || '—')}</td>
+    <td>${esc(d.linked_name || '—')}</td>
+    <td>${fmtDate(d.upload_date)}</td>
+    <td>${fmtDate(d.expiry_date)}</td>
+    <td>${statusBadge(d.status)}</td>
+    <td>
+      <button type="button" class="tbl-btn" onclick="openViewDoc('${esc(d.id)}')">View</button>
+      ${edit}
+      ${del}
+    </td>
+  </tr>`;
+}
+
+function updateComplianceBanner() {
+  const top = document.getElementById('docComplianceTop');
+  if (!top) return;
+  const n = (docsData || []).filter((d) => normStatus(d.status) === 'missing' && d.requirement_key).length;
+  if (n <= 0) {
+    top.style.display = 'none';
+    top.innerHTML = '';
+    return;
+  }
+  top.style.display = 'block';
+  top.innerHTML = '<strong>Action needed</strong> — ' + n + ' required document slot' + (n === 1 ? ' is' : 's are') + ' still missing an upload. Use <strong>Upload / Edit</strong> on each row to add content or an upload date.';
+}
+
+function renderDocTables() {
+  const bodyReq = document.getElementById('docBodyRequired');
+  const bodyOth = document.getElementById('docBodyOther');
+  const { req, other } = splitAndSort(docsData);
+  if (!req.length) {
+    bodyReq.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No client requirement rows yet. Add a client or run sync (opens automatically when the API loads).</td></tr>';
+  } else {
+    bodyReq.innerHTML = req.map(rowHtml).join('');
+  }
+  if (!other.length) {
+    bodyOth.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No other documents yet. Use <strong>Upload Document</strong> for staff or org files.</td></tr>';
+  } else {
+    bodyOth.innerHTML = other.map(rowHtml).join('');
+  }
+  updateComplianceBanner();
+  filterDocTables();
+}
+
 async function loadLinkedOptions() {
   const sel = document.getElementById('docLinkedInput');
   sel.innerHTML = '<option value="">— Optional link —</option>';
-  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId) return;
   try {
     const [cRes, sRes, pRes] = await Promise.all([jvmFetchClients(orgId, null), jvmFetchStaff(orgId, null), providerJvmFetch(orgId)]);
-    const add = (label) => { sel.innerHTML += `<option value="${esc(label)}">${esc(label)}</option>`; };
-    if (cRes.ok) (await cRes.json()).forEach((x) => add(`${x.first_name || ''} ${x.last_name || ''}`.trim()));
-    if (sRes.ok) (await sRes.json()).forEach((x) => add(`${x.first_name || ''} ${x.last_name || ''}`.trim()));
+    const add = (label) => { sel.innerHTML += '<option value="' + esc(label) + '">' + esc(label) + '</option>'; };
+    if (cRes.ok) (await cRes.json()).forEach((x) => add(String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
+    if (sRes.ok) (await sRes.json()).forEach((x) => add(String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
     if (pRes.ok) (await pRes.json()).forEach((x) => add(x.full_name || ''));
   } catch (_) {}
 }
+
 async function loadDocuments() {
-  const body = document.getElementById('docBody');
-  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const bodyReq = document.getElementById('docBodyRequired');
+  const bodyOth = document.getElementById('docBodyOther');
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>';
+    const msg = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">Connect to the Java API with your org to manage documents and compliance.</td></tr>';
+    bodyReq.innerHTML = msg;
+    bodyOth.innerHTML = msg;
     return;
   }
   try {
+    if (typeof documentJvmEnsureOrgRequirements === 'function') {
+      await documentJvmEnsureOrgRequirements(orgId).catch(function () {});
+    }
     const res = await documentJvmFetch(orgId, null);
     if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     docsData = await res.json();
     if (!docsData.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents loaded yet.</td></tr>';
+      const msg = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#6b8c7a;">No documents yet.</td></tr>';
+      bodyReq.innerHTML = msg;
+      bodyOth.innerHTML = msg;
       return;
     }
-    body.innerHTML = docsData.map((d) => `<tr data-status="${esc(d.status || 'active')}">
-      <td>${esc(d.doc_name || '—')}</td>
-      <td>${esc(d.doc_type || '—')}</td>
-      <td>${esc(d.linked_name || '—')}</td>
-      <td>${fmtDate(d.upload_date)}</td>
-      <td>${fmtDate(d.expiry_date)}</td>
-      <td>${statusBadge(d.status)}</td>
-      <td>
-        <button class="tbl-btn" onclick="openViewDoc('${d.id}')">View</button>
-        <button class="tbl-btn danger" onclick="openDeleteDoc('${d.id}')">Delete</button>
-      </td>
-    </tr>`).join('');
+    renderDocTables();
   } catch (e) {
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e?.message || 'unknown error') + '</td></tr>';
+    const err = '<tr><td colspan="7" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e && e.message ? e.message : 'unknown error') + '</td></tr>';
+    bodyReq.innerHTML = err;
+    bodyOth.innerHTML = err;
   }
 }
+
+function openNewDocument() {
+  document.getElementById('editDocId').value = '';
+  document.getElementById('uploadDocModalTitle').textContent = 'Upload document';
+  document.getElementById('docNameInput').value = '';
+  document.getElementById('docTypeInput').selectedIndex = 0;
+  document.getElementById('docLinkedInput').value = '';
+  document.getElementById('docUploadDateInput').value = '';
+  document.getElementById('docExpiryDateInput').value = '';
+  document.getElementById('docContentInput').value = '';
+  openModal('uploadDocModal');
+}
+
+function openEditDoc(id) {
+  const d = docsData.find((x) => x.id === id);
+  if (!d) return;
+  document.getElementById('editDocId').value = id;
+  document.getElementById('uploadDocModalTitle').textContent = (normStatus(d.status) === 'missing') ? 'Complete required document' : 'Edit document';
+  document.getElementById('docNameInput').value = d.doc_name || '';
+  const sel = document.getElementById('docTypeInput');
+  const dt = d.doc_type || '';
+  let found = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === dt || sel.options[i].text === dt) { sel.selectedIndex = i; found = true; break; }
+  }
+  if (!found && dt) {
+    const o = document.createElement('option');
+    o.value = dt;
+    o.textContent = dt;
+    sel.appendChild(o);
+    sel.value = dt;
+  }
+  document.getElementById('docLinkedInput').value = d.linked_name || '';
+  document.getElementById('docUploadDateInput').value = d.upload_date ? String(d.upload_date).slice(0, 10) : '';
+  document.getElementById('docExpiryDateInput').value = d.expiry_date ? String(d.expiry_date).slice(0, 10) : '';
+  document.getElementById('docContentInput').value = d.content_text || '';
+  openModal('uploadDocModal');
+}
+
 async function saveDocument() {
-  const orgId = window.gilbertoCurrentOrg?.id || null;
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId) { showToast('Organization not loaded'); return; }
+  const editId = (document.getElementById('editDocId').value || '').trim();
+  const prev = editId ? docsData.find((x) => x.id === editId) : null;
   const payload = {
     org_id: orgId,
     doc_name: (document.getElementById('docNameInput').value || '').trim(),
@@ -289,18 +441,37 @@ async function saveDocument() {
     expiry_date: document.getElementById('docExpiryDateInput').value || null,
     content_text: (document.getElementById('docContentInput').value || '').trim() || null
   };
-  payload.status = statusFor(payload.expiry_date);
+  if (prev) {
+    payload.id = editId;
+    payload.client_id = prev.client_id || null;
+    payload.requirement_key = prev.requirement_key || null;
+    payload.provider_id = prev.provider_id || null;
+    let next = statusFor(payload.expiry_date);
+    if (normStatus(prev.status) === 'missing') {
+      const hasText = !!(payload.content_text && payload.content_text.trim().length > 0);
+      const hasUp = !!payload.upload_date;
+      if (!hasText && !hasUp) next = 'missing';
+    }
+    payload.status = next;
+  } else {
+    payload.client_id = null;
+    payload.requirement_key = null;
+    payload.provider_id = null;
+    payload.status = statusFor(payload.expiry_date);
+  }
   if (!payload.doc_name) { showToast('Document name is required'); return; }
   try {
-    const res = await documentJvmCreate(payload);
+    const res = await documentJvmUpsert(payload);
     if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     closeModal('uploadDocModal');
-    showToast('Document saved and stored');
+    document.getElementById('editDocId').value = '';
+    showToast('Document saved');
     await loadDocuments();
   } catch (e) {
-    showToast('Save failed: ' + (e?.message || 'unknown error'));
+    showToast('Save failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
 }
+
 function openViewDoc(id) {
   const d = docsData.find((x) => x.id === id);
   if (!d) return;
@@ -313,10 +484,12 @@ function openViewDoc(id) {
   document.getElementById('viewDocContent').textContent = d.content_text || 'No content saved.';
   openModal('viewDocModal');
 }
+
 function openDeleteDoc(id) {
   pendingDeleteDocId = id;
   openModal('deleteDocModal');
 }
+
 async function confirmDeleteDoc() {
   if (!pendingDeleteDocId) return;
   try {
@@ -327,26 +500,38 @@ async function confirmDeleteDoc() {
     pendingDeleteDocId = null;
     await loadDocuments();
   } catch (e) {
-    showToast('Delete failed: ' + (e?.message || 'unknown error'));
+    showToast('Delete failed: ' + (e && e.message ? e.message : 'unknown error'));
   }
 }
-function filterTable(inputId, tbodyId) {
-  const q = document.getElementById(inputId).value.toLowerCase();
-  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+
+function filterDocTables() {
+  const q = (document.getElementById('docSearch') || {}).value.toLowerCase() || '';
+  document.querySelectorAll('.doc-filter-row').forEach((row) => {
     row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
-function filterDocs(status) {
-  document.querySelectorAll('#docBody tr').forEach(row => {
-    if (status === 'all') row.style.display = '';
-    else row.style.display = row.dataset.status === status ? '' : 'none';
+
+function filterDocs(ev, status) {
+  document.querySelectorAll('.doc-filter-row').forEach((row) => {
+    const r = normStatus(row.getAttribute('data-status'));
+    let show = true;
+    if (status === 'all') show = true;
+    else if (status === 'missing') show = r === 'missing';
+    else if (status === 'expiring') show = r === 'expiring';
+    else if (status === 'expired') show = r === 'expired';
+    else if (status === 'active') show = r === 'active' || r === 'expiring';
+    row.style.display = show ? '' : 'none';
   });
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active-blue'));
-  event.target.classList.add('active-blue');
+  document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active-blue'));
+  if (ev && ev.target) ev.target.classList.add('active-blue');
 }
-document.addEventListener('DOMContentLoaded', function () {
-  loadLinkedOptions();
-  loadDocuments();
+
+document.addEventListener('DOMContentLoaded', async function () {
+  if (typeof loadGilbertoOrganization === 'function') {
+    await loadGilbertoOrganization();
+  }
+  await loadLinkedOptions();
+  await loadDocuments();
 });
 </script>
 </body>

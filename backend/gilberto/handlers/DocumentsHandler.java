@@ -7,6 +7,7 @@ import gilberto.Db;
 import gilberto.HttpUtil;
 import gilberto.JsonUtil;
 import gilberto.QueryUtil;
+import gilberto.RequiredClientDocuments;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class DocumentsHandler implements HttpHandler {
+
   @Override
   public void handle ( HttpExchange ex ) throws IOException {
     if ( HttpUtil.preflight ( ex ) ) return;
@@ -34,7 +36,7 @@ public final class DocumentsHandler implements HttpHandler {
     String orgId = QueryUtil.eq ( q, "org_id" );
     String providerId = QueryUtil.eq ( q, "provider_id" );
     String status = QueryUtil.eq ( q, "status" );
-    String sql = "SELECT id, org_id, provider_id, doc_name, doc_type, linked_name, upload_date, expiry_date, status, content_text FROM documents";
+    String sql = "SELECT id, org_id, client_id, requirement_key, provider_id, doc_name, doc_type, linked_name, upload_date, expiry_date, status, content_text FROM documents";
     List<String> where = new ArrayList<> ();
     List<String> vals = new ArrayList<> ();
     if ( !JsonUtil.blank ( id ) ) { where.add ( "id = ?" ); vals.add ( id ); }
@@ -52,6 +54,8 @@ public final class DocumentsHandler implements HttpHandler {
           rows.add ( "{"
             + "\"id\":\"" + JsonUtil.esc ( rs.getString ( "id" ) ) + "\","
             + "\"org_id\":" + JsonUtil.strOrNull ( rs.getString ( "org_id" ) ) + ","
+            + "\"client_id\":" + JsonUtil.strOrNull ( rs.getString ( "client_id" ) ) + ","
+            + "\"requirement_key\":" + JsonUtil.strOrNull ( rs.getString ( "requirement_key" ) ) + ","
             + "\"provider_id\":" + JsonUtil.strOrNull ( rs.getString ( "provider_id" ) ) + ","
             + "\"doc_name\":" + JsonUtil.strOrNull ( rs.getString ( "doc_name" ) ) + ","
             + "\"doc_type\":" + JsonUtil.strOrNull ( rs.getString ( "doc_type" ) ) + ","
@@ -71,21 +75,80 @@ public final class DocumentsHandler implements HttpHandler {
 
   private void post ( HttpExchange ex ) throws IOException {
     String b = HttpUtil.body ( ex );
+    if ( "ensure_organization_requirements".equals ( JsonUtil.field ( b, "action" ) ) ) {
+      ensureOrganizationDocuments ( ex, b );
+      return;
+    }
+    String existingId = JsonUtil.field ( b, "id" );
+    if ( !JsonUtil.blank ( existingId ) ) {
+      updateDocument ( ex, b, existingId );
+      return;
+    }
+    insertDocument ( ex, b );
+  }
+
+  private void ensureOrganizationDocuments ( HttpExchange ex, String b ) throws IOException {
+    String orgId = JsonUtil.field ( b, "org_id" );
+    if ( JsonUtil.blank ( orgId ) ) { HttpUtil.err ( ex, 400, "org_id is required" ); return; }
+    try ( Connection c = Db.open () ) {
+      RequiredClientDocuments.ensureOrganization ( c, orgId );
+      Audit.log ( ex, "update", "documents", orgId, "ensure_requirements" );
+      HttpUtil.json ( ex, 200, "{\"ok\":true}" );
+    } catch ( Exception e ) {
+      HttpUtil.err ( ex, 500, "Failed to ensure document requirements" );
+    }
+  }
+
+  private void updateDocument ( HttpExchange ex, String b, String id ) throws IOException {
+    String orgId = JsonUtil.field ( b, "org_id" );
+    if ( JsonUtil.blank ( orgId ) ) { HttpUtil.err ( ex, 400, "org_id is required" ); return; }
+    String name = JsonUtil.field ( b, "doc_name" );
+    if ( JsonUtil.blank ( name ) ) { HttpUtil.err ( ex, 400, "doc_name is required" ); return; }
+    String status = JsonUtil.field ( b, "status" );
+    if ( JsonUtil.blank ( status ) ) status = "active";
+    String sql = "UPDATE documents SET doc_name = ?, doc_type = ?, linked_name = ?, upload_date = ?, expiry_date = ?, status = ?, content_text = ?, client_id = ?, requirement_key = ?, provider_id = ? WHERE id = ? AND org_id = ?";
+    try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
+      ps.setString ( 1, name );
+      ps.setString ( 2, JsonUtil.field ( b, "doc_type" ) );
+      ps.setString ( 3, JsonUtil.field ( b, "linked_name" ) );
+      ps.setString ( 4, JsonUtil.field ( b, "upload_date" ) );
+      ps.setString ( 5, JsonUtil.field ( b, "expiry_date" ) );
+      ps.setString ( 6, status );
+      ps.setString ( 7, JsonUtil.field ( b, "content_text" ) );
+      ps.setString ( 8, JsonUtil.field ( b, "client_id" ) );
+      ps.setString ( 9, JsonUtil.field ( b, "requirement_key" ) );
+      ps.setString ( 10, JsonUtil.field ( b, "provider_id" ) );
+      ps.setString ( 11, id );
+      ps.setString ( 12, orgId );
+      int n = ps.executeUpdate ();
+      if ( n == 0 ) { HttpUtil.err ( ex, 404, "Document not found" ); return; }
+      Audit.log ( ex, "update", "documents", id, "success" );
+      HttpUtil.json ( ex, 200, "[{\"id\":\"" + JsonUtil.esc ( id ) + "\"}]" );
+    } catch ( Exception e ) {
+      Audit.log ( ex, "update", "documents", id, "error" );
+      HttpUtil.err ( ex, 500, "Failed to update document" );
+    }
+  }
+
+  private void insertDocument ( HttpExchange ex, String b ) throws IOException {
     String name = JsonUtil.field ( b, "doc_name" );
     if ( JsonUtil.blank ( name ) ) { HttpUtil.err ( ex, 400, "doc_name is required" ); return; }
     String id = UUID.randomUUID ().toString ();
-    String sql = "INSERT INTO documents (id, org_id, provider_id, doc_name, doc_type, linked_name, upload_date, expiry_date, status, content_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    String sql = "INSERT INTO documents (id, org_id, client_id, requirement_key, provider_id, doc_name, doc_type, linked_name, upload_date, expiry_date, status, content_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     try ( Connection c = Db.open (); PreparedStatement ps = c.prepareStatement ( sql ) ) {
       ps.setString ( 1, id );
       ps.setString ( 2, JsonUtil.field ( b, "org_id" ) );
-      ps.setString ( 3, JsonUtil.field ( b, "provider_id" ) );
-      ps.setString ( 4, name );
-      ps.setString ( 5, JsonUtil.field ( b, "doc_type" ) );
-      ps.setString ( 6, JsonUtil.field ( b, "linked_name" ) );
-      ps.setString ( 7, JsonUtil.field ( b, "upload_date" ) );
-      ps.setString ( 8, JsonUtil.field ( b, "expiry_date" ) );
-      ps.setString ( 9, JsonUtil.blank ( JsonUtil.field ( b, "status" ) ) ? "active" : JsonUtil.field ( b, "status" ) );
-      ps.setString ( 10, JsonUtil.field ( b, "content_text" ) );
+      ps.setString ( 3, JsonUtil.field ( b, "client_id" ) );
+      ps.setString ( 4, JsonUtil.field ( b, "requirement_key" ) );
+      ps.setString ( 5, JsonUtil.field ( b, "provider_id" ) );
+      ps.setString ( 6, name );
+      ps.setString ( 7, JsonUtil.field ( b, "doc_type" ) );
+      ps.setString ( 8, JsonUtil.field ( b, "linked_name" ) );
+      ps.setString ( 9, JsonUtil.field ( b, "upload_date" ) );
+      ps.setString ( 10, JsonUtil.field ( b, "expiry_date" ) );
+      String st = JsonUtil.field ( b, "status" );
+      ps.setString ( 11, JsonUtil.blank ( st ) ? "active" : st );
+      ps.setString ( 12, JsonUtil.field ( b, "content_text" ) );
       ps.executeUpdate ();
       Audit.log ( ex, "create", "documents", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );
