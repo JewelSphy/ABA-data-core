@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sessions - Gilberto ABA Care CRM</title>
   <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .sessions-shell { border-radius: 14px; border: 1px solid #d9e8df; box-shadow: 0 14px 30px rgba(21, 58, 46, 0.09); overflow: hidden; }
+    .sessions-toolbar { background: linear-gradient(180deg, #f7fcf9, #eef7f2); border-bottom: 1px solid #d8e7dd; }
+    .sessions-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; flex-wrap: wrap; }
+    .sessions-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #d1e2d8; background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: #2d4a3e; font-weight: 600; }
+    .sessions-range { min-width: 250px; border: none; background: transparent; font-size: 13px; color: #1f2d26; font-weight: 600; }
+    .sessions-view .small-btn { border-radius: 999px !important; }
+    .sessions-actions .small-btn { border-radius: 999px !important; background: #fff; border-color: #cfe0d6; color: #2d4a3e; }
+    .sessions-actions .small-btn:hover { background: #f2f8f5; }
+    .sessions-tip { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid #6b9e7e; background: #f3faf6; color: #456457; font-size: 12px; }
+  </style>
 </head>
 <body class="page-sessions">
 <div class="app-layout">
@@ -65,25 +76,26 @@
       </div>
     </div>
 
-    <div class="table-wrapper table-oversight">
-      <div class="table-toolbar">
-        <div class="dashboard-strip" style="width:100%;">
-          <button class="small-btn" onclick="prevPeriod()" title="Previous period">← Prev</button>
-          <div style="display:inline-flex;align-items:center;gap:0;border:1px solid #d4e4da;border-radius:8px;overflow:hidden;background:#fff;">
-            <span style="display:inline-flex;align-items:center;padding:0 10px;border-right:1px solid #d4e4da;background:#f4f7f5;height:100%;font-size:14px;" aria-hidden="true">🗓️</span>
-            <input id="dateRangeInput" class="search-input" readonly style="min-width:200px;border:none;border-radius:0;margin:0;cursor:default;background:#fff;" value="Apr 1, 2026 – Apr 30, 2026" />
+    <div class="sessions-tip">Use the controls below to move across time ranges, switch Day/Week/Month, and filter the table by session status.</div>
+    <div class="table-wrapper table-oversight sessions-shell">
+      <div class="table-toolbar sessions-toolbar">
+        <div class="sessions-row">
+          <button class="small-btn" onclick="prevPeriod()" title="Previous period">← Previous</button>
+          <div class="sessions-pill">
+            <span aria-hidden="true">🗓️</span>
+            <input id="dateRangeInput" class="sessions-range" readonly value="Apr 1, 2026 – Apr 30, 2026" />
           </div>
           <button class="small-btn" onclick="nextPeriod()" title="Next period">Next →</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
-          <div class="segmented">
+        <div class="sessions-row">
+          <div class="segmented sessions-view">
             <button class="small-btn" data-view="day"   onclick="setView('day')">Day</button>
             <button class="small-btn" data-view="week"  onclick="setView('week')">Week</button>
             <button class="small-btn active-blue" data-view="month" onclick="setView('month')">Month</button>
           </div>
-          <div style="display:flex;gap:8px;">
-            <button class="small-btn" onclick="toggleSessionDensity()"><span class="icon-chip icon-settings" aria-hidden="true"></span> Density</button>
-            <button class="small-btn" onclick="cycleSessionStatusFilter()"><span class="icon-chip icon-filter" aria-hidden="true"></span> Filter Status</button>
+          <div class="sessions-actions" style="display:flex;gap:8px;">
+            <button class="small-btn" id="densityBtn" onclick="toggleSessionDensity()"><span class="icon-chip icon-settings" aria-hidden="true"></span> Row spacing: Comfortable</button>
+            <button class="small-btn" id="statusFilterBtn" onclick="cycleSessionStatusFilter()"><span class="icon-chip icon-filter" aria-hidden="true"></span> Status: All</button>
           </div>
         </div>
         <div class="table-search">
@@ -509,11 +521,13 @@
   function toggleSessionDensity() {
     sessionDenseMode = !sessionDenseMode;
     const body = document.getElementById('sessionsBody');
+    const btn = document.getElementById('densityBtn');
     if (!body) return;
     body.querySelectorAll('td').forEach(function (td) {
       td.style.padding = sessionDenseMode ? '6px 10px' : '';
       td.style.fontSize = sessionDenseMode ? '12.5px' : '';
     });
+    if (btn) btn.innerHTML = '<span class="icon-chip icon-settings" aria-hidden="true"></span> Row spacing: ' + (sessionDenseMode ? 'Compact' : 'Comfortable');
     showToast(sessionDenseMode ? 'Compact rows enabled' : 'Comfortable rows enabled');
   }
 
@@ -540,12 +554,15 @@
       : sessionStatusFilter === 'pending'
       ? 'complete'
       : 'all';
+    var btn = document.getElementById('statusFilterBtn');
     applySessionStatusFilter();
     const label = sessionStatusFilter === 'all'
       ? 'All statuses'
       : sessionStatusFilter === 'pending'
       ? 'Pending only'
       : 'Complete only';
+    if (btn) btn.innerHTML = '<span class="icon-chip icon-filter" aria-hidden="true"></span> Status: '
+      + (sessionStatusFilter === 'all' ? 'All' : sessionStatusFilter === 'pending' ? 'Pending' : 'Complete');
     showToast('Status filter: ' + label);
   }
 </script>

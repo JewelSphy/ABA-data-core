@@ -60,8 +60,13 @@
         <p>All submitted session notes across clients and staff</p>
       </div>
       <div class="top-actions">
+        <button class="small-btn" onclick="goToPage('revisions.html')">Open Revisions</button>
         <div class="user-pill">—</div>
       </div>
+    </div>
+
+    <div class="notice notice-info">
+      Review workflow: submit a session note, click <strong>Send to Review</strong>, then supervisors use <strong>Revisions</strong> to Approve/Reject.
     </div>
 
     <div class="table-wrapper">
@@ -168,6 +173,43 @@
     document.getElementById('vn-content').textContent = content || 'No note text saved for this session.';
     openModal('viewNoteModal');
   }
+  async function sendNoteToReview(sessionId) {
+    if (!sessionId) { showToast('Missing session id for review'); return; }
+    const orgId = window.gilbertoCurrentOrg?.id || null;
+    try {
+      const getRes = await sessionNoteJvmFetchBySessionId(sessionId);
+      if (!getRes.ok) {
+        showToast('Could not load note to submit');
+        return;
+      }
+      const list = await getRes.json();
+      const note = Array.isArray(list) && list.length ? list[0] : null;
+      if (!note) { showToast('No saved note found for this session'); return; }
+      const payload = {
+        session_id: note.session_id,
+        org_id: note.org_id || orgId,
+        progress_note: note.progress_note || null,
+        similarity_percent: note.similarity_percent,
+        supervision_required: !!note.supervision_required,
+        rbt_signed_by: note.rbt_signed_by || null,
+        rbt_signed_at: note.rbt_signed_at || null,
+        supervisor_signed_by: note.supervisor_signed_by || null,
+        supervisor_signed_at: note.supervisor_signed_at || null,
+        submitted_by: note.submitted_by || window.gilbertoCurrentUserName || 'Session Author',
+        submitted_at: note.submitted_at || new Date().toISOString(),
+        status: 'submitted'
+      };
+      const up = await sessionNoteJvmUpsert(payload);
+      if (!up.ok) {
+        showToast('Send to review failed');
+        return;
+      }
+      showToast('Sent to review');
+      await loadSessionNotesTable();
+    } catch (e) {
+      showToast('Send to review failed');
+    }
+  }
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(String(iso).includes('T') ? iso : (iso + 'T00:00:00'));
@@ -212,6 +254,9 @@
         const dateText = fmtDate(n.session_date);
         const submittedText = fmtDate(n.submitted_at || n.updated_at);
         const noteBody = n.progress_note || 'No note text saved for this session.';
+        const reviewBtn = (statusKey === 'pending-review' || statusKey === 'approved')
+          ? `<button class="tbl-btn" onclick="goToPage('revisions.html')">Review</button>`
+          : `<button class="tbl-btn" onclick="sendNoteToReview('${esc(n.session_id || '')}')">Send to Review</button>`;
         return `<tr data-status="${statusKey}">
           <td>${dateText}</td>
           <td>${clientName || '—'}</td>
@@ -222,6 +267,7 @@
           <td>
             <button class="tbl-btn" onclick="openViewNote('${esc(clientName)}','${esc(dateText)}','${esc(humanService(n.service_type))}','${esc(author)}','${esc(statusLabel)}','${esc(noteBody)}')">View</button>
             <button class="tbl-btn" onclick="goToPage('behavior-treatment-session.html?session_id=${encodeURIComponent(n.session_id || '')}')">Edit</button>
+            ${reviewBtn}
           </td>
         </tr>`;
       }).join('');

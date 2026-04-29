@@ -123,7 +123,7 @@
     </div>
     <div class="modal-footer">
       <button class="tbl-btn" onclick="closeModal('reviewNoteModal')">Close</button>
-      <button class="tbl-btn" onclick="closeModal('reviewNoteModal'); showToast('Note approved')">Approve</button>
+      <button class="tbl-btn" onclick="approveFromReview()">Approve</button>
       <button class="tbl-btn danger" onclick="submitRejectFromReview()">Reject and Send Back</button>
     </div>
   </div>
@@ -156,6 +156,9 @@
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js"></script>
 <script>
+  let revisionRows = [];
+  let activeRevision = null;
+
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
   function handleOverlayClick(e, id) {
@@ -184,18 +187,128 @@
       else { row.style.display = row.getAttribute('data-rev-status') === status ? '' : 'none'; }
     });
   }
-  function openReviewModal(client, author, date) {
-    document.getElementById('rn-client').textContent = client;
-    document.getElementById('rn-author').textContent = author;
-    document.getElementById('rn-date').textContent = date;
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function daysPending(iso) {
+    if (!iso) return 0;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 0;
+    const delta = Date.now() - d.getTime();
+    return Math.max(0, Math.floor(delta / 86400000));
+  }
+  function normalizeRevisionStatus(raw) {
+    const s = String(raw || '').toLowerCase();
+    if (s === 'rejected') return 'rejected';
+    if (s === 'approved') return 'approved';
+    if (s === 'submitted' || s === 'pending_review' || s === 'caregiver_signed') return 'pending';
+    return 'pending';
+  }
+  function statusBadge(status) {
+    if (status === 'rejected') return '<span class="badge badge-rejected">Rejected</span>';
+    if (status === 'approved') return '<span class="badge badge-approved">Approved</span>';
+    return '<span class="badge badge-pending">Pending</span>';
+  }
+  function findRevision(id) {
+    return revisionRows.find(function (r) { return r.id === id; }) || null;
+  }
+  function renderRevisions(rows) {
+    const body = document.getElementById('revisionsBody');
+    if (!rows || !rows.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No revision records loaded yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (r) {
+      const revStatus = normalizeRevisionStatus(r.status);
+      const days = daysPending(r.submitted_at || r.updated_at);
+      return '<tr data-rev-status="' + esc(revStatus) + '">'
+        + '<td>' + esc(fmtDate(r.submitted_at || r.updated_at)) + '</td>'
+        + '<td>' + esc(r.client_name || 'Unknown client') + '</td>'
+        + '<td>' + esc(r.submitted_by || 'Unknown author') + '</td>'
+        + '<td>' + esc(r.service_type || 'Session Note') + '</td>'
+        + '<td>' + esc(String(days)) + '</td>'
+        + '<td>' + statusBadge(revStatus) + '</td>'
+        + '<td><button class="tbl-btn" onclick="openReviewModalById(\'' + esc(r.id) + '\')">Review</button>'
+        + (revStatus === 'pending' ? ' <button class="tbl-btn danger" onclick="openRejectModalById(\'' + esc(r.id) + '\')">Reject</button>' : '')
+        + '</td></tr>';
+    }).join('');
+  }
+  async function loadRevisions() {
+    try {
+      if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
+      const path = '/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : '');
+      const res = await jvmFetch(path, { method: 'GET' });
+      if (!res.ok) throw new Error(await readJvmErrorResponse(res));
+      const notes = await res.json();
+      revisionRows = (notes || []).map(function (n) {
+        const first = n && n.client && n.client.first_name ? n.client.first_name : '';
+        const last = n && n.client && n.client.last_name ? n.client.last_name : '';
+        return Object.assign({}, n, {
+          client_name: [first, last].join(' ').trim() || 'Unknown client'
+        });
+      });
+      renderRevisions(revisionRows);
+      revFilter('pending');
+    } catch (e) {
+      document.getElementById('revisionsBody').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;padding:20px;color:#b04f4f;">Failed to load revisions: ' + esc(e && e.message ? e.message : String(e)) + '</td></tr>';
+    }
+  }
+  function openReviewModalById(id) {
+    const rev = findRevision(id);
+    if (!rev) return;
+    activeRevision = rev;
+    document.getElementById('rn-client').textContent = rev.client_name || 'Unknown client';
+    document.getElementById('rn-author').textContent = rev.submitted_by || 'Unknown author';
+    document.getElementById('rn-date').textContent = fmtDate(rev.submitted_at || rev.updated_at);
+    document.getElementById('reviewNoteBody').textContent = rev.progress_note || 'No note content available.';
     document.getElementById('reviewRejectReason').value = '';
     openModal('reviewNoteModal');
   }
-  function openRejectModal(client, author) {
-    document.getElementById('reject-client').textContent = client;
-    document.getElementById('reject-author').textContent = author;
+  function openRejectModalById(id) {
+    const rev = findRevision(id);
+    if (!rev) return;
+    activeRevision = rev;
+    document.getElementById('reject-client').textContent = rev.client_name || 'Unknown client';
+    document.getElementById('reject-author').textContent = rev.submitted_by || 'Unknown author';
     document.getElementById('rejectReason').value = '';
     openModal('rejectModal');
+  }
+  async function setRevisionStatus(newStatus) {
+    if (!activeRevision) return false;
+    const payload = {
+      session_id: activeRevision.session_id,
+      org_id: activeRevision.org_id || null,
+      progress_note: activeRevision.progress_note || null,
+      similarity_percent: typeof activeRevision.similarity_percent === 'number' ? activeRevision.similarity_percent : null,
+      supervision_required: !!activeRevision.supervision_required,
+      rbt_signed_by: activeRevision.rbt_signed_by || null,
+      rbt_signed_at: activeRevision.rbt_signed_at || null,
+      supervisor_signed_by: activeRevision.supervisor_signed_by || null,
+      supervisor_signed_at: activeRevision.supervisor_signed_at || null,
+      submitted_by: activeRevision.submitted_by || null,
+      submitted_at: activeRevision.submitted_at || activeRevision.updated_at || new Date().toISOString(),
+      status: newStatus
+    };
+    const res = await sessionNoteJvmUpsert(payload);
+    if (!res.ok) {
+      showToast('Update failed: ' + await readJvmErrorResponse(res));
+      return false;
+    }
+    await loadRevisions();
+    return true;
   }
   function submitRejection() {
     const reason = document.getElementById('rejectReason').value.trim();
@@ -203,8 +316,11 @@
       showToast('Please enter a rejection reason before sending back');
       return;
     }
-    closeModal('rejectModal');
-    showToast('Note sent back for revision');
+    setRevisionStatus('rejected').then(function (ok) {
+      if (!ok) return;
+      closeModal('rejectModal');
+      showToast('Note sent back for revision');
+    });
   }
   function submitRejectFromReview() {
     const reason = document.getElementById('reviewRejectReason').value.trim();
@@ -212,9 +328,22 @@
       showToast('Please fill in the rejection reason before rejecting');
       return;
     }
-    closeModal('reviewNoteModal');
-    showToast('Note sent back for revision');
+    setRevisionStatus('rejected').then(function (ok) {
+      if (!ok) return;
+      closeModal('reviewNoteModal');
+      showToast('Note sent back for revision');
+    });
   }
+  function approveFromReview() {
+    setRevisionStatus('approved').then(function (ok) {
+      if (!ok) return;
+      closeModal('reviewNoteModal');
+      showToast('Note approved');
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    void loadRevisions();
+  });
 </script>
 </body>
 </html>

@@ -306,9 +306,9 @@
           <input type="tel" id="addPhone" placeholder="(555) 000-0000"/>
         </div>
       </div>
-      <div class="form-group">
-        <label>Notes</label>
-        <textarea rows="3" id="addNotes" placeholder="Any additional notes…"></textarea>
+      <div style="margin:8px 0 10px;padding:10px 12px;border:1px solid #d4e4da;border-left:4px solid #6b9e7e;border-radius:6px;background:#f8fcfa;">
+        <strong style="font-size:13px;color:#2d4a3e;">Caregiver (Optional)</strong>
+        <div style="font-size:12px;color:#6b8c7a;margin-top:2px;">If this client has a caregiver, fill this out now and it will auto-create on the caregivers page.</div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -336,6 +336,10 @@
           <label>Caregiver Email</label>
           <input type="email" id="addCgEmail" placeholder="caregiver@email.com"/>
         </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea rows="3" id="addNotes" placeholder="Any additional notes…"></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -459,6 +463,37 @@
         <label>Notes</label>
         <textarea rows="3" id="editNotes"></textarea>
       </div>
+      <div style="margin:8px 0 10px;padding:10px 12px;border:1px solid #d4e4da;border-left:4px solid #6b9e7e;border-radius:6px;background:#f8fcfa;">
+        <strong style="font-size:13px;color:#2d4a3e;">Caregiver (Optional)</strong>
+        <div style="font-size:12px;color:#6b8c7a;margin-top:2px;">Edit or add linked caregiver information for this client.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Caregiver Name</label>
+          <input type="text" id="editCgName" placeholder="Leave blank if none"/>
+        </div>
+        <div class="form-group">
+          <label>Caregiver Relationship</label>
+          <select id="editCgRelationship">
+            <option value="">— Select relationship —</option>
+            <option>Parent</option>
+            <option>Grandparent</option>
+            <option>Sibling</option>
+            <option>Legal Guardian</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Caregiver Phone</label>
+          <input type="tel" id="editCgPhone" placeholder="(555) 000-0000"/>
+        </div>
+        <div class="form-group">
+          <label>Caregiver Email</label>
+          <input type="email" id="editCgEmail" placeholder="caregiver@email.com"/>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="small-btn" onclick="closeModal('editClientModal')">Cancel</button>
@@ -479,6 +514,7 @@ var _clientsData     = [];   // full list cached after load
 var _editingClientId = null; // set when edit modal is open
 var _viewingClientId = null;
 var _staffById       = {};   // used to resolve assigned staff names
+var _caregiverByClientId = {}; // one linked caregiver (first active) per client
 
 // ── Modal helpers ─────────────────────────────────────────────────────────────
 function openModal  (id) { document.getElementById (id).classList.add    ('open'); }
@@ -534,11 +570,31 @@ async function loadClientsTable () {
     if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
       var sres = await jvmFetchStaff (org.id, null);
       if (sres.ok) staffRows = await sres.json ();
+      var cgres = await jvmFetchCaregivers (org.id, null);
+      var cgRows = cgres.ok ? await cgres.json () : [];
+      _caregiverByClientId = {};
+      (cgRows || []).forEach(function (cg) {
+        if (!cg || !cg.client_id) return;
+        if (_caregiverByClientId[cg.client_id]) return;
+        _caregiverByClientId[cg.client_id] = cg;
+      });
     } else if (window.supabaseClient) {
       var sq = await window.supabaseClient.from ('staff')
         .select ('id,first_name,last_name,status')
         .eq ('org_id', org.id);
       if (!sq.error) staffRows = sq.data || [];
+      var cgq = await window.supabaseClient.from ('caregivers')
+        .select ('id,client_id,first_name,last_name,relationship,email,phone,status')
+        .eq ('org_id', org.id)
+        .order ('created_at', { ascending: true });
+      _caregiverByClientId = {};
+      if (!cgq.error) {
+        (cgq.data || []).forEach(function (cg) {
+          if (!cg || !cg.client_id) return;
+          if (_caregiverByClientId[cg.client_id]) return;
+          _caregiverByClientId[cg.client_id] = cg;
+        });
+      }
     }
     _staffById = (staffRows || []).reduce(function (acc, s) {
       var n = ((s.first_name || '') + ' ' + (s.last_name || '')).trim();
@@ -806,6 +862,11 @@ function openEditClient (clientId) {
   set ('editEmail',     c.email);
   set ('editPhone',     c.phone);
   set ('editNotes',     c.notes);
+  var cg = _caregiverByClientId[clientId] || null;
+  set ('editCgName',    cg ? (((cg.first_name || '') + ' ' + (cg.last_name || '')).trim ()) : '');
+  set ('editCgRelationship', cg ? cg.relationship : '');
+  set ('editCgPhone',   cg ? cg.phone : '');
+  set ('editCgEmail',   cg ? cg.email : '');
 
   var as = document.getElementById ('editAuthStatus');
   if (as) as.value = c.auth_status || 'active';
@@ -833,6 +894,9 @@ async function updateClient () {
     status:             document.getElementById ('editStatus').value     || 'active',
     notes:              (document.getElementById ('editNotes').value     || '').trim (),
   };
+  var org = window.gilbertoCurrentOrg;
+  var cgName = (document.getElementById ('editCgName').value || '').trim ();
+  var existingCg = _caregiverByClientId[_editingClientId] || null;
 
   if (!patch.first_name || !patch.last_name) {
     clientToast ('First and last name are required.'); return;
@@ -845,9 +909,48 @@ async function updateClient () {
     if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
       var res = await clientJvmPatch (_editingClientId, patch);
       if (!res.ok) { clientToast ('Update failed: ' + await readJvmErrorResponse (res)); return; }
+      if (existingCg && existingCg.id) {
+        await caregiverJvmDelete (existingCg.id);
+      }
+      if (cgName) {
+        var n = cgName.split (/\s+/);
+        var cgPayload = {
+          org_id: org && org.id ? org.id : null,
+          client_id: _editingClientId,
+          first_name: n[0] || 'Caregiver',
+          last_name: n.slice(1).join(' ') || 'Contact',
+          relationship: document.getElementById('editCgRelationship').value || null,
+          phone: (document.getElementById('editCgPhone').value || '').trim() || null,
+          email: (document.getElementById('editCgEmail').value || '').trim() || null,
+          status: 'active'
+        };
+        var cgRes = await jvmFetch('/api/caregivers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cgPayload)
+        });
+        if (!cgRes.ok) clientToast ('Client updated, but caregiver save failed.');
+      }
     } else {
       var r = await window.supabaseClient.from ('clients').update (patch).eq ('id', _editingClientId);
       if (r.error) { clientToast ('Update failed: ' + r.error.message); return; }
+      if (existingCg && existingCg.id) {
+        await window.supabaseClient.from('caregivers').delete().eq('id', existingCg.id);
+      }
+      if (cgName) {
+        var nn = cgName.split (/\s+/);
+        var cgi = await window.supabaseClient.from('caregivers').insert({
+          org_id: org && org.id ? org.id : null,
+          client_id: _editingClientId,
+          first_name: nn[0] || 'Caregiver',
+          last_name: nn.slice(1).join(' ') || 'Contact',
+          relationship: document.getElementById('editCgRelationship').value || null,
+          phone: (document.getElementById('editCgPhone').value || '').trim() || null,
+          email: (document.getElementById('editCgEmail').value || '').trim() || null,
+          status: 'active'
+        });
+        if (cgi.error) clientToast ('Client updated, but caregiver save failed.');
+      }
     }
     closeModal ('editClientModal');
     clientToast ('Client updated');

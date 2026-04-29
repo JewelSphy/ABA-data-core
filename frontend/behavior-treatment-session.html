@@ -1140,7 +1140,7 @@
         return;
       }
       showToast('Session note submitted and saved');
-      setTimeout(() => { goToPage('revisions.html'); }, 1200);
+      setTimeout(() => { goToPage('sessions.html'); }, 1200);
     } catch (e) {
       showToast("Submit failed: " + (e?.message || "unknown error"));
     }
