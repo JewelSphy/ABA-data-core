@@ -59,7 +59,7 @@ body::after {
 
 .container {
   width: 100%;
-  max-width: 480px;
+  max-width: 640px;
   position: relative;
   z-index: 1;
 }
@@ -67,16 +67,16 @@ body::after {
 /* Card with dark header + white body */
 .card {
   background: white;
-  border-radius: 18px;
+  border-radius: 22px;
   overflow: hidden;
-  box-shadow: 0 24px 70px rgba(45, 74, 62, 0.18), 0 4px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 32px 90px rgba(45, 74, 62, 0.2), 0 8px 24px rgba(0,0,0,0.08);
   border: 1px solid rgba(255,255,255,0.55);
 }
 
 /* --- Dark header section --- */
 .card-header {
   background: linear-gradient(135deg, #3a6350, #2d4a3e);
-  padding: 36px 40px 32px;
+  padding: 44px 48px 38px;
   position: relative;
   overflow: hidden;
 }
@@ -114,8 +114,8 @@ body::after {
 }
 
 .login-logo-icon {
-  width: 50px;
-  height: 50px;
+  width: 62px;
+  height: 62px;
   flex-shrink: 0;
 }
 
@@ -126,14 +126,14 @@ body::after {
 }
 
 .login-logo-name {
-  font-size: 22px;
+  font-size: 27px;
   font-weight: 800;
   color: white;
   letter-spacing: -0.5px;
 }
 
 .login-logo-sub {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: rgba(255,255,255,0.6);
   text-transform: uppercase;
@@ -175,7 +175,7 @@ body::after {
 }
 
 .card-header-tagline h1 {
-  font-size: 29px;
+  font-size: 36px;
   font-weight: 800;
   color: white;
   letter-spacing: -0.6px;
@@ -184,14 +184,14 @@ body::after {
 }
 
 .card-header-tagline p {
-  font-size: 13.5px;
+  font-size: 15px;
   color: rgba(255,255,255,0.68);
   line-height: 1.5;
 }
 
 /* --- Form section --- */
 .card-body {
-  padding: 32px 40px 36px;
+  padding: 38px 48px 44px;
 }
 
 form {
@@ -200,7 +200,7 @@ form {
 }
 
 label {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   margin-bottom: 6px;
   color: #2d4a3e;
@@ -209,11 +209,11 @@ label {
 }
 
 input {
-  padding: 12px 14px;
+  padding: 15px 16px;
   border: 1.5px solid #d4e4da;
-  border-radius: 9px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  border-radius: 11px;
+  margin-bottom: 18px;
+  font-size: 15px;
   color: #1f2d26;
   transition: all 0.2s ease;
   background: #fafcfb;
@@ -231,13 +231,13 @@ input::placeholder {
 }
 
 button[type="button"] {
-  padding: 13px;
+  padding: 16px;
   border: none;
-  border-radius: 9px;
+  border-radius: 11px;
   background: linear-gradient(135deg, #4a7c62, #2d4a3e);
   color: white;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
   transition: 0.2s ease;
   letter-spacing: 0.2px;
@@ -249,13 +249,33 @@ button[type="button"]:hover {
   box-shadow: 0 6px 18px rgba(45, 74, 62, 0.3);
 }
 
+.login-helper-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.login-helper-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d8e8de;
+  background: #f7fbf9;
+  color: #527164;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
 /* --- Tabs --- */
 .tabs {
   display: flex;
-  margin-top: 24px;
+  margin-top: 28px;
   background: #eef4f1;
-  border-radius: 9px;
-  padding: 3px;
+  border-radius: 11px;
+  padding: 4px;
 }
 
 .tabs button {
@@ -265,9 +285,9 @@ button[type="button"]:hover {
   border: none;
   outline: none;
   box-shadow: none;
-  border-radius: 7px;
-  font-size: 13px;
-  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  padding: 11px 14px;
   font-weight: 500;
   margin-top: 0;
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
@@ -292,6 +312,8 @@ button[type="button"]:hover {
 }
 
 @media (max-width: 520px) {
+  .container { max-width: 100%; }
   .card-header, .card-body { padding-left: 28px; padding-right: 28px; }
-  .card-header-tagline h1 { font-size: 22px; }
+  .card-header-tagline h1 { font-size: 28px; }
+  .login-logo-name { font-size: 23px; }
 }

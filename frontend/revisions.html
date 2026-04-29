@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Revisions - Gilberto ABA Care CRM</title>
   <link rel="stylesheet" href="dashboard.css" />
+  <style>
+    .review-board-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .review-stat-row { display:flex; gap:10px; flex-wrap:wrap; }
+    .review-stat { background:#fff; border:1px solid #d7e6dd; border-radius:10px; padding:8px 10px; min-width:130px; }
+    .review-stat .k { font-size:11px; color:#6b8c7a; text-transform:uppercase; letter-spacing:.4px; }
+    .review-stat .v { font-size:19px; font-weight:700; color:#1f2d26; line-height:1.2; }
+    .review-board { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
+    .review-col { background:#fff; border:1px solid #d9e8df; border-radius:12px; min-height:420px; display:flex; flex-direction:column; overflow:hidden; }
+    .review-col-head { padding:10px 12px; font-size:12px; font-weight:700; color:#1f2d26; border-bottom:1px solid #e5f0ea; display:flex; justify-content:space-between; align-items:center; }
+    .review-col.pending .review-col-head { background:#fff7e8; }
+    .review-col.rejected .review-col-head { background:#fff0f0; }
+    .review-col.approved .review-col-head { background:#eefaf2; }
+    .review-list { padding:10px; display:flex; flex-direction:column; gap:10px; overflow:auto; }
+    .review-card { border:1px solid #d8e7de; border-radius:10px; padding:10px; background:#fff; box-shadow:0 5px 14px rgba(31,45,38,.06); }
+    .review-card .t { font-size:13px; font-weight:700; color:#203229; margin-bottom:4px; }
+    .review-card .m { font-size:12px; color:#597568; margin-bottom:8px; line-height:1.45; }
+    .review-card .a { display:flex; gap:6px; flex-wrap:wrap; }
+    .review-empty { color:#7f988c; font-size:12px; padding:12px; border:1px dashed #dbe8e1; border-radius:8px; background:#fbfdfc; }
+    @media (max-width: 1050px) { .review-board { grid-template-columns:1fr; } }
+  </style>
 </head>
 <body>
 <div class="app-layout">
@@ -68,33 +88,30 @@
       Review each note carefully before approving. Rejected notes are sent back to the author for correction.
     </div>
 
-    <div class="table-wrapper">
-      <div class="table-toolbar">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="tbl-btn" id="rev-filter-all" onclick="revFilter('all')">All</button>
-          <button class="tbl-btn" id="rev-filter-pending" onclick="revFilter('pending')">Pending</button>
-          <button class="tbl-btn" id="rev-filter-rejected" onclick="revFilter('rejected')">Rejected</button>
-        </div>
-        <div class="table-search">
-          <input class="search-input" id="revSearch" type="text" placeholder="Search revisions..." oninput="filterTable('revSearch','revisionsBody')" />
-        </div>
+    <div class="review-board-toolbar">
+      <div class="review-stat-row">
+        <div class="review-stat"><div class="k">Pending Review</div><div class="v" id="pendingCount">0</div></div>
+        <div class="review-stat"><div class="k">Rejected</div><div class="v" id="rejectedCount">0</div></div>
+        <div class="review-stat"><div class="k">Approved</div><div class="v" id="approvedCount">0</div></div>
       </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Author</th>
-            <th>Note Type</th>
-            <th>Days Pending</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="revisionsBody">
-          <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No revision records loaded yet.</td></tr>
-        </tbody>
-      </table>
+      <div class="table-search">
+        <input class="search-input" id="revSearch" type="text" placeholder="Search by client, author, type..." oninput="renderRevisions(revisionRows)" />
+      </div>
+    </div>
+
+    <div class="review-board">
+      <div class="review-col pending">
+        <div class="review-col-head">Pending <span id="pendingHeadCount">0</span></div>
+        <div class="review-list" id="pendingList"><div class="review-empty">No pending notes.</div></div>
+      </div>
+      <div class="review-col rejected">
+        <div class="review-col-head">Rejected <span id="rejectedHeadCount">0</span></div>
+        <div class="review-list" id="rejectedList"><div class="review-empty">No rejected notes.</div></div>
+      </div>
+      <div class="review-col approved">
+        <div class="review-col-head">Approved <span id="approvedHeadCount">0</span></div>
+        <div class="review-list" id="approvedList"><div class="review-empty">No approved notes.</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -171,22 +188,6 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2500);
   }
-  function filterTable(inputId, tbodyId) {
-    const q = document.getElementById(inputId).value.toLowerCase();
-    document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-  }
-  function revFilter(status) {
-    ['rev-filter-all','rev-filter-pending','rev-filter-rejected'].forEach(id => {
-      document.getElementById(id).classList.remove('active-filter');
-    });
-    document.getElementById('rev-filter-' + status).classList.add('active-filter');
-    document.querySelectorAll('#revisionsBody tr').forEach(row => {
-      if (status === 'all') { row.style.display = ''; }
-      else { row.style.display = row.getAttribute('data-rev-status') === status ? '' : 'none'; }
-    });
-  }
   function esc(v) {
     return String(v == null ? '' : v)
       .replaceAll('&', '&amp;')
@@ -223,26 +224,50 @@
   function findRevision(id) {
     return revisionRows.find(function (r) { return r.id === id; }) || null;
   }
+  function reviewCardHtml(r, revStatus, days) {
+    const actions = revStatus === 'pending'
+      ? '<button class="tbl-btn" onclick="openReviewModalById(\'' + esc(r.id) + '\')">Review</button><button class="tbl-btn danger" onclick="openRejectModalById(\'' + esc(r.id) + '\')">Reject</button>'
+      : revStatus === 'approved'
+      ? '<button class="tbl-btn" onclick="openReviewModalById(\'' + esc(r.id) + '\')">View</button>'
+      : '<button class="tbl-btn" onclick="openReviewModalById(\'' + esc(r.id) + '\')">Review</button>';
+    return '<div class="review-card">'
+      + '<div class="t">' + esc(r.client_name || 'Unknown client') + '</div>'
+      + '<div class="m">Author: ' + esc(r.submitted_by || 'Unknown author') + '<br/>'
+      + 'Type: ' + esc(r.service_type || 'Session Note') + '<br/>'
+      + 'Date: ' + esc(fmtDate(r.submitted_at || r.updated_at)) + ' · '
+      + 'Pending: ' + esc(String(days)) + ' day(s)</div>'
+      + '<div class="a">' + actions + '</div>'
+      + '</div>';
+  }
   function renderRevisions(rows) {
-    const body = document.getElementById('revisionsBody');
-    if (!rows || !rows.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No revision records loaded yet.</td></tr>';
-      return;
-    }
-    body.innerHTML = rows.map(function (r) {
+    const pending = [];
+    const rejected = [];
+    const approved = [];
+    const q = (document.getElementById('revSearch')?.value || '').trim().toLowerCase();
+    (rows || []).forEach(function (r) {
       const revStatus = normalizeRevisionStatus(r.status);
       const days = daysPending(r.submitted_at || r.updated_at);
-      return '<tr data-rev-status="' + esc(revStatus) + '">'
-        + '<td>' + esc(fmtDate(r.submitted_at || r.updated_at)) + '</td>'
-        + '<td>' + esc(r.client_name || 'Unknown client') + '</td>'
-        + '<td>' + esc(r.submitted_by || 'Unknown author') + '</td>'
-        + '<td>' + esc(r.service_type || 'Session Note') + '</td>'
-        + '<td>' + esc(String(days)) + '</td>'
-        + '<td>' + statusBadge(revStatus) + '</td>'
-        + '<td><button class="tbl-btn" onclick="openReviewModalById(\'' + esc(r.id) + '\')">Review</button>'
-        + (revStatus === 'pending' ? ' <button class="tbl-btn danger" onclick="openRejectModalById(\'' + esc(r.id) + '\')">Reject</button>' : '')
-        + '</td></tr>';
-    }).join('');
+      const hay = (r.client_name + ' ' + (r.submitted_by || '') + ' ' + (r.service_type || '') + ' ' + revStatus).toLowerCase();
+      if (q && !hay.includes(q)) return;
+      const card = reviewCardHtml(r, revStatus, days);
+      if (revStatus === 'rejected') rejected.push(card);
+      else if (revStatus === 'approved') approved.push(card);
+      else pending.push(card);
+    });
+    const set = function (id, arr, emptyMsg) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = arr.length ? arr.join('') : '<div class="review-empty">' + emptyMsg + '</div>';
+    };
+    set('pendingList', pending, 'No pending notes.');
+    set('rejectedList', rejected, 'No rejected notes.');
+    set('approvedList', approved, 'No approved notes.');
+    document.getElementById('pendingCount').textContent = String(pending.length);
+    document.getElementById('rejectedCount').textContent = String(rejected.length);
+    document.getElementById('approvedCount').textContent = String(approved.length);
+    document.getElementById('pendingHeadCount').textContent = String(pending.length);
+    document.getElementById('rejectedHeadCount').textContent = String(rejected.length);
+    document.getElementById('approvedHeadCount').textContent = String(approved.length);
   }
   async function loadRevisions() {
     try {
@@ -260,10 +285,11 @@
         });
       });
       renderRevisions(revisionRows);
-      revFilter('pending');
     } catch (e) {
-      document.getElementById('revisionsBody').innerHTML =
-        '<tr><td colspan="7" style="text-align:center;padding:20px;color:#b04f4f;">Failed to load revisions: ' + esc(e && e.message ? e.message : String(e)) + '</td></tr>';
+      const msg = 'Failed to load revisions: ' + esc(e && e.message ? e.message : String(e));
+      document.getElementById('pendingList').innerHTML = '<div class="review-empty" style="color:#b04f4f;">' + msg + '</div>';
+      document.getElementById('rejectedList').innerHTML = '<div class="review-empty">No rejected notes.</div>';
+      document.getElementById('approvedList').innerHTML = '<div class="review-empty">No approved notes.</div>';
     }
   }
   function openReviewModalById(id) {
