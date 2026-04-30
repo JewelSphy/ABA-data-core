@@ -59,5 +59,11 @@ public final class JsonUtil {
     return s == null || s.isBlank ();
   }
 
+  /** True if JSON contains a top-level quoted key (flat payloads only). */
+  public static boolean hasField ( String json, String key ) {
+    if ( json == null || key == null || key.isBlank () ) return false;
+    return json.indexOf ( "\"" + key + "\"" ) >= 0;
+  }
+
   private JsonUtil () {}
 }

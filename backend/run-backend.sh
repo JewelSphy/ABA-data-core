@@ -16,7 +16,7 @@ if [ -z "${PORT:-}" ]; then
   export PORT="8788"
 fi
 if [ -z "${MAX_BODY_BYTES:-}" ]; then
-  export MAX_BODY_BYTES="131072"
+  export MAX_BODY_BYTES="12582912"
 fi
 # Optional hardening:
 # export ALLOWED_ORIGIN="http://127.0.0.1:5500"

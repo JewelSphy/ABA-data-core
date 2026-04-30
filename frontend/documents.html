@@ -6,22 +6,349 @@
   <title>Documents - Gilberto CRM</title>
   <link rel="stylesheet" href="dashboard.css"/>
   <style>
-    .ui-colorful .topbar { background: linear-gradient(120deg, rgba(41,121,255,.08), rgba(46,204,113,.08)); border: 1px solid #dbe8ef; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
-    .ui-colorful .topbar h1 { background: linear-gradient(90deg, #1d6fd8, #1f9e67); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .ui-colorful .table-wrapper { border: 1px solid #dbe7e2; border-radius: 14px; box-shadow: 0 12px 26px rgba(22,61,48,.08); background: linear-gradient(180deg, #fff, #fbfffd); }
-    .ui-colorful .data-table thead th { background: linear-gradient(90deg, #eef7ff, #effbf4); color: #22493b; border-bottom: 1px solid #d9e9df; }
-    .ui-colorful .data-table tbody tr:hover { background: linear-gradient(90deg, rgba(66,133,244,.08), rgba(46,204,113,.08)); }
-    .ui-colorful .add-btn { background: linear-gradient(90deg, #2b73d2, #2ca66b); border: none; box-shadow: 0 10px 20px rgba(35,93,155,.2); }
-    .ui-colorful .add-btn:hover { background: linear-gradient(90deg, #225da8, #248558); transform: translateY(-1px); }
-    .doc-section-head { margin: 18px 0 8px; }
-    .doc-section-head h2 { font-size: 15px; color: #1f2d26; margin: 0 0 4px; }
-    .doc-section-head p { font-size: 12px; color: #597568; margin: 0; line-height: 1.45; }
+    /* Same shell treatment as Sessions / Reports */
+    body.page-documents .main-area {
+      background: linear-gradient(180deg, #eef7ff 0%, #ffffff 38%, #f5fbff 100%);
+      min-height: 100%;
+    }
+    .page-documents .topbar {
+      background: linear-gradient(120deg, rgba(41, 121, 255, 0.08), rgba(46, 204, 113, 0.08));
+      border: 1px solid #dbe8ef;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .page-documents .topbar h1 {
+      background: linear-gradient(90deg, #1d6fd8, #1f9e67);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .page-documents .table-wrapper {
+      border: 1px solid #dbe7e2;
+      border-radius: 14px;
+      box-shadow: 0 12px 26px rgba(22, 61, 48, 0.08);
+      background: linear-gradient(180deg, #ffffff, #fbfffd);
+      transition: opacity .22s ease;
+    }
+    .page-documents .table-wrapper.doc-shell-loading { opacity: .72; pointer-events: none; }
+    .page-documents .data-table thead th {
+      background: linear-gradient(90deg, #eef7ff, #effbf4);
+      color: #22493b;
+      border-bottom: 1px solid #d9e9df;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .page-documents .data-table th:last-child,
+    .page-documents .data-table td:last-child {
+      text-align: right;
+    }
+    .page-documents .data-table tbody tr.doc-filter-row {
+      transition: background .15s ease, box-shadow .15s ease, transform .12s ease;
+    }
+    .page-documents .data-table tbody tr.doc-filter-row:hover {
+      background: linear-gradient(90deg, rgba(66, 133, 244, 0.07), rgba(46, 204, 113, 0.07));
+      box-shadow: inset 0 0 0 1px rgba(107, 158, 126, 0.14);
+    }
+    .page-documents .data-table tbody tr.doc-filter-row:active { transform: scale(0.998); }
+    .page-documents .add-btn {
+      background: linear-gradient(90deg, #2b73d2, #2ca66b);
+      border: none;
+      box-shadow: 0 10px 20px rgba(35, 93, 155, 0.2);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .page-documents .add-btn:hover {
+      background: linear-gradient(90deg, #225da8, #248558);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(35, 93, 155, 0.26);
+    }
+    .page-documents .search-input {
+      border: 1px solid #cfe2db;
+      background: linear-gradient(180deg, #ffffff, #f8fcfa);
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .page-documents .search-input:focus {
+      border-color: #6ea8ff;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.16);
+      outline: none;
+    }
+    .doc-compliance-banner {
+      border-radius: 12px;
+      border: 1px solid #e8dcc8;
+      background: linear-gradient(105deg, #fffbf5, #fff8ef);
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 8px 20px rgba(120, 90, 40, 0.06);
+    }
+    /* Align with dashboard .table-toolbar rhythm */
+    .doc-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 20px;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid #d4e4da;
+      background: linear-gradient(180deg, #fbfffd, #ffffff);
+    }
+    .doc-toolbar-groups { display: flex; flex-wrap: wrap; gap: 18px 24px; align-items: flex-end; }
+    .doc-filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .doc-toolbar-label {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #6b8c7a;
+    }
+    .doc-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .doc-filter-chip {
+      font-family: inherit;
+      border: 1px solid #c8ddd2;
+      background: linear-gradient(145deg, #fbfffd, #f5f9ff);
+      color: #275344;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .doc-filter-chip:hover {
+      transform: translateY(-1px);
+      border-color: #9bc4b0;
+      box-shadow: 0 6px 14px rgba(45, 74, 62, 0.1);
+    }
+    .doc-filter-chip:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.28);
+    }
+    .doc-filter-chip.is-active {
+      background: linear-gradient(90deg, #1f7a5a, #2c74b4);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 8px 18px rgba(44, 116, 180, 0.22);
+    }
+    .doc-toolbar-search {
+      min-width: 200px;
+      flex: 1 1 220px;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+    }
+    .page-documents .doc-toolbar-search .search-input {
+      width: 100%;
+      max-width: none;
+      min-width: 0;
+    }
+    .doc-table-section {
+      padding: 16px 20px 22px;
+    }
+    .doc-table-section + .doc-table-section {
+      border-top: 1px solid #d4e4da;
+      padding-top: 20px;
+    }
+    .doc-table-panel {
+      border: 1px solid #d4e4da;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(22, 61, 48, 0.04);
+    }
+    .page-documents .doc-table-panel .data-table { margin: 0; }
+    .page-documents .doc-table-panel .data-table tr:last-child td { border-bottom: none; }
+    .doc-section-head {
+      margin: 0 0 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 10px 16px;
+      justify-content: space-between;
+    }
+    .doc-section-head h2 { font-size: 16px; color: #1f2d26; margin: 0; font-weight: 800; letter-spacing: .02em; }
+    .doc-section-head p {
+      font-size: 12px;
+      color: #597568;
+      margin: 0;
+      line-height: 1.5;
+      flex: 1 1 220px;
+      max-width: 52rem;
+    }
     .doc-row-click { cursor: pointer; }
-    .doc-row-click:hover td { background: rgba(107,158,126,.06); }
-    .intake-modal-hint { font-size: 12px; color: #597568; margin: 0 0 12px; line-height: 1.45; border-left: 3px solid #6b9e7e; padding-left: 10px; background: #f9fcfb; border-radius: 4px; }
+    .doc-row-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .doc-attach-pill {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #eef4ff;
+      color: #2c5282;
+      border: 1px solid #c9daf5;
+      flex-shrink: 0;
+    }
+    .doc-row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+    .doc-action-btn {
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #c6ddd3;
+      background: #fff;
+      color: #2d4a3e;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .doc-action-btn:hover {
+      background: #f4faf7;
+      border-color: #9bc4b0;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(45, 74, 62, 0.08);
+    }
+    .doc-action-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.25); }
+    .doc-action-btn--primary {
+      border: none;
+      background: linear-gradient(90deg, #238055, #2a9e6e);
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(35, 128, 85, 0.22);
+    }
+    .doc-action-btn--primary:hover {
+      background: linear-gradient(90deg, #1c6845, #238055);
+      box-shadow: 0 8px 18px rgba(35, 128, 85, 0.28);
+    }
+    .doc-action-btn--danger {
+      border-color: #fca5a5;
+      color: #b91c1c;
+      background: #fff;
+    }
+    .doc-action-btn--danger:hover { background: #fef2f2; border-color: #f87171; }
+    .doc-empty-cell {
+      text-align: center !important;
+      padding: 36px 20px !important;
+      border: none !important;
+    }
+    .doc-empty-state {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+    .doc-empty-state .doc-empty-title { font-size: 15px; font-weight: 700; color: #2d4a3e; margin: 0; }
+    .doc-empty-state .doc-empty-text { font-size: 13px; color: #6b8c7a; margin: 0; line-height: 1.5; }
+    .doc-loading-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b9e7e;
+      animation: docPulse 1s ease-in-out infinite;
+    }
+    @keyframes docPulse { 0%, 100% { opacity: .35; transform: scale(.9); } 50% { opacity: 1; transform: scale(1); } }
+    .doc-modal-hint {
+      font-size: 12px;
+      color: #486458;
+      margin: 0 0 14px;
+      line-height: 1.5;
+      border-left: 4px solid #6b9e7e;
+      padding: 10px 12px;
+      background: linear-gradient(90deg, #f7fbfa, #f9fbff);
+      border-radius: 0 10px 10px 0;
+    }
+    /* Keep global modal header (white title on sage) — do not clip title text */
+    .doc-dropzone {
+      position: relative;
+      border: 2px dashed #b9d4c8;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      cursor: pointer;
+      background: linear-gradient(180deg, #fbfffd, #f6faf8);
+      transition: border-color .2s ease, background .2s ease, transform .15s ease, box-shadow .2s ease;
+    }
+    .doc-dropzone:hover {
+      border-color: #6b9e7e;
+      box-shadow: 0 8px 22px rgba(45, 74, 62, 0.08);
+    }
+    .doc-dropzone:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.28);
+    }
+    .doc-dropzone.doc-dropzone--active {
+      border-color: #2c74b4;
+      background: linear-gradient(180deg, #f0f7ff, #f4fff9);
+      transform: scale(1.01);
+    }
+    .doc-dropzone-inner .doc-dropzone-title { display: block; font-size: 14px; font-weight: 700; color: #1f3c31; margin-bottom: 4px; }
+    .doc-dropzone-inner .doc-dropzone-sub { font-size: 12px; color: #6b8c7a; }
+    .doc-dropzone-fileline {
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2c5282;
+      word-break: break-word;
+    }
+    #viewDocModal .modal-box {
+      border-radius: 16px;
+      border: 1px solid #dbe8e2;
+      box-shadow: 0 24px 48px rgba(24, 56, 44, 0.12);
+      max-width: 560px;
+    }
+    #viewDocModal .info-item {
+      border: 1px solid #deebe5;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fff;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    #viewDocModal .info-item:hover {
+      border-color: #b9d8cb;
+      box-shadow: 0 6px 14px rgba(45, 74, 62, 0.07);
+    }
+    #viewDocAttachmentLink.doc-download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #e8f4ff, #ecfdf5);
+      border: 1px solid #c9daf5;
+      text-decoration: none;
+      font-weight: 700 !important;
+      color: #1d4ed8 !important;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    #viewDocAttachmentLink.doc-download-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(29, 78, 216, 0.12);
+    }
+    #docSaveBtn:disabled { opacity: .65; cursor: wait; }
+    .page-documents .badge-active {
+      background: linear-gradient(90deg, #23b36b, #2fd58e);
+      color: #fff;
+      border: none;
+    }
+    .page-documents .badge-expiring {
+      background: linear-gradient(90deg, #f5a623, #ffc14d);
+      color: #4b3200;
+      border: none;
+    }
+    .page-documents .badge-pending {
+      background: linear-gradient(90deg, #8aa1b7, #b0bfd0);
+      color: #1f3345;
+      border: none;
+    }
+    .page-documents .badge-expired {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      color: #fff;
+      border: none;
+    }
   </style>
 </head>
-<body class="ui-colorful">
+<body class="page-documents">
 <div class="app-layout">
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -69,7 +396,7 @@
     <header class="topbar">
       <div>
         <h1>Documents</h1>
-        <p>Expired (high), missing uploads (medium), and renewal windows (low) — active clients must complete initial files</p>
+        <p>Intake files, expirations, and uploads — filter by status or priority, click a row to edit</p>
       </div>
       <div class="top-actions">
         <button class="add-btn" type="button" onclick="openNewDocument()">+ Upload Document</button>
@@ -77,29 +404,41 @@
       </div>
     </header>
 
-    <div id="docComplianceTop" class="notice notice-warn" role="alert" style="display:none;margin-bottom:12px;"></div>
+    <div id="docComplianceTop" class="doc-compliance-banner" role="alert" style="display:none;margin-bottom:14px;"></div>
 
-    <div class="table-wrapper">
-      <div class="table-toolbar">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button class="filter-btn small-btn active-blue" type="button" onclick="filterDocs(event,'all')">All</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'missing')">Missing uploads</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expiring')">Expiring Soon</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'expired')">Expired</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'active')">Active only</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-expired')">Pri: High · Expired</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-missing')">Pri: Medium · Missing</button>
-          <button class="filter-btn small-btn" type="button" onclick="filterDocs(event,'tier-soon')">Pri: Low · Soon</button>
+    <div class="table-wrapper" id="docTableShell">
+      <div class="doc-toolbar">
+        <div class="doc-toolbar-groups">
+          <div class="doc-filter-group">
+            <span class="doc-toolbar-label">Lifecycle</span>
+            <div class="doc-chip-row">
+              <button type="button" class="doc-filter-chip is-active" data-filter="all" onclick="filterDocs(event,'all')">All</button>
+              <button type="button" class="doc-filter-chip" data-filter="missing" onclick="filterDocs(event,'missing')">Missing</button>
+              <button type="button" class="doc-filter-chip" data-filter="expiring" onclick="filterDocs(event,'expiring')">Expiring</button>
+              <button type="button" class="doc-filter-chip" data-filter="expired" onclick="filterDocs(event,'expired')">Expired</button>
+              <button type="button" class="doc-filter-chip" data-filter="active" onclick="filterDocs(event,'active')">Active</button>
+            </div>
+          </div>
+          <div class="doc-filter-group">
+            <span class="doc-toolbar-label">Priority tier</span>
+            <div class="doc-chip-row">
+              <button type="button" class="doc-filter-chip" data-filter="tier-expired" onclick="filterDocs(event,'tier-expired')">High · Expired</button>
+              <button type="button" class="doc-filter-chip" data-filter="tier-missing" onclick="filterDocs(event,'tier-missing')">Medium · Missing</button>
+              <button type="button" class="doc-filter-chip" data-filter="tier-soon" onclick="filterDocs(event,'tier-soon')">Low · Soon</button>
+            </div>
+          </div>
         </div>
-        <div class="table-search">
-          <input class="search-input" id="docSearch" type="text" placeholder="Search documents..." oninput="filterDocTables()"/>
+        <div class="doc-toolbar-search">
+          <input class="search-input" id="docSearch" type="search" autocomplete="off" placeholder="Search name, client, type…" oninput="filterDocTables()" aria-label="Search documents"/>
         </div>
       </div>
 
+      <section class="doc-table-section" aria-labelledby="docHeadingRequired">
       <div class="doc-section-head">
-        <h2>Required client documentation</h2>
-        <p><strong>Active clients</strong> automatically get eight HIPAA-aligned healthcare placeholders when created or activated — listed in checklist order below. Rows sort first by urgency (expired → missing uploads → expiring ≤45 days), then by checklist order.</p>
+        <h2 id="docHeadingRequired">Required client documentation</h2>
+        <p>Eight HIPAA-style intake slots per active client. Sorted by urgency, then checklist order. <strong>Click a row</strong> to edit or use <strong>Upload</strong>.</p>
       </div>
+      <div class="doc-table-panel">
       <table class="data-table">
         <thead>
           <tr>
@@ -113,13 +452,17 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="docBodyRequired"><tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
+        <tbody id="docBodyRequired"><tr><td colspan="8" class="doc-empty-cell"><span class="doc-loading-dot"></span> <span style="color:#6b8c7a;font-size:13px;">Loading documents…</span></td></tr></tbody>
       </table>
-
-      <div class="doc-section-head">
-        <h2>Administrative &amp; other uploads</h2>
-        <p>Optional staff uploads, providers, legacy records, or files not tied to a client requirement.</p>
       </div>
+      </section>
+
+      <section class="doc-table-section" aria-labelledby="docHeadingOther">
+      <div class="doc-section-head">
+        <h2 id="docHeadingOther">Administrative &amp; other uploads</h2>
+        <p>Staff, providers, and files not tied to a requirement slot.</p>
+      </div>
+      <div class="doc-table-panel">
       <table class="data-table">
         <thead>
           <tr>
@@ -133,8 +476,10 @@
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="docBodyOther"><tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Loading…</td></tr></tbody>
+        <tbody id="docBodyOther"><tr><td colspan="8" class="doc-empty-cell"><span class="doc-loading-dot"></span> <span style="color:#6b8c7a;font-size:13px;">Loading documents…</span></td></tr></tbody>
       </table>
+      </div>
+      </section>
     </div>
   </main>
 </div>
@@ -148,7 +493,7 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="editDocId" value=""/>
-      <div class="intake-modal-hint" id="intakeHintBlock">
+      <div class="doc-modal-hint" id="intakeHintBlock">
         Complete each item before service where required. Labels match HIPAA notice, ROI/consent practice, payer rules, and your practice policies.</div>
       <div class="form-row">
         <div class="form-group">
@@ -191,11 +536,18 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Attach file reference (optional)</label>
-        <input type="file" id="docFileInput" accept=".pdf,.png,.jpg,.jpeg,.txt,application/pdf,image/png,image/jpeg"/>
-        <div style="font-size:11px;color:#597568;margin-top:6px;line-height:1.4;">
-          HIPAA tip: pasted text plus date is fully stored. For binaries, summarize key terms here—store signed PDFs according to your org’s policy outside this CRM if needed.
+        <label>File upload</label>
+        <input type="file" id="docFileInput" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.doc,.docx,application/pdf,image/*,text/plain"/>
+        <div class="doc-dropzone" id="docDropZone" tabindex="0" role="button" aria-label="Drop a file or press Enter to browse">
+          <div class="doc-dropzone-inner">
+            <span class="doc-dropzone-title">Drag &amp; drop a file here</span>
+            <span class="doc-dropzone-sub">or click to browse · PDF, images, Word · max 10 MB</span>
+            <div class="doc-dropzone-fileline" id="docFileChosenLabel">No file selected</div>
+          </div>
         </div>
+        <p style="font-size:11px;color:#597568;margin-top:10px;line-height:1.45;">
+          Stored with this record. Add notes below if needed. Follow your org’s HIPAA and retention policies.
+        </p>
       </div>
       <div class="form-group">
         <label>Document Content</label>
@@ -204,7 +556,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="small-btn" onclick="closeModal('uploadDocModal')">Cancel</button>
-      <button type="button" class="add-btn" onclick="saveDocument()">Save</button>
+      <button type="button" class="add-btn" id="docSaveBtn" onclick="saveDocument()">Save document</button>
     </div>
   </div>
 </div>
@@ -224,6 +576,7 @@
         <div class="info-item"><label>Upload Date</label><span id="viewDocUploadDate">—</span></div>
         <div class="info-item"><label>Expiry Date</label><span id="viewDocExpiryDate">—</span></div>
         <div class="info-item"><label>Status</label><span id="viewDocStatus">—</span></div>
+        <div class="info-item" id="viewDocAttachmentWrap" style="display:none;grid-column:1/-1"><label>File attachment</label><div style="display:flex;flex-direction:column;gap:10px;"><a id="viewDocAttachmentLink" class="doc-download-link" href="#" download="" style="display:none;">Download</a><span id="viewDocAttachmentNote" style="display:none;font-size:13px;color:#597568;"></span></div></div>
         <div class="info-item" style="grid-column:1/-1"><label>Content</label><span id="viewDocContent">—</span></div>
       </div>
     </div>
@@ -290,7 +643,43 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, "&#039;"); }
+function docEmptyHtml(title, text, showUpload) {
+  var btn = showUpload ? '<button type="button" class="doc-action-btn doc-action-btn--primary" onclick="openNewDocument()">Upload document</button>' : '';
+  return '<tr><td colspan="8" class="doc-empty-cell"><div class="doc-empty-state"><p class="doc-empty-title">' + esc(title) + '</p><p class="doc-empty-text">' + esc(text) + '</p>' + btn + '</div></td></tr>';
+}
 function fmtDate(v) { if (!v) return '—'; const d = new Date(String(v) + 'T00:00:00'); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtBytes(n) {
+  if (n == null || !isFinite(Number(n))) return '';
+  var x = Number(n);
+  if (x < 1024) return x + ' B';
+  if (x < 1048576) return (x / 1024).toFixed(1) + ' KB';
+  return (x / 1048576).toFixed(1) + ' MB';
+}
+function updateDocFileChosenLabel() {
+  var inp = document.getElementById('docFileInput');
+  var lbl = document.getElementById('docFileChosenLabel');
+  if (!lbl) return;
+  var f = inp && inp.files && inp.files[0];
+  lbl.textContent = f ? (f.name + ' · ' + fmtBytes(f.size)) : 'No file selected';
+}
+function readDocFileAsBase64(file) {
+  var max = 10 * 1024 * 1024;
+  if (!file || file.size > max) return Promise.reject(new Error(file ? 'File too large (max 10 MB).' : 'No file'));
+  return new Promise(function (resolve, reject) {
+    var r = new FileReader();
+    r.onload = function () {
+      var s = String(r.result || '');
+      var i = s.indexOf(',');
+      resolve({
+        mime: file.type || 'application/octet-stream',
+        filename: file.name || 'attachment',
+        base64: i >= 0 ? s.slice(i + 1) : s
+      });
+    };
+    r.onerror = function () { reject(new Error('Could not read file')); };
+    r.readAsDataURL(file);
+  });
+}
 function statusFor(expiry) {
   if (!expiry) return 'active';
   const now = new Date();
@@ -385,27 +774,27 @@ function rowHtml(d) {
   const st = normStatus(effSt) || 'active';
   const tier = documentActionTier(d);
   var vid = id.replace(/'/g, "\\'");
-  var btnView = '<button type="button" class="tbl-btn" onclick="event.stopPropagation();openViewDoc(\'' + vid + '\')">View</button>';
-  var btnUp = '<button type="button" class="tbl-btn add-btn" style="margin-right:6px;font-weight:700;padding:6px 12px;border-radius:8px;" onclick="event.stopPropagation();openEditDoc(\'' + vid + '\')">Upload now</button>';
-  var btnDel = '<button type="button" class="tbl-btn danger" onclick="event.stopPropagation();openDeleteDoc(\'' + vid + '\')">Delete</button>';
+  var hasFile = d.attachment_present === true || d.attachment_present === 'true';
+  var filePill = hasFile ? '<span class="doc-attach-pill">File</span>' : '';
+  var btnView = '<button type="button" class="doc-action-btn" onclick="event.stopPropagation();openViewDoc(\'' + vid + '\')">View</button>';
+  var btnUp = '<button type="button" class="doc-action-btn doc-action-btn--primary" onclick="event.stopPropagation();openEditDoc(\'' + vid + '\')">Upload</button>';
+  var btnDel = '<button type="button" class="doc-action-btn doc-action-btn--danger" onclick="event.stopPropagation();openDeleteDoc(\'' + vid + '\')">Delete</button>';
   return '<tr class="doc-filter-row doc-row-click"'
     + ' data-doc-id="' + esc(id) + '"'
     + ' data-client-id="' + esc(cid) + '"'
     + ' data-status="' + esc(st) + '"'
     + ' data-priority="' + esc(tier) + '"'
     + ' onclick="documentRowClick(event,\'' + vid + '\')"'
-    + ' title="Click row to upload or edit"'
+    + ' title="Open editor · or use View / Upload / Delete"'
     + '>'
     + '<td>' + priorityBadge(tier) + '</td>'
-    + '<td>' + esc(d.doc_name || '—') + '</td>'
+    + '<td><div class="doc-row-title">' + filePill + '<span>' + esc(d.doc_name || '—') + '</span></div></td>'
     + '<td>' + esc(d.doc_type || '—') + '</td>'
     + '<td>' + esc(d.linked_name || '—') + '</td>'
     + '<td>' + fmtDate(d.upload_date) + '</td>'
     + '<td>' + fmtDate(d.expiry_date) + '</td>'
     + '<td>' + statusBadge(effSt) + '</td>'
-    + '<td>'
-    + btnView + btnUp + btnDel
-    + '</td>'
+    + '<td><div class="doc-row-actions">' + btnView + btnUp + btnDel + '</div></td>'
     + '</tr>';
 }
 
@@ -429,7 +818,7 @@ function updateComplianceBanner() {
     return;
   }
   top.style.display = 'block';
-  top.className = 'notice notice-warn';
+  top.className = 'doc-compliance-banner';
   top.innerHTML =
     '<strong>Action priorities</strong> — ' +
     '<span style="white-space:normal;">High (expired): ' +
@@ -446,12 +835,12 @@ function renderDocTables() {
   const bodyOth = document.getElementById('docBodyOther');
   const { req, other } = splitAndSort(docsData);
   if (!req.length) {
-    bodyReq.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No client requirement rows yet. Add a client or run sync (opens automatically when the API loads).</td></tr>';
+    bodyReq.innerHTML = docEmptyHtml('No requirement rows yet', 'Activate a client or wait for the API to seed HIPAA placeholders.', false);
   } else {
     bodyReq.innerHTML = req.map(rowHtml).join('');
   }
   if (!other.length) {
-    bodyOth.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No other documents yet. Use <strong>Upload Document</strong> for staff or org files.</td></tr>';
+    bodyOth.innerHTML = docEmptyHtml('No other uploads', 'Use Upload document for staff files, providers, or records outside intake slots.', true);
   } else {
     bodyOth.innerHTML = other.map(rowHtml).join('');
   }
@@ -466,23 +855,36 @@ async function loadLinkedOptions() {
   if (!orgId) return;
   try {
     const [cRes, sRes, pRes] = await Promise.all([jvmFetchClients(orgId, null), jvmFetchStaff(orgId, null), providerJvmFetch(orgId)]);
-    const add = (label) => { sel.innerHTML += '<option value="' + esc(label) + '">' + esc(label) + '</option>'; };
-    if (cRes.ok) (await cRes.json()).forEach((x) => add(String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-    if (sRes.ok) (await sRes.json()).forEach((x) => add(String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-    if (pRes.ok) (await pRes.json()).forEach((x) => add(x.full_name || ''));
+    var seen = new Set();
+    const add = function (kind, name) {
+      var n = String(name || '').trim();
+      if (!n) return;
+      var value = kind + ': ' + n;
+      var key = value.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      sel.innerHTML += '<option value="' + esc(value) + '">' + esc(value) + '</option>';
+    };
+    if (cRes.ok) (await cRes.json()).forEach((x) => add('Client', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
+    if (sRes.ok) (await sRes.json()).forEach((x) => add('Staff', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
+    if (pRes.ok) (await pRes.json()).forEach((x) => add('Provider', x.full_name || ''));
   } catch (_) {}
 }
 
 async function loadDocuments() {
   window.__focusClientId = null;
   window.__docFilterMode = 'all';
+  syncDocFilterUI();
+  var shell = document.getElementById('docTableShell');
+  if (shell) shell.classList.add('doc-shell-loading');
   const bodyReq = document.getElementById('docBodyRequired');
   const bodyOth = document.getElementById('docBodyOther');
   const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId || !(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
-    const msg = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">Connect to the Java API with your org to manage documents and compliance.</td></tr>';
+    const msg = docEmptyHtml('Connect the API', 'Open Gilberto with the Java bridge and your organization to load documents.', false);
     bodyReq.innerHTML = msg;
     bodyOth.innerHTML = msg;
+    if (shell) shell.classList.remove('doc-shell-loading');
     return;
   }
   try {
@@ -493,18 +895,21 @@ async function loadDocuments() {
     if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     docsData = await res.json();
     if (!docsData.length) {
-      const msg = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#6b8c7a;">No documents yet.</td></tr>';
+      const msg = docEmptyHtml('No documents yet', 'Upload a file or activate clients to see intake requirements.', true);
       bodyReq.innerHTML = msg;
       bodyOth.innerHTML = msg;
       applyDocumentsUrlParams();
+      if (shell) shell.classList.remove('doc-shell-loading');
       return;
     }
     renderDocTables();
     applyDocumentsUrlParams();
   } catch (e) {
-    const err = '<tr><td colspan="8" style="text-align:center;padding:16px;color:#b04f4f;">Failed to load documents: ' + esc(e && e.message ? e.message : 'unknown error') + '</td></tr>';
+    const err = '<tr><td colspan="8" class="doc-empty-cell"><div class="doc-empty-state"><p class="doc-empty-title">Could not load documents</p><p class="doc-empty-text">' + esc(e && e.message ? e.message : 'unknown error') + '</p></div></td></tr>';
     bodyReq.innerHTML = err;
     bodyOth.innerHTML = err;
+  } finally {
+    if (shell) shell.classList.remove('doc-shell-loading');
   }
 }
 
@@ -515,6 +920,7 @@ function openNewDocument() {
   if (hint) hint.style.display = 'none';
   var fi = document.getElementById('docFileInput');
   if (fi) fi.value = '';
+  updateDocFileChosenLabel();
   document.getElementById('docNameInput').value = '';
   document.getElementById('docTypeInput').selectedIndex = 0;
   document.getElementById('docLinkedInput').value = '';
@@ -531,6 +937,12 @@ function openEditDoc(id) {
   if (hint) hint.style.display = d.requirement_key ? '' : 'none';
   var fi = document.getElementById('docFileInput');
   if (fi) fi.value = '';
+  var fl = document.getElementById('docFileChosenLabel');
+  if (fl) {
+    fl.textContent = (d.attachment_filename && (d.attachment_present === true || d.attachment_present === 'true'))
+      ? ('Saved: ' + d.attachment_filename + ' — drop or click to replace')
+      : 'No file selected';
+  }
   document.getElementById('editDocId').value = id;
   document.getElementById('uploadDocModalTitle').textContent = (normStatus(d.status) === 'missing') ? 'Complete required document' : 'Edit document';
   document.getElementById('docNameInput').value = d.doc_name || '';
@@ -559,6 +971,17 @@ async function saveDocument() {
   if (!orgId) { showToast('Organization not loaded'); return; }
   const editId = (document.getElementById('editDocId').value || '').trim();
   const prev = editId ? docsData.find((x) => x.id === editId) : null;
+  var inp = document.getElementById('docFileInput');
+  var fileEl = inp && inp.files && inp.files[0];
+  var incomingAtt = null;
+  if (fileEl) {
+    try {
+      incomingAtt = await readDocFileAsBase64(fileEl);
+    } catch (err) {
+      showToast(err && err.message ? err.message : 'Could not read file');
+      return;
+    }
+  }
   const payload = {
     org_id: orgId,
     doc_name: (document.getElementById('docNameInput').value || '').trim(),
@@ -568,6 +991,13 @@ async function saveDocument() {
     expiry_date: document.getElementById('docExpiryDateInput').value || null,
     content_text: (document.getElementById('docContentInput').value || '').trim() || null
   };
+  if (incomingAtt) {
+    payload.attachment_mime = incomingAtt.mime;
+    payload.attachment_filename = incomingAtt.filename;
+    payload.attachment_base64 = incomingAtt.base64;
+    if (!payload.upload_date) payload.upload_date = new Date().toISOString().slice(0, 10);
+  }
+  var hasExistingAtt = !!(prev && (prev.attachment_present === true || prev.attachment_present === 'true'));
   if (prev) {
     payload.id = editId;
     payload.client_id = prev.client_id || null;
@@ -577,7 +1007,8 @@ async function saveDocument() {
     if (normStatus(prev.status) === 'missing') {
       const hasText = !!(payload.content_text && payload.content_text.trim().length > 0);
       const hasUp = !!payload.upload_date;
-      if (!hasText && !hasUp) next = 'missing';
+      const hasAtt = !!incomingAtt || hasExistingAtt;
+      if (!hasText && !hasUp && !hasAtt) next = 'missing';
     }
     payload.status = next;
   } else {
@@ -587,21 +1018,28 @@ async function saveDocument() {
     payload.status = statusFor(payload.expiry_date);
   }
   if (!payload.doc_name) { showToast('Document name is required'); return; }
+  var saveBtn = document.getElementById('docSaveBtn');
+  if (saveBtn) saveBtn.disabled = true;
   try {
     const res = await documentJvmUpsert(payload);
     if (!res.ok) throw new Error(typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : ('HTTP ' + res.status));
     closeModal('uploadDocModal');
     document.getElementById('editDocId').value = '';
+    if (inp) inp.value = '';
+    updateDocFileChosenLabel();
     showToast('Document saved');
     await loadDocuments();
   } catch (e) {
     showToast('Save failed: ' + (e && e.message ? e.message : 'unknown error'));
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
   }
 }
 
-function openViewDoc(id) {
+async function openViewDoc(id) {
   const d = docsData.find((x) => x.id === id);
   if (!d) return;
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   document.getElementById('viewDocName').textContent = d.doc_name || '—';
   document.getElementById('viewDocType').textContent = d.doc_type || '—';
   document.getElementById('viewDocLinked').textContent = d.linked_name || '—';
@@ -609,6 +1047,42 @@ function openViewDoc(id) {
   document.getElementById('viewDocExpiryDate').textContent = fmtDate(d.expiry_date);
   document.getElementById('viewDocStatus').innerHTML = statusBadge(effectiveStatus(d));
   document.getElementById('viewDocContent').textContent = d.content_text || 'No content saved.';
+  var wrap = document.getElementById('viewDocAttachmentWrap');
+  var link = document.getElementById('viewDocAttachmentLink');
+  var note = document.getElementById('viewDocAttachmentNote');
+  if (wrap && link && note) {
+    wrap.style.display = 'none';
+    link.style.display = 'none';
+    note.style.display = 'none';
+    link.removeAttribute('href');
+    var wantsAtt = d.attachment_present === true || d.attachment_present === 'true' || !!d.attachment_base64;
+    if (wantsAtt && orgId && typeof documentJvmFetchById === 'function') {
+      wrap.style.display = '';
+      try {
+        var full = d.attachment_base64 ? d : null;
+        if (!full) {
+          var res = await documentJvmFetchById(orgId, id);
+          if (res.ok) {
+            var arr = await res.json();
+            if (arr && arr[0]) full = arr[0];
+          }
+        }
+        if (full && full.attachment_base64) {
+          var mime = full.attachment_mime || 'application/octet-stream';
+          link.href = 'data:' + mime + ';base64,' + full.attachment_base64;
+          link.download = full.attachment_filename || 'attachment';
+          link.textContent = 'Download · ' + (full.attachment_filename || 'file');
+          link.style.display = '';
+        } else {
+          note.textContent = 'A file is saved on this record. Use Edit to replace it, or refresh if download fails.';
+          note.style.display = '';
+        }
+      } catch (_) {
+        note.textContent = 'Could not load attachment details.';
+        note.style.display = '';
+      }
+    }
+  }
   openModal('viewDocModal');
 }
 
@@ -654,6 +1128,13 @@ function filterDocTables() {
   });
 }
 
+function syncDocFilterUI() {
+  var mode = window.__docFilterMode || 'all';
+  document.querySelectorAll('.doc-filter-chip').forEach(function (b) {
+    b.classList.toggle('is-active', (b.getAttribute('data-filter') || '') === mode);
+  });
+}
+
 function applyDocumentsUrlParams() {
   try {
     var q = new URLSearchParams(window.location.search || '');
@@ -662,6 +1143,7 @@ function applyDocumentsUrlParams() {
     if (!cid) return;
     window.__focusClientId = cid;
     if (focus === 'intake') window.__docFilterMode = 'tier-missing';
+    syncDocFilterUI();
     filterDocTables();
     var hdr = document.getElementById('docComplianceTop');
     setTimeout(function () {
@@ -677,31 +1159,52 @@ function applyDocumentsUrlParams() {
 function filterDocs(ev, status) {
   window.__docFilterMode = status || 'all';
   if (status === 'all') window.__focusClientId = null;
-  document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active-blue'));
-  if (ev && ev.target) ev.target.classList.add('active-blue');
+  syncDocFilterUI();
   filterDocTables();
 }
 
-document.addEventListener('DOMContentLoaded', async function () {
-  var docFileEl = document.getElementById('docFileInput');
-  if (docFileEl) {
-    docFileEl.addEventListener('change', function (ev) {
-      var f = ev.target.files && ev.target.files[0];
-      if (!f) return;
-      var ta = document.getElementById('docContentInput');
-      if (!ta) return;
-      var note = '[Attachment: ' + f.name + ' — ' + f.type + ' — ' + (f.size || 0) + ' bytes]\n';
-      if (/\.txt$/i.test(f.name) || (f.type && f.type.indexOf('text') === 0)) {
-        var r = new FileReader();
-        r.onload = function () {
-          ta.value = note + '\n' + String(r.result || '').slice(0, 120000);
-        };
-        r.readAsText(f);
-      } else {
-        ta.value = (ta.value ? ta.value + '\n' : '') + note + '(Paste typed summary or excerpts from PDF/images per policy.)';
-      }
+function initDocDropZone() {
+  var zone = document.getElementById('docDropZone');
+  var inp = document.getElementById('docFileInput');
+  if (!zone || !inp) return;
+  zone.addEventListener('click', function () { inp.click(); });
+  zone.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      inp.click();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function (evName) {
+    zone.addEventListener(evName, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.add('doc-dropzone--active');
     });
-  }
+  });
+  zone.addEventListener('dragleave', function (e) {
+    e.preventDefault();
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('doc-dropzone--active');
+  });
+  zone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    zone.classList.remove('doc-dropzone--active');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    try {
+      var dt = new DataTransfer();
+      dt.items.add(f);
+      inp.files = dt.files;
+      updateDocFileChosenLabel();
+    } catch (_) {
+      showToast('Could not attach file');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+  initDocDropZone();
+  var docFileEl = document.getElementById('docFileInput');
+  if (docFileEl) docFileEl.addEventListener('change', updateDocFileChosenLabel);
   if (typeof loadGilbertoOrganization === 'function') {
     await loadGilbertoOrganization();
   }

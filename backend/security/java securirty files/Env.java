@@ -7,7 +7,8 @@ public final class Env {
   public static final String DB_PASS = strOrDefault ( "DB_PASS", "root" );
   public static final String ALLOWED_ORIGIN = strOrDefault ( "ALLOWED_ORIGIN", "*" );
   public static final String API_KEY = strOrDefault ( "API_KEY", "" );
-  public static final int MAX_BODY_BYTES = intOrDefault ( "MAX_BODY_BYTES", 131072 );
+  /** Large enough for ~8 MB files as base64 in JSON (override via MAX_BODY_BYTES env). */
+  public static final int MAX_BODY_BYTES = intOrDefault ( "MAX_BODY_BYTES", 12582912 );
 
   public static int intOrDefault ( String key, int fallback ) {
     try {

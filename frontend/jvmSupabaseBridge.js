@@ -437,6 +437,13 @@ function documentJvmFetch (orgId, providerId) {
   return jvmFetch (path, { method: "GET" });
 }
 
+/** Full row including attachment_base64 (use id + org_id for scoped lookup). */
+function documentJvmFetchById (orgId, docId) {
+  var path = "/api/documents?id=eq." + encodeURIComponent (docId || "");
+  if (orgId) path += "&org_id=eq." + encodeURIComponent (orgId);
+  return jvmFetch (path, { method: "GET" });
+}
+
 function documentJvmCreate (rowObj) {
   return documentJvmUpsert (rowObj);
 }
