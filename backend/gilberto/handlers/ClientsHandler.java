@@ -106,7 +106,12 @@ public final class ClientsHandler implements HttpHandler {
       ps.setString ( 14, rowStatus );
       ps.executeUpdate ();
       if ( rowStatus != null && "active".equalsIgnoreCase ( rowStatus.trim () ) ) {
-        RequiredClientDocuments.seedForClient ( c, org, id, first, last );
+        try {
+          RequiredClientDocuments.seedForClient ( c, org, id, first, last );
+        } catch ( Exception seedErr ) {
+          // Never block client creation on document placeholder seeding.
+          Audit.log ( ex, "update", "documents_seed", id, "client_created_seed_failed" );
+        }
       }
       Audit.log ( ex, "create", "clients", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );
@@ -145,13 +150,17 @@ public final class ClientsHandler implements HttpHandler {
           if ( rs.next () ) {
             String st = rs.getString ( "status" );
             if ( st != null && "active".equalsIgnoreCase ( st.trim () ) ) {
-              RequiredClientDocuments.seedForClient (
-                  c,
-                  rs.getString ( "org_id" ),
-                  id,
-                  rs.getString ( "first_name" ),
-                  rs.getString ( "last_name" )
-              );
+              try {
+                RequiredClientDocuments.seedForClient (
+                    c,
+                    rs.getString ( "org_id" ),
+                    id,
+                    rs.getString ( "first_name" ),
+                    rs.getString ( "last_name" )
+                );
+              } catch ( Exception seedErr ) {
+                Audit.log ( ex, "update", "documents_seed", id, "client_updated_seed_failed" );
+              }
             }
           }
         }
