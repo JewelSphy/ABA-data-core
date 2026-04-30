@@ -495,19 +495,43 @@
   }
 
   async function loadSessionFormDropdowns() {
-    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
     const orgId = window.gilbertoCurrentOrg?.id || null;
     const clientSel = document.getElementById("newSessionClient");
     const rbtSel = document.getElementById("newSessionRbt");
+    const setFallback = function (msg) {
+      if (clientSel) clientSel.innerHTML = '<option value="">' + msg + '</option>';
+      if (rbtSel) rbtSel.innerHTML = '<option value="">No active staff found</option>';
+      _sessionClients = [];
+      _sessionCaregivers = [];
+      onSessionTypeChanged();
+    };
+    if (!orgId) {
+      setFallback("Organization not loaded");
+      return;
+    }
     try {
-      const [cRes, sRes, cgRes] = await Promise.all([
-        jvmFetchClients(orgId, "active"),
-        jvmFetchStaff(orgId, "active"),
-        jvmFetchCaregivers(orgId, "active"),
-      ]);
-      const clients = cRes.ok ? await cRes.json() : [];
-      const staff = sRes.ok ? await sRes.json() : [];
-      const caregivers = cgRes.ok ? await cgRes.json() : [];
+      let clients = [];
+      let staff = [];
+      let caregivers = [];
+      if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) {
+        const [cRes, sRes, cgRes] = await Promise.all([
+          jvmFetchClients(orgId, "active"),
+          jvmFetchStaff(orgId, "active"),
+          jvmFetchCaregivers(orgId, "active"),
+        ]);
+        clients = cRes.ok ? await cRes.json() : [];
+        staff = sRes.ok ? await sRes.json() : [];
+        caregivers = cgRes.ok ? await cgRes.json() : [];
+      } else if (window.supabaseClient) {
+        const [cQ, sQ, cgQ] = await Promise.all([
+          window.supabaseClient.from("clients").select("id,first_name,last_name,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
+          window.supabaseClient.from("staff").select("id,first_name,last_name,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
+          window.supabaseClient.from("caregivers").select("id,client_id,first_name,last_name,relationship,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
+        ]);
+        clients = cQ.error ? [] : (cQ.data || []);
+        staff = sQ.error ? [] : (sQ.data || []);
+        caregivers = cgQ.error ? [] : (cgQ.data || []);
+      }
       _sessionClients = clients;
       _sessionCaregivers = caregivers;
       if (clientSel) {
@@ -522,11 +546,7 @@
       }
       onSessionTypeChanged();
     } catch (_) {
-      if (clientSel) clientSel.innerHTML = '<option value="">No active clients found</option>';
-      if (rbtSel) rbtSel.innerHTML = '<option value="">No active staff found</option>';
-      _sessionClients = [];
-      _sessionCaregivers = [];
-      onSessionTypeChanged();
+      setFallback("No active clients found");
     }
   }
 
@@ -674,8 +694,11 @@
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    loadSessionFormDropdowns();
+  document.addEventListener("DOMContentLoaded", async function () {
+    if (typeof loadGilbertoOrganization === "function") {
+      await loadGilbertoOrganization().catch(function () {});
+    }
+    await loadSessionFormDropdowns();
     if (typeof loadSessionsTable === "function") void loadSessionsTable();
     ["newSessionDate","newSessionStartTime","newSessionDuration","newSessionLocation","newSessionNotes","newSessionCaregivers"].forEach(function (id) {
       const el = document.getElementById(id);
