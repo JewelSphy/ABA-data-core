@@ -15,6 +15,64 @@
     .sessions-actions .small-btn { border-radius: 999px !important; background: #fff; border-color: #cfe0d6; color: #2d4a3e; }
     .sessions-actions .small-btn:hover { background: #f2f8f5; }
     .sessions-tip { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; border-left: 4px solid #6b9e7e; background: #f3faf6; color: #456457; font-size: 12px; }
+    .helper-copy { margin: 4px 0 0; font-size: 11px; color: #5f7b6d; line-height: 1.4; }
+    .session-modal-box { border: 1px solid #d7e9df; box-shadow: 0 20px 40px rgba(22, 61, 48, 0.16); }
+    .session-modal-box .modal-header { background: linear-gradient(120deg, #2e6fd0, #2c9b67); }
+    .session-modal-box .modal-header h3 { color: #fff; font-size: 16px; font-weight: 800; }
+    .session-palette {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+      border: 1px solid #d6e9dd;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, #f8fcff, #f4fbf7);
+    }
+    .session-pill-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid #c9def2;
+      background: #edf5ff;
+      color: #1f4f86;
+    }
+    .session-pill-procedure {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid #cce4d6;
+      background: #eef9f2;
+      color: #1f5b3f;
+    }
+    .session-quick-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .session-quick-btn {
+      border: 1px solid #c8ddd2;
+      background: #fff;
+      color: #2d4a3e;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .session-quick-btn:hover { background: #f3f9f5; }
+    .session-summary {
+      margin-top: 10px;
+      border: 1px solid #dbe9e1;
+      border-radius: 10px;
+      background: #fbfffd;
+      padding: 10px 12px;
+    }
+    .session-summary h4 { margin: 0 0 6px; font-size: 12px; color: #1f4a37; text-transform: uppercase; letter-spacing: .04em; }
+    .session-summary p { margin: 0; font-size: 12px; color: #486458; line-height: 1.45; }
   </style>
 </head>
 <body class="page-sessions">
@@ -94,7 +152,6 @@
             <button class="small-btn active-blue" data-view="month" onclick="setView('month')">Month</button>
           </div>
           <div class="sessions-actions" style="display:flex;gap:8px;">
-            <button class="small-btn" id="densityBtn" onclick="toggleSessionDensity()"><span class="icon-chip icon-settings" aria-hidden="true"></span> Row spacing: Comfortable</button>
             <button class="small-btn" id="statusFilterBtn" onclick="cycleSessionStatusFilter()"><span class="icon-chip icon-filter" aria-hidden="true"></span> Status: All</button>
           </div>
         </div>
@@ -153,30 +210,47 @@
 
 <!-- New Session Modal -->
 <div class="modal-overlay" id="newSessionModal" onclick="handleOverlayClick(event,'newSessionModal')">
-  <div class="modal-box wide">
+  <div class="modal-box wide session-modal-box">
     <div class="modal-header">
       <h3>New Session</h3>
       <button class="modal-close" onclick="closeModal('newSessionModal')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Client</label>
-        <select id="newSessionClient">
-          <option>Jon Snow</option>
-          <option>Robb Stark</option>
-          <option>Arya Stark</option>
-          <option>Sansa Stark</option>
-        </select>
+      <div class="session-palette">
+        <div>
+          <span class="session-pill-type" id="newSessionTypePill">Behavior Treatment</span>
+          <div class="session-quick-row">
+            <button type="button" class="session-quick-btn" onclick="setSessionTypeQuick('Behavior Treatment')">Behavior</button>
+            <button type="button" class="session-quick-btn" onclick="setSessionTypeQuick('Caregiver Training')">Caregiver Training</button>
+            <button type="button" class="session-quick-btn" onclick="setSessionTypeQuick('Assessment')">Assessment</button>
+          </div>
+        </div>
+        <div><span class="session-pill-procedure" id="newSessionProcedurePill">Procedure: 97153</span></div>
       </div>
       <div class="form-group">
         <label>Session Type</label>
-        <select id="newSessionType">
+        <select id="newSessionType" onchange="onSessionTypeChanged()">
           <option>Behavior Treatment</option>
           <option>Assessment</option>
           <option>Supervision</option>
           <option>Caregiver Training</option>
           <option>Parent Training</option>
         </select>
+        <p class="helper-copy">Choose this first. It drives procedure defaults and caregiver options.</p>
+      </div>
+      <div class="form-group">
+        <label id="newSessionClientLabel">Client</label>
+        <select id="newSessionClient" onchange="onSessionClientChanged()">
+          <option>Jon Snow</option>
+          <option>Robb Stark</option>
+          <option>Arya Stark</option>
+          <option>Sansa Stark</option>
+        </select>
+      </div>
+      <div class="form-group" id="newSessionCaregiverWrap" style="display:none;">
+        <label>Caregiver(s) for this session</label>
+        <select id="newSessionCaregivers" multiple size="5"></select>
+        <p class="helper-copy">Hold Cmd/Ctrl to select more than one caregiver.</p>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -188,6 +262,11 @@
           <input id="newSessionStartTime" type="time" value="09:00" />
         </div>
       </div>
+      <div class="form-group">
+        <label>End Time</label>
+        <input id="newSessionEndTime" type="time" readonly />
+        <p class="helper-copy">Auto-calculated from start time and duration.</p>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Duration</label>
@@ -198,6 +277,11 @@
             <option selected>2 hrs</option>
             <option>3 hrs</option>
           </select>
+          <div class="session-quick-row">
+            <button type="button" class="session-quick-btn" onclick="setDurationQuick('30 min')">30m</button>
+            <button type="button" class="session-quick-btn" onclick="setDurationQuick('1 hr')">1h</button>
+            <button type="button" class="session-quick-btn" onclick="setDurationQuick('2 hrs')">2h</button>
+          </div>
         </div>
         <div class="form-group">
           <label>Location</label>
@@ -222,6 +306,10 @@
       <div class="form-group">
         <label>Notes</label>
         <textarea id="newSessionNotes" rows="3" placeholder="Any additional notes about this session..."></textarea>
+      </div>
+      <div class="session-summary">
+        <h4>Session Preview</h4>
+        <p id="newSessionSummaryText">Pick session details to preview what will be saved.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -280,18 +368,148 @@
     openModal('viewSessionModal');
   }
 
+  let _sessionClients = [];
+  let _sessionCaregivers = [];
+
+  function procedureForType(serviceTypeKey) {
+    return procedureByType[serviceTypeKey] || "97153";
+  }
+
+  function durationToMinutes(v) {
+    const s = String(v || "").toLowerCase();
+    if (s.indexOf("30") >= 0) return 30;
+    if (s.indexOf("1.5") >= 0) return 90;
+    if (s.indexOf("2") >= 0) return 120;
+    if (s.indexOf("3") >= 0) return 180;
+    return 60;
+  }
+
+  function computeEndTimeFromModal() {
+    const start = document.getElementById("newSessionStartTime")?.value || "";
+    if (!start || start.indexOf(":") < 0) return "";
+    const mins = durationToMinutes(document.getElementById("newSessionDuration")?.value || "");
+    const hm = start.split(":");
+    const h = Number(hm[0] || 0);
+    const m = Number(hm[1] || 0);
+    if (!isFinite(h) || !isFinite(m)) return "";
+    const total = (h * 60 + m + mins) % (24 * 60);
+    const eh = Math.floor(total / 60);
+    const em = total % 60;
+    return String(eh).padStart(2, "0") + ":" + String(em).padStart(2, "0");
+  }
+
+  function refreshSessionComposerUI() {
+    const typeSel = document.getElementById("newSessionType");
+    const serviceTypeRaw = typeSel ? typeSel.value : "Behavior Treatment";
+    const serviceTypeMap = {
+      "Behavior Treatment":  "behavior_treatment",
+      "Assessment":          "assessment",
+      "Supervision":         "supervision",
+      "Caregiver Training":  "caregiver_training",
+      "Parent Training":     "family_training",
+    };
+    const serviceTypeKey = serviceTypeMap[serviceTypeRaw] || "behavior_treatment";
+    const typePill = document.getElementById("newSessionTypePill");
+    const procPill = document.getElementById("newSessionProcedurePill");
+    if (typePill) typePill.textContent = serviceTypeRaw;
+    if (procPill) procPill.textContent = "Procedure: " + procedureForType(serviceTypeKey);
+
+    const clientSel = document.getElementById("newSessionClient");
+    const clientName = clientSel && clientSel.options[clientSel.selectedIndex]
+      ? String(clientSel.options[clientSel.selectedIndex].textContent || "").trim()
+      : "No client";
+    const dateVal = document.getElementById("newSessionDate")?.value || "no date";
+    const timeVal = document.getElementById("newSessionStartTime")?.value || "no start time";
+    const endTimeVal = computeEndTimeFromModal();
+    const endEl = document.getElementById("newSessionEndTime");
+    if (endEl) endEl.value = endTimeVal;
+    const durationVal = document.getElementById("newSessionDuration")?.value || "1 hr";
+    const locationVal = document.getElementById("newSessionLocation")?.value || "no location";
+    const careNames = selectedCaregiverNamesFromModal();
+    const carePart = careNames.length ? (" | Caregivers: " + careNames.join(", ")) : "";
+    const summary = document.getElementById("newSessionSummaryText");
+    if (summary) summary.textContent = serviceTypeRaw + " for " + clientName + " on " + dateVal + " at " + timeVal + "–" + (endTimeVal || "—") + " (" + durationVal + "), " + locationVal + carePart + ".";
+  }
+
+  function setSessionTypeQuick(typeLabel) {
+    const sel = document.getElementById("newSessionType");
+    if (!sel) return;
+    sel.value = typeLabel;
+    onSessionTypeChanged();
+  }
+
+  function setDurationQuick(v) {
+    const sel = document.getElementById("newSessionDuration");
+    if (!sel) return;
+    sel.value = v;
+    refreshSessionComposerUI();
+  }
+
+  function isCaregiverFocusedType(rawType) {
+    const v = String(rawType || "").toLowerCase();
+    return v.indexOf("caregiver") >= 0 || v.indexOf("parent") >= 0 || v.indexOf("family") >= 0;
+  }
+
+  function selectedCaregiverNamesFromModal() {
+    const sel = document.getElementById("newSessionCaregivers");
+    if (!sel) return [];
+    return Array.from(sel.selectedOptions || []).map((o) => String(o.textContent || "").trim()).filter(Boolean);
+  }
+
+  function refreshCaregiverSelect() {
+    const clientId = document.getElementById("newSessionClient")?.value || "";
+    const wrap = document.getElementById("newSessionCaregiverWrap");
+    const sel = document.getElementById("newSessionCaregivers");
+    if (!wrap || !sel) return;
+    const trainingMode = isCaregiverFocusedType(document.getElementById("newSessionType")?.value || "");
+    wrap.style.display = trainingMode ? "" : "none";
+    if (!trainingMode) {
+      sel.innerHTML = "";
+      refreshSessionComposerUI();
+      return;
+    }
+    const list = (_sessionCaregivers || []).filter((cg) => String(cg.client_id || "") === String(clientId || ""));
+    if (!list.length) {
+      sel.innerHTML = '<option value="">No caregivers found for this client</option>';
+      refreshSessionComposerUI();
+      return;
+    }
+    sel.innerHTML = list.map((cg) => {
+      const nm = String((cg.first_name || "") + " " + (cg.last_name || "")).trim() || "Caregiver";
+      const rel = cg.relationship ? (" — " + cg.relationship) : "";
+      return '<option value="' + (cg.id || "") + '">' + nm + rel + '</option>';
+    }).join("");
+    refreshSessionComposerUI();
+  }
+
+  function onSessionTypeChanged() {
+    const lbl = document.getElementById("newSessionClientLabel");
+    if (lbl) lbl.textContent = isCaregiverFocusedType(document.getElementById("newSessionType")?.value || "") ? "Client (for caregiver/parent training)" : "Client";
+    refreshCaregiverSelect();
+    refreshSessionComposerUI();
+  }
+
+  function onSessionClientChanged() {
+    refreshCaregiverSelect();
+    refreshSessionComposerUI();
+  }
+
   async function loadSessionFormDropdowns() {
     if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
     const orgId = window.gilbertoCurrentOrg?.id || null;
     const clientSel = document.getElementById("newSessionClient");
     const rbtSel = document.getElementById("newSessionRbt");
     try {
-      const [cRes, sRes] = await Promise.all([
+      const [cRes, sRes, cgRes] = await Promise.all([
         jvmFetchClients(orgId, "active"),
         jvmFetchStaff(orgId, "active"),
+        jvmFetchCaregivers(orgId, "active"),
       ]);
       const clients = cRes.ok ? await cRes.json() : [];
       const staff = sRes.ok ? await sRes.json() : [];
+      const caregivers = cgRes.ok ? await cgRes.json() : [];
+      _sessionClients = clients;
+      _sessionCaregivers = caregivers;
       if (clientSel) {
         clientSel.innerHTML = clients.length
           ? clients.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name}</option>`).join("")
@@ -302,9 +520,13 @@
           ? staff.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name}</option>`).join("")
           : '<option value="">No active staff found</option>';
       }
+      onSessionTypeChanged();
     } catch (_) {
       if (clientSel) clientSel.innerHTML = '<option value="">No active clients found</option>';
       if (rbtSel) rbtSel.innerHTML = '<option value="">No active staff found</option>';
+      _sessionClients = [];
+      _sessionCaregivers = [];
+      onSessionTypeChanged();
     }
   }
 
@@ -401,15 +623,29 @@
       "Caregiver Training":  "caregiver_training",
       "Parent Training":     "family_training",
     };
+    const procedureByType = {
+      behavior_treatment: "97153",
+      caregiver_training: "97156",
+      family_training: "97156",
+      supervision: "97155",
+      assessment: "97151"
+    };
+    const serviceTypeKey = serviceTypeMap[serviceTypeRaw] || "behavior_treatment";
+    const caregiverNames = selectedCaregiverNamesFromModal();
+    const notesRaw = document.getElementById("newSessionNotes").value || "";
+    const notesWithCaregivers = caregiverNames.length
+      ? ("Caregivers: " + caregiverNames.join(", ") + (notesRaw ? "\n" + notesRaw : ""))
+      : notesRaw;
 
     const row = buildSessionInsertRow({
-      service_type:   serviceTypeMap[serviceTypeRaw] || "behavior_treatment",
+      service_type:   serviceTypeKey,
       session_date:   document.getElementById("newSessionDate").value,
       start_time:     document.getElementById("newSessionStartTime").value || null,
+      end_time:       computeEndTimeFromModal() || null,
       pos:            document.getElementById("newSessionLocation").value  || null,
-      notes:          document.getElementById("newSessionNotes").value     || null,
+      notes:          notesWithCaregivers || null,
       status:         "pending",
-      procedure_code: "97153",
+      procedure_code: procedureForType(serviceTypeKey),
       client_id:      document.getElementById("newSessionClient").value || null,
       staff_id:       document.getElementById("newSessionRbt").value || null,
     }, window.gilbertoCurrentOrg?.id || null);
@@ -441,6 +677,13 @@
   document.addEventListener("DOMContentLoaded", function () {
     loadSessionFormDropdowns();
     if (typeof loadSessionsTable === "function") void loadSessionsTable();
+    ["newSessionDate","newSessionStartTime","newSessionDuration","newSessionLocation","newSessionNotes","newSessionCaregivers"].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("change", refreshSessionComposerUI);
+      el.addEventListener("input", refreshSessionComposerUI);
+    });
+    refreshSessionComposerUI();
     updateDisplay();
   });
 
@@ -515,21 +758,7 @@
     updateDisplay();
   }
 
-  let sessionDenseMode = false;
   let sessionStatusFilter = 'all'; // all | pending | complete
-
-  function toggleSessionDensity() {
-    sessionDenseMode = !sessionDenseMode;
-    const body = document.getElementById('sessionsBody');
-    const btn = document.getElementById('densityBtn');
-    if (!body) return;
-    body.querySelectorAll('td').forEach(function (td) {
-      td.style.padding = sessionDenseMode ? '6px 10px' : '';
-      td.style.fontSize = sessionDenseMode ? '12.5px' : '';
-    });
-    if (btn) btn.innerHTML = '<span class="icon-chip icon-settings" aria-hidden="true"></span> Row spacing: ' + (sessionDenseMode ? 'Compact' : 'Comfortable');
-    showToast(sessionDenseMode ? 'Compact rows enabled' : 'Comfortable rows enabled');
-  }
 
   function applySessionStatusFilter() {
     const rows = document.querySelectorAll('#sessionsBody tr');

@@ -245,8 +245,11 @@
         return;
       }
       tbody.innerHTML = rows.map((n) => {
-        const statusRaw = (n.status || 'draft').toLowerCase();
-        const statusKey = statusRaw === 'submitted' ? 'pending-review' : statusRaw;
+        const statusRaw = String(n.status || 'draft').trim().toLowerCase().replace(/_/g, '-');
+        let statusKey = statusRaw;
+        if (statusRaw === 'submitted' || statusRaw === 'pending-review' || statusRaw === 'pending' || statusRaw === 'caregiver-signed') statusKey = 'pending-review';
+        if (statusRaw === 'approved' || statusRaw === 'signed') statusKey = 'approved';
+        if (statusRaw === 'rejected') statusKey = 'rejected';
         const badgeClass = statusKey === 'approved' ? 'badge-approved' : (statusKey === 'rejected' ? 'badge-rejected' : 'badge-pending');
         const statusLabel = statusKey === 'pending-review' ? 'Pending Review' : (statusKey.charAt(0).toUpperCase() + statusKey.slice(1));
         const clientName = n.client ? `${n.client.first_name || ''} ${n.client.last_name || ''}`.trim() : '—';
