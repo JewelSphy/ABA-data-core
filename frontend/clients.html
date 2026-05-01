@@ -606,6 +606,27 @@ async function ensureClientOrgReady() {
       if (org && org.id) return org;
     }
   }
+  // Last-resort bridge inference for org-scoped Java mode.
+  if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled() && typeof jvmFetchClients === 'function') {
+    try {
+      var res = await jvmFetchClients(null, null);
+      if (res && res.ok) {
+        var rows = await res.json();
+        var first = Array.isArray(rows) && rows.length ? rows[0] : null;
+        if (first && first.org_id) {
+          org = { id: first.org_id, name: 'My Organization' };
+          window.gilbertoCurrentOrg = org;
+          if (typeof window.resolveCurrentUserIdentity === 'function') {
+            try {
+              var u = await window.resolveCurrentUserIdentity();
+              if (u && u.id) localStorage.setItem('gilberto_active_org:' + u.id, JSON.stringify(org));
+            } catch (_) {}
+          }
+          return org;
+        }
+      }
+    } catch (_) {}
+  }
   return null;
 }
 

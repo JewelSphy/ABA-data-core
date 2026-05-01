@@ -375,9 +375,38 @@ async function loadGilbertoOrganization() {
       .select("organization_id, role")
       .eq("user_id", uid)
       .limit(1);
-    if (mErr || !mRows || !mRows.length) return null;
-    const orgId = mRows[0].organization_id;
-    const role = mRows[0].role;
+    let orgId = null;
+    let role = "member";
+    if (!mErr && mRows && mRows.length) {
+      orgId = mRows[0].organization_id || null;
+      role = mRows[0].role || "member";
+    }
+
+    // Fallback for teammates whose membership select is blocked by policy but onboarding row exists.
+    if (!orgId) {
+      try {
+        const { data: onb } = await window.supabaseClient
+          .from("user_onboarding")
+          .select("organization_id, company_display_name, company_legal_name")
+          .eq("user_id", uid)
+          .limit(1)
+          .maybeSingle();
+        if (onb && onb.organization_id) {
+          orgId = onb.organization_id;
+          window.gilbertoCurrentOrg = {
+            id: orgId,
+            name: onb.company_display_name || "My Organization",
+            company_legal_name: onb.company_legal_name || null,
+            joinCode: null,
+            role: "member",
+          };
+          try { localStorage.setItem(key, JSON.stringify(window.gilbertoCurrentOrg)); } catch (_) {}
+          return window.gilbertoCurrentOrg;
+        }
+      } catch (_) {
+        /* continue to bridge fallback */
+      }
+    }
     if (!orgId) return null;
 
     // Step 2: best-effort fetch org display fields. If blocked by RLS, still keep org id.
