@@ -369,20 +369,34 @@ async function loadGilbertoOrganization() {
     } catch (_) {
       /* empty */
     }
-    const { data: rows, error } = await window.supabaseClient
+    // Step 1: get org_id from membership (least restrictive query).
+    const { data: mRows, error: mErr } = await window.supabaseClient
       .from("organization_members")
-      .select("organization_id, role, organizations ( id, company_display_name, company_legal_name, join_code )")
+      .select("organization_id, role")
       .eq("user_id", uid)
       .limit(1);
-    if (error || !rows || !rows.length) return null;
-    const org = rows[0].organizations;
-    if (!org) return null;
-    const role = rows[0].role;
+    if (mErr || !mRows || !mRows.length) return null;
+    const orgId = mRows[0].organization_id;
+    const role = mRows[0].role;
+    if (!orgId) return null;
+
+    // Step 2: best-effort fetch org display fields. If blocked by RLS, still keep org id.
+    let org = null;
+    try {
+      const { data: oRows } = await window.supabaseClient
+        .from("organizations")
+        .select("id, company_display_name, company_legal_name, join_code")
+        .eq("id", orgId)
+        .limit(1);
+      if (oRows && oRows.length) org = oRows[0];
+    } catch (_) {
+      /* keep minimal org object */
+    }
     window.gilbertoCurrentOrg = {
-      id: org.id,
-      name: org.company_display_name,
-      company_legal_name: org.company_legal_name,
-      joinCode: org.join_code || null,
+      id: orgId,
+      name: org && org.company_display_name ? org.company_display_name : "My Organization",
+      company_legal_name: org ? org.company_legal_name : null,
+      joinCode: org && org.join_code ? org.join_code : null,
       role: role || "member",
     };
     try {

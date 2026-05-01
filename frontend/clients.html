@@ -587,9 +587,31 @@ function authBadge (val) {
   return '<span class="badge ' + cls + '">' + lbl + '</span>';
 }
 
+async function ensureClientOrgReady() {
+  var org = window.gilbertoCurrentOrg;
+  if (org && org.id) return org;
+  if (typeof loadGilbertoOrganization === 'function') {
+    try { await loadGilbertoOrganization(); } catch (_) {}
+    org = window.gilbertoCurrentOrg;
+    if (org && org.id) return org;
+  }
+  // small retry window for just-after-login race
+  for (var i = 0; i < 5; i++) {
+    await new Promise(function (r) { setTimeout(r, 180); });
+    org = window.gilbertoCurrentOrg;
+    if (org && org.id) return org;
+    if (typeof loadGilbertoOrganization === 'function') {
+      try { await loadGilbertoOrganization(); } catch (_) {}
+      org = window.gilbertoCurrentOrg;
+      if (org && org.id) return org;
+    }
+  }
+  return null;
+}
+
 // ── Load + render table ───────────────────────────────────────────────────────
 async function loadClientsTable () {
-  var org = window.gilbertoCurrentOrg;
+  var org = await ensureClientOrgReady ();
   if (!org || !org.id) {
     document.getElementById ('clientBody').innerHTML =
       '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>';
@@ -766,12 +788,12 @@ function openAddClient () {
   });
   var a = document.getElementById ('addAuthStatus'); if (a) a.value = 'active';
   var rel = document.getElementById ('addCgRelationship'); if (rel) rel.value = '';
-  loadStaffDropdowns ('addRbt', 'addBcba', null, null);
+  void loadStaffDropdowns ('addRbt', 'addBcba', null, null);
   openModal ('addClientModal');
 }
 
 async function createClient () {
-  var org = window.gilbertoCurrentOrg;
+  var org = await ensureClientOrgReady ();
   if (!org || !org.id) { clientToast ('Organization not loaded — please reload.'); return; }
 
   var row = buildClientInsertRow ({
@@ -929,7 +951,7 @@ async function updateClient () {
     status:             document.getElementById ('editStatus').value     || 'active',
     notes:              (document.getElementById ('editNotes').value     || '').trim (),
   };
-  var org = window.gilbertoCurrentOrg;
+  var org = await ensureClientOrgReady ();
   var cgName = (document.getElementById ('editCgName').value || '').trim ();
   var existingCg = _caregiverByClientId[_editingClientId] || null;
 
@@ -999,7 +1021,7 @@ async function updateClient () {
 
 // ── Staff dropdowns ───────────────────────────────────────────────────────────
 async function loadStaffDropdowns (rbtElId, bcbaElId, selectedRbt, selectedBcba) {
-  var org = window.gilbertoCurrentOrg;
+  var org = await ensureClientOrgReady ();
   var staffRows = [];
   try {
     if (org && org.id) {
