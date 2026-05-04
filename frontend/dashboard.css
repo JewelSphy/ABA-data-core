@@ -3,13 +3,12 @@
 /* ---- from dashboard.part1.css ---- */
 /* ================================================
    gilberto aba care crm — main stylesheet
-   colors:
-     dark sage  #2d4a3e   sidebar, headings
-     mid sage   #6b9e7e   accent, active states
-     light sage #eef4f1   backgrounds, hover
-     border     #d4e4da   dividers, inputs
-     text dark  #1f2d26
-     text muted #6b8c7a
+   palette (bold teal / emerald shell):
+     sidebar    emerald gradient (#047857 → #052e16)
+     accents    #10b981, #14b8a6, #34d399
+     canvas     mint-tinted gradient (#ecfdf5 …)
+     deep text  #052e16 / #065f46
+     muted      #6b8c7a
    ================================================ */
 
 /* custom scrollbars */
@@ -31,7 +30,7 @@
 }
 
 body {
-  background: #f4f7f5;
+  background: linear-gradient(180deg, #ecfdf5 0%, #f4f7f5 42%, #effaf6 100%);
   color: #1f2d26;
 }
 
@@ -47,7 +46,7 @@ body {
 .sidebar {
   width: 260px;
   min-width: 260px;
-  background: #2d4a3e;
+  background: linear-gradient(175deg, #047857 0%, #065f46 38%, #064e3b 72%, #052e16 100%);
   color: white;
   padding: 24px 16px;
   height: 100%;
@@ -117,16 +116,18 @@ body.sidebar-collapsed .logout {
 .logo-icon {
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, #4a7c62, #2d4a3e);
+  background: linear-gradient(135deg, #34d399 0%, #14b8a6 48%, #059669 100%);
   border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 17px;
-  color: white;
+  color: #042f2e;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow:
+    0 2px 8px rgba(16, 185, 129, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .sidebar-header h2 {
@@ -135,7 +136,7 @@ body.sidebar-collapsed .logout {
   letter-spacing: -0.3px;
 }
 .sidebar-header p {
-  color: #7aaa94;
+  color: rgba(167, 243, 208, 0.92);
   font-size: 11px;
   margin-top: 1px;
 }
@@ -149,7 +150,7 @@ body.sidebar-collapsed .logout {
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.28);
+  color: rgba(167, 243, 208, 0.55);
   padding: 0 10px;
   margin: 22px 0 5px;
 }
@@ -182,16 +183,17 @@ body.sidebar-collapsed .logout {
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.88);
-  border-left-color: rgba(82,196,138,0.45);
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.95);
+  border-left-color: rgba(52, 211, 153, 0.85);
 }
 
 .nav-item.active {
-  background: rgba(255,255,255,0.13);
-  color: #fff;
+  background: rgba(52, 211, 153, 0.18);
+  color: #ecfdf5;
   font-weight: 600;
-  border-left-color: #52c48a;
+  border-left-color: #34d399;
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.22);
 }
 
 /* count badge */
@@ -229,20 +231,21 @@ body.sidebar-collapsed .logout {
   align-items: center;
   margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #d4e4da;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.22);
 }
 
 /* green accent bar on the left of each page title */
 .topbar > div:first-child {
-  border-left: 4px solid #6b9e7e;
+  border-left: 5px solid #10b981;
   padding-left: 14px;
+  box-shadow: -3px 0 14px rgba(16, 185, 129, 0.18);
 }
 
 .topbar h1 {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.8px;
-  color: #1f2d26;
+  color: #052e16;
   line-height: 1.1;
 }
 
@@ -251,7 +254,7 @@ p.topbar-company {
   font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.3px;
-  color: #2d4a3e;
+  color: #047857;
   line-height: 1.2;
   margin: 0 0 4px 0;
   text-transform: none;
@@ -276,10 +279,10 @@ p.topbar-company {
   margin: 0 0 20px;
   padding: 13px 18px;
   border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #d4e4da;
-  border-left: 4px solid #2d4a3e;
-  box-shadow: 0 2px 8px rgba(45, 74, 62, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf9 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-left: 5px solid #059669;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.12);
 }
 
 .wb-icon {
@@ -313,9 +316,9 @@ p.topbar-company {
   margin: 0 0 18px;
   padding: 14px 16px;
   border-radius: 10px;
-  background: #fff;
-  border: 1px solid #c5ddd0;
-  box-shadow: 0 2px 8px rgba(45, 74, 62, 0.06);
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.42);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
 }
 .invite-team-header {
   display: flex;
@@ -369,9 +372,9 @@ p.topbar-company {
 /* secondary outline btns, used througout toolbars */
 .icon-btn,
 .small-btn {
-  border: 1px solid #3d6350;
-  background: #2d4a3e;
-  color: rgba(255,255,255,0.88);
+  border: 1px solid #0f766e;
+  background: linear-gradient(180deg, #0f766e 0%, #065f46 100%);
+  color: rgba(236, 253, 245, 0.95);
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -380,36 +383,45 @@ p.topbar-company {
 }
 .icon-btn:hover,
 .small-btn:hover {
-  background: #3a5c4a;
-  border-color: #4d7a61;
-  color: #fff;
+  background: linear-gradient(180deg, #14b8a6 0%, #0d9488 100%);
+  border-color: #5eead4;
+  color: #042f2e;
 }
 
 /* active state for view toggles like day/week/month */
 .active-blue {
-  background: #52c48a;
-  color: #1a3028;
-  border-color: #52c48a;
+  background: linear-gradient(135deg, #5eead4 0%, #34d399 100%);
+  color: #042f2e;
+  border-color: #34d399;
   font-weight: 700;
+  box-shadow: 0 2px 10px rgba(52, 211, 153, 0.35);
 }
 
 /* Primary action button */
 .add-btn {
   border: none;
-  background: #6b9e7e;
-  color: white;
+  background: linear-gradient(135deg, #14b8a6 0%, #10b981 45%, #059669 100%);
+  color: #042f2e;
   padding: 9px 16px;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-weight: 700;
   font-size: 13px;
   cursor: pointer;
+  box-shadow:
+    0 6px 18px rgba(16, 185, 129, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
-.add-btn:hover { background: #5a8a6a; }
+.add-btn:hover {
+  filter: brightness(1.06) saturate(1.08);
+  box-shadow:
+    0 8px 22px rgba(16, 185, 129, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
 
 .user-pill {
-  background: white;
-  border: 1px solid #c6ddd3;
-  color: #2d4a3e;
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+  border: 2px solid #6ee7b7;
+  color: #065f46;
   padding: 8px 14px;
   border-radius: 6px;
   font-weight: 600;
@@ -426,11 +438,12 @@ p.topbar-company {
 }
 
 .card {
-  background: white;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fffb 100%);
   padding: 20px;
-  border-radius: 6px;
-  border: 1px solid #d4e4da;
-  border-left: 3px solid #6b9e7e;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-left: 4px solid #10b981;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.08);
 }
 .card p   { color: #6b8c7a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 .card h2  { font-size: 32px; font-weight: 800; margin: 6px 0 4px; color: #1f2d26; letter-spacing: -1px; }
@@ -607,15 +620,25 @@ p.topbar-company {
    ============================================= */
 
 /* ===== Data table ===== */
-.table-wrapper { background: white; border: 1px solid #d4e4da; border-radius: 6px; overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
-.table-toolbar  { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #d4e4da; gap: 12px; flex-wrap: wrap; }
+.table-wrapper {
+  background: linear-gradient(180deg, #ffffff 0%, #fafefc 100%);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 8px;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+.table-toolbar  { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid rgba(16, 185, 129, 0.18); gap: 12px; flex-wrap: wrap; }
 .table-toolbar h3 { font-size: 15px; font-weight: 700; color: #1f2d26; }
 .table-search   { display: flex; gap: 8px; align-items: center; }
 .search-input   { border: 1px solid #c6ddd3; border-radius: 5px; padding: 7px 12px; font-size: 13px; outline: none; color: #1f2d26; min-width: 140px; width: 100%; max-width: 260px; }
-.search-input:focus { border-color: #6b9e7e; box-shadow: 0 0 0 2px rgba(107,158,126,0.12); }
+.search-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28), 0 0 18px rgba(20, 184, 166, 0.15);
+}
 
 .data-table     { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.data-table th  { text-align: left; padding: 10px 16px; background: #f4f7f5; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6b8c7a; border-bottom: 1px solid #d4e4da; white-space: nowrap; }
+.data-table th  { text-align: left; padding: 10px 16px; background: linear-gradient(180deg, #ecfdf5 0%, #f0fdf9 100%); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #047857; border-bottom: 1px solid rgba(16, 185, 129, 0.22); white-space: nowrap; }
 .data-table td  { padding: 9px 13px; border-bottom: 1px solid #eef4f1; color: #1f2d26; vertical-align: middle; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: #f8faf8; }
@@ -628,7 +651,7 @@ p.topbar-company {
 
 /* ===== BADGES ===== */
 .badge          { display: inline-block; padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.badge-active   { background: #e8f3ec; color: #2d5a3d; }
+.badge-active   { background: #d1fae5; color: #065f46; font-weight: 700; }
 .badge-pending  { background: #fef3c7; color: #92400e; }
 .badge-expired  { background: #fee2e2; color: #991b1b; }
 .badge-inactive { background: #f1f5f9; color: #64748b; }
@@ -678,7 +701,7 @@ p.topbar-company {
 /* dark sage header — same gradient as login card */
 .modal-header {
   padding: 18px 22px;
-  background: linear-gradient(135deg, #3a6350, #2d4a3e);
+  background: linear-gradient(135deg, #14b8a6 0%, #059669 55%, #047857 100%);
   border-bottom: none;
   border-radius: 16px 16px 0 0;
   display: flex;
@@ -760,9 +783,9 @@ p.topbar-company {
 
 /* ===== notice banners ===== */
 .notice         { padding: 12px 16px; border-radius: 5px; font-size: 13px; margin-bottom: 16px; }
-.notice-info    { background: #e8f3ec; color: #2d4a3e; border-left: 3px solid #6b9e7e; }
+.notice-info    { background: linear-gradient(90deg, #ecfdf5 0%, #ffffff 65%); color: #065f46; border-left: 4px solid #10b981; }
 .notice-warn    { background: #fef3c7; color: #92400e; border-left: 3px solid #d97706; }
-.notice-success { background: #e8f3ec; color: #2d5a3d; border-left: 3px solid #6b9e7e; }
+.notice-success { background: linear-gradient(90deg, #d1fae5 0%, #ffffff 60%); color: #065f46; border-left: 4px solid #059669; }
 
 /* ===== ABC cards ===== */
 .abc-card               { background: #f4f7f5; border: 1px solid #d4e4da; border-radius: 5px; padding: 14px; margin-bottom: 10px; }
@@ -773,13 +796,13 @@ p.topbar-company {
    visual refresh system
    ============================================= */
 :root {
-  --layer-1: 0 10px 25px rgba(45, 74, 62, 0.09);
-  --layer-2: 0 14px 34px rgba(45, 74, 62, 0.12);
-  --soft-border: #d8e6df;
-  --soft-bg: #f8fbf9;
-  --accent: #6b9e7e;
-  --accent-soft: #eef7f2;
-  --accent-deep: #2d4a3e;
+  --layer-1: 0 10px 28px rgba(16, 185, 129, 0.12);
+  --layer-2: 0 14px 36px rgba(5, 150, 105, 0.14);
+  --soft-border: rgba(16, 185, 129, 0.26);
+  --soft-bg: #f0fdf9;
+  --accent: #10b981;
+  --accent-soft: #d1fae5;
+  --accent-deep: #065f46;
 }
 
 .cards .card,

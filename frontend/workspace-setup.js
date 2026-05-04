@@ -89,7 +89,7 @@
     window.location.replace("dashboard.html?setup=1");
   });
 
-  void (async function guard() {
+    void (async function guard() {
     const supa = window.supabaseClient;
     const flow = window.gilbertoAuthFlow;
     if (!supa || !flow) return;
@@ -99,7 +99,29 @@
       return;
     }
     const uid = data.session.user.id;
-    if (await flow.isOnboardingComplete(supa, uid)) {
+    const qs = new URLSearchParams(window.location.search || "");
+    const joiningAnother =
+      qs.get("join") === "1" ||
+      qs.get("add_company") === "1" ||
+      qs.get("join_company") === "1";
+    const stayOnWorkspaceSetup =
+      joiningAnother ||
+      qs.get("settings") === "1" ||
+      qs.get("stay") === "1";
+    if (joiningAnother) {
+      const tag = document.querySelector(".ws-card .card-header-tagline p");
+      if (tag) {
+        tag.textContent =
+          "You're signed in with this email. Enter an invite code from another company's admin to add that workspace — no second account.";
+      }
+    } else if (qs.get("settings") === "1") {
+      const tag2 = document.querySelector(".ws-card .card-header-tagline p");
+      if (tag2) {
+        tag2.textContent =
+          "Same login for every company: create another workspace below or join one with an invite code.";
+      }
+    }
+    if (!stayOnWorkspaceSetup && (await flow.isOnboardingComplete(supa, uid))) {
       window.location.replace("dashboard.html");
     }
   })();

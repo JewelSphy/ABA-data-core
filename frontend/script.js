@@ -106,7 +106,7 @@ function showLogin() {
       normalized.includes("user already") ||
       normalized.includes("already been registered")
     ) {
-      return "This email already has a Gilberto CRM account — use Log In instead. After you sign in, open another company via Profile → Switch company or Workspace settings → join code (no duplicate signup).";
+      return "This email already has a Gilberto CRM account — use Log In instead. After you sign in, use the top bar \"Workspace\" button (or Profile menu → Switch or join company), then Join another company with your admin’s invite code — same login, no duplicate signup.";
     }
     return message || "Authentication failed.";
   }

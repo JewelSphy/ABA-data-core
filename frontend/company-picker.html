@@ -84,7 +84,7 @@
         <div id="orgPickList" class="org-choice-list" aria-live="polite"></div>
         <div class="picker-actions">
           <button id="pickContinue" type="button" disabled>Continue to Gilberto CRM</button>
-          <button type="button" class="subtle-link" id="pickJoinAnother">Join another company (code)</button>
+          <button type="button" class="subtle-link" id="pickJoinAnother">Join another company (same email · invite code)</button>
         </div>
         <button type="button" class="subtle-link" id="pickLogout" style="margin-top:8px;display:block;">
           Wrong account? Sign out and use a different email
@@ -142,7 +142,7 @@
         var uid = "";
 
         joinBtn.addEventListener("click", function () {
-          window.location.href = "workspace-setup.html";
+          window.location.href = "workspace-setup.html?join=1";
         });
         outBtn.addEventListener("click", async function () {
           if (window.supabaseClient) await window.supabaseClient.auth.signOut();
@@ -165,6 +165,17 @@
           return;
         }
 
+        function escHtml(t) {
+          return String(t || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        function escAttr(t) {
+          return escHtml(t).replace(/'/g, "&#39;");
+        }
+
         if (!memberships || !memberships.length) {
           setStatus(
             statusEl,
@@ -178,22 +189,39 @@
         }
 
         if (memberships.length === 1) {
-          var m = memberships[0];
-          var o = m.organizations || {};
+          var m1 = memberships[0];
+          var o1 = m1.organizations || {};
           var one = {
-            id: m.organization_id,
-            name: (o.company_display_name || "My Organization").trim(),
-            company_legal_name: o.company_legal_name || null,
-            joinCode: o.join_code != null ? o.join_code : null,
-            role: m.role || "member",
+            id: m1.organization_id,
+            name: (o1.company_display_name || "My Organization").trim(),
+            company_legal_name: o1.company_legal_name || null,
+            joinCode: o1.join_code != null ? o1.join_code : null,
+            role: m1.role || "member",
           };
-          try {
-            localStorage.setItem(
-              "gilberto_active_org:" + uid,
-              JSON.stringify(one)
-            );
-          } catch (_) {}
-          window.location.replace("dashboard.html");
+          var nm = escHtml(one.name);
+          var rl = escHtml((one.role || "member").replace(/_/g, " "));
+          listEl.innerHTML =
+            '<div class="org-choice org-choice-selected" style="cursor:default;">' +
+            "<div><strong>" +
+            nm +
+            "</strong><small>Your current workspace · " +
+            rl +
+            "</small></div></div>" +
+            '<p style="font-size:13px;color:#5f7a6d;margin:10px 0 0;line-height:1.45;">Use <strong>Join another company</strong> below to add this same login to another organization with an admin invite code.</p>';
+
+          btn.disabled = false;
+          btn.addEventListener("click", function () {
+            try {
+              localStorage.setItem(
+                "gilberto_active_org:" + uid,
+                JSON.stringify(one)
+              );
+            } catch (e2) {
+              setStatus(statusEl, "Could not save workspace.", true);
+              return;
+            }
+            window.location.href = "dashboard.html";
+          });
           return;
         }
 
@@ -228,17 +256,6 @@
             );
           })
           .join("");
-
-        function escHtml(t) {
-          return String(t || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;");
-        }
-        function escAttr(t) {
-          return escHtml(t).replace(/'/g, "&#39;");
-        }
 
         listEl.querySelectorAll('input[type="radio"]').forEach(function (inp) {
           inp.addEventListener("change", function () {

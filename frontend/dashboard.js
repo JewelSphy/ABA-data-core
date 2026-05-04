@@ -389,6 +389,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
       gilbertoInjectSwitchCompanyMenuItem();
+      gilbertoInjectTopBarWorkspaceNavIfNeeded();
       maybeSetupToast();
       return;
     }
@@ -414,6 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     await applyWorkspaceWithOrg();
     gilbertoInjectSwitchCompanyMenuItem();
+    gilbertoInjectTopBarWorkspaceNavIfNeeded();
     maybeSetupToast();
   })();
 });
@@ -718,7 +720,9 @@ function gilbertoInjectSwitchCompanyMenuItem() {
     item.type = "button";
     item.className = "top-menu-item";
     item.setAttribute("role", "menuitem");
-    item.textContent = "🏢 Switch company";
+    item.textContent = "🏢 Switch or join company";
+    item.title =
+      "Pick another workspace or add this login to a company with an invite code";
     item.addEventListener("click", function () {
       window.location.href = "company-picker.html";
     });
@@ -735,6 +739,39 @@ function gilbertoInjectSwitchCompanyMenuItem() {
   });
 }
 window.gilbertoInjectSwitchCompanyMenuItem = gilbertoInjectSwitchCompanyMenuItem;
+
+/**
+ * Pages without profile dropdown (only user pill) never received "Switch company".
+ * Adds a compact Workspace control next to the pill — opens company-picker (cloud only).
+ */
+function gilbertoInjectTopBarWorkspaceNavIfNeeded() {
+  if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) return;
+  if (!window.supabaseClient) return;
+  document.querySelectorAll(".top-actions").forEach(function (actions) {
+    if (actions.querySelector("[data-gilberto-workspace-nav]")) return;
+    const hasProfileMenu =
+      actions.querySelector(".menu-wrap .profile-chip.menu-caret") ||
+      actions.querySelector(".menu-wrap .profile-chip.profile-action");
+    if (hasProfileMenu) return;
+    const nav = document.createElement("button");
+    nav.type = "button";
+    nav.dataset.gilbertoWorkspaceNav = "1";
+    nav.className = "small-btn";
+    nav.textContent = "Workspace";
+    nav.title =
+      "Switch company or join another with this email (invite code from admin)";
+    nav.addEventListener("click", function () {
+      window.location.href = "company-picker.html";
+    });
+    const pill = actions.querySelector(".user-pill, #topbarUserPill");
+    if (pill && pill.parentNode === actions) {
+      pill.insertAdjacentElement("beforebegin", nav);
+    } else {
+      actions.appendChild(nav);
+    }
+  });
+}
+window.gilbertoInjectTopBarWorkspaceNavIfNeeded = gilbertoInjectTopBarWorkspaceNavIfNeeded;
 
 function makeJoinCode8() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1223,8 +1260,22 @@ async function enforceAuthGuard() {
     const draft = await flow.hasIncompleteOnboardingDraft(window.supabaseClient, userId);
 
     if (done) {
-      if (currentPage === "workspace-setup.html" || currentPage === "onboarding.html") {
+      if (currentPage === "onboarding.html") {
         window.location.replace("dashboard.html");
+        return;
+      }
+      if (currentPage === "workspace-setup.html") {
+        const qs = new URLSearchParams(window.location.search || "");
+        const allowWorkspacePage =
+          qs.get("join") === "1" ||
+          qs.get("add_company") === "1" ||
+          qs.get("join_company") === "1" ||
+          qs.get("settings") === "1" ||
+          qs.get("stay") === "1";
+        if (!allowWorkspacePage) {
+          window.location.replace("dashboard.html");
+        }
+        return;
       }
       return;
     }
