@@ -1,9 +1,43 @@
 function showLogin() {
     document.getElementById("loginForm").classList.remove("hidden");
     document.getElementById("signupForm").classList.add("hidden");
-  
+
     document.getElementById("loginTab").classList.add("active");
     document.getElementById("signupTab").classList.remove("active");
+
+    const email = document.getElementById("loginEmail")?.value?.trim() || "";
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      loginShowPasswordStep();
+    } else {
+      loginShowEmailStep();
+    }
+  }
+
+  function loginShowEmailStep() {
+    const wrap = document.getElementById("loginPasswordStep");
+    const step = document.getElementById("loginEmailStep");
+    if (wrap) wrap.classList.add("hidden");
+    if (step) step.classList.remove("hidden");
+    const pw = document.getElementById("loginPassword");
+    if (pw) pw.value = "";
+  }
+
+  function loginShowPasswordStep() {
+    const email = document.getElementById("loginEmail")?.value?.trim() || "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthMessage("Enter a valid email address, then Continue.", true);
+      return;
+    }
+    const recap = document.getElementById("loginEmailRecap");
+    if (recap) recap.textContent = email;
+    const wrap = document.getElementById("loginPasswordStep");
+    const step = document.getElementById("loginEmailStep");
+    if (step) step.classList.add("hidden");
+    if (wrap) {
+      wrap.classList.remove("hidden");
+      document.getElementById("loginPassword")?.focus();
+    }
+    setAuthMessage("");
   }
 
   function loadRememberedEmail() {
@@ -12,6 +46,9 @@ function showLogin() {
     const rememberBox = document.getElementById("rememberEmail");
     if (loginEmailInput && savedEmail) loginEmailInput.value = savedEmail;
     if (rememberBox) rememberBox.checked = !!savedEmail;
+    if (savedEmail && loginEmailInput) {
+      loginShowPasswordStep();
+    }
   }
   
   function showSignup() {
@@ -56,10 +93,22 @@ function showLogin() {
     if (normalized.includes("email not confirmed")) {
       return "Please confirm your email from the Gilberto CRM verification message, then log in.";
     }
+    if (
+      normalized.includes("already registered") ||
+      normalized.includes("user already") ||
+      normalized.includes("already been registered")
+    ) {
+      return "This email already has a Gilberto CRM account — use Log In instead. After you sign in, open another company via Profile → Switch company or Workspace settings → join code (no duplicate signup).";
+    }
     return message || "Authentication failed.";
   }
 
   async function login() {
+    const pwStep = document.getElementById("loginPasswordStep");
+    if (pwStep && pwStep.classList.contains("hidden")) {
+      loginShowPasswordStep();
+      return;
+    }
     const email = document.getElementById("loginEmail")?.value?.trim();
     const password = document.getElementById("loginPassword")?.value || "";
     if (!email || !password) {
@@ -165,6 +214,20 @@ async function goToDashboard() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+  document.getElementById("loginEmailContinue")?.addEventListener("click", loginShowPasswordStep);
+  document.getElementById("loginChangeEmailBtn")?.addEventListener("click", loginShowEmailStep);
+  document.getElementById("loginEmail")?.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      loginShowPasswordStep();
+    }
+  });
+  document.getElementById("loginPassword")?.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      login();
+    }
+  });
   loadRememberedEmail();
 
   const params = new URLSearchParams(window.location.search);

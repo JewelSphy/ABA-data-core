@@ -35,18 +35,31 @@
 
         <!-- LOGIN FORM -->
         <form id="loginForm">
-          <label>Email</label>
-          <input id="loginEmail" type="email" placeholder="you@example.com" />
-
-          <label>Password</label>
-          <input id="loginPassword" type="password" placeholder="Enter your password" />
-
-          <div style="display:flex;align-items:center;gap:8px;margin:-2px 0 12px;">
-            <input id="rememberEmail" type="checkbox" style="width:auto;margin:0;" />
-            <label for="rememberEmail" style="margin:0;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:#5f7a6d;">Remember email on this device</label>
+          <div id="loginEmailStep">
+            <label>Email</label>
+            <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="username" />
+            <p style="font-size:12px;line-height:1.45;color:#5f7a6d;margin:-4px 0 14px;">
+              One Gilberto login can access <strong>several organizations</strong>. After signing in we&apos;ll open the workspace you chose (or ask you to pick one).
+              If this email belongs to multiple companies already, join new ones via <strong>Join code</strong> after logging in—not a second signup.
+            </p>
+            <button id="loginEmailContinue" type="button">Continue</button>
           </div>
 
-          <button id="loginBtn" type="button" onclick="login()">Log In</button>
+          <div id="loginPasswordStep" class="hidden">
+            <p style="font-size:13px;margin:0 0 12px;color:#2d4a3e;">
+              Signing in as <strong id="loginEmailRecap"></strong><br/>
+              <button type="button" id="loginChangeEmailBtn" style="margin-top:6px;background:none;border:none;padding:0;color:#1d6fd8;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">Use a different email</button>
+            </p>
+            <label>Password</label>
+            <input id="loginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" />
+
+            <div style="display:flex;align-items:center;gap:8px;margin:-2px 0 12px;">
+              <input id="rememberEmail" type="checkbox" style="width:auto;margin:0;" />
+              <label for="rememberEmail" style="margin:0;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:#5f7a6d;">Remember email on this device</label>
+            </div>
+
+            <button id="loginBtn" type="button" onclick="login()">Log In</button>
+          </div>
           <div class="login-helper-row">
             <span class="login-helper-pill">Secure workspace access</span>
             <span class="login-helper-pill">HIPAA-ready workflow</span>

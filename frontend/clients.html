@@ -609,6 +609,22 @@ async function ensureClientOrgReady() {
   org = window.gilbertoCurrentOrg;
   if ((!org || !org.id) && window.supabaseClient) {
     try {
+      var sid = '';
+      try {
+        var sess = await window.supabaseClient.auth.getSession();
+        if (sess.data && sess.data.session && sess.data.session.user) {
+          sid = sess.data.session.user.id;
+        }
+      } catch (_) {}
+      if (sid && typeof window.gilbertoFetchOrgMembershipsForUser === 'function') {
+        var mems = await window.gilbertoFetchOrgMembershipsForUser(window.supabaseClient, sid);
+        if (Array.isArray(mems) && mems.length > 1) {
+          window.location.href = 'company-picker.html';
+          return null;
+        }
+      }
+    } catch (_) {}
+    try {
       var pq = await window.supabaseClient
         .from('clients')
         .select('org_id')

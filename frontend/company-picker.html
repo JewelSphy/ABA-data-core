@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Choose company - Gilberto CRM</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-company-picker .picker-card-inner {
+      text-align: left;
+    }
+    .page-company-picker .org-choice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .page-company-picker label.org-choice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid #dbe8e2;
+      border-radius: 12px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #fbfffd, #ffffff);
+      margin: 0;
+    }
+    .page-company-picker label.org-choice.org-choice-selected {
+      border-color: #2b73d2;
+      box-shadow: 0 0 0 2px rgba(43, 115, 210, 0.15);
+    }
+    .page-company-picker .org-choice strong {
+      display: block;
+      color: #1f3345;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .page-company-picker .org-choice small {
+      display: block;
+      color: #5f7a6d;
+      margin-top: 4px;
+      font-size: 13px;
+    }
+    .page-company-picker .picker-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 14px;
+    }
+    .page-company-picker .subtle-link {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #1d6fd8;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    #pickStatus {
+      margin-top: 10px;
+      font-size: 13px;
+      min-height: 18px;
+    }
+  </style>
+</head>
+<body class="page-company-picker">
+
+  <div class="container">
+    <div class="card picker-card-inner">
+      <div class="card-header">
+        <div class="card-header-tagline" style="text-align:center;">
+          <h1>Select your workspace</h1>
+          <p>Your email is tied to one account. Pick which company&apos;s Gilberto CRM data to open.</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:14px;color:#2d4a3e;line-height:1.45;">
+          You belong to more than one organization — or haven&apos;t chosen one yet — so Gilberto asks which tenant to load.
+          Billing, documents, clients, and teams stay <strong>separate per company</strong> (that&apos;s how every org sees the latest app updates securely).
+        </p>
+        <div id="orgPickList" class="org-choice-list" aria-live="polite"></div>
+        <div class="picker-actions">
+          <button id="pickContinue" type="button" disabled>Continue to Gilberto CRM</button>
+          <button type="button" class="subtle-link" id="pickJoinAnother">Join another company (code)</button>
+        </div>
+        <button type="button" class="subtle-link" id="pickLogout" style="margin-top:8px;display:block;">
+          Wrong account? Sign out and use a different email
+        </button>
+        <p id="pickStatus"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabaseConfig.js"></script>
+  <script src="supabaseClient.js"></script>
+  <script src="jvmSupabaseBridge.js"></script>
+  <script src="dashboard.js"></script>
+  <script>
+    (function () {
+      function setStatus(el, msg, bad) {
+        if (!el) return;
+        el.textContent = msg || "";
+        el.style.color = bad ? "#b91c1c" : "#2d4a3e";
+      }
+
+      function orgRadioId(i) {
+        return "gilberto-org-choice-" + i;
+      }
+
+      document.addEventListener("DOMContentLoaded", async function () {
+        var statusEl = document.getElementById("pickStatus");
+        var listEl = document.getElementById("orgPickList");
+        var btn = document.getElementById("pickContinue");
+        var joinBtn = document.getElementById("pickJoinAnother");
+        var outBtn = document.getElementById("pickLogout");
+
+        if (
+          typeof jvmSupabaseRelayEnabled === "function" &&
+          jvmSupabaseRelayEnabled()
+        ) {
+          setStatus(
+            statusEl,
+            "This screen is for cloud sign-in. Java bridge deployments use server-side tenancy.",
+            true
+          );
+          return;
+        }
+
+        if (
+          !window.supabaseClient ||
+          typeof window.gilbertoFetchOrgMembershipsForUser !== "function"
+        ) {
+          setStatus(statusEl, "Configuration error: reload the page.", true);
+          return;
+        }
+
+        var memberships = [];
+        var uid = "";
+
+        joinBtn.addEventListener("click", function () {
+          window.location.href = "workspace-setup.html";
+        });
+        outBtn.addEventListener("click", async function () {
+          if (window.supabaseClient) await window.supabaseClient.auth.signOut();
+          window.location.href = "index.html?lo=1";
+        });
+
+        try {
+          var s = await window.supabaseClient.auth.getSession();
+          if (!s.data || !s.data.session || !s.data.session.user) {
+            window.location.href = "index.html";
+            return;
+          }
+          uid = s.data.session.user.id;
+          memberships = await window.gilbertoFetchOrgMembershipsForUser(
+            window.supabaseClient,
+            uid
+          );
+        } catch (e) {
+          setStatus(statusEl, (e && e.message) || "Could not load companies.", true);
+          return;
+        }
+
+        if (!memberships || !memberships.length) {
+          setStatus(
+            statusEl,
+            "No companies found yet. Join with a code from your admin, or create a workspace.",
+            true
+          );
+          listEl.innerHTML =
+            '<p style="font-size:14px;color:#5f7a6d;">Use \"Join another company\" below.</p>';
+          btn.disabled = true;
+          return;
+        }
+
+        if (memberships.length === 1) {
+          var m = memberships[0];
+          var o = m.organizations || {};
+          var one = {
+            id: m.organization_id,
+            name: (o.company_display_name || "My Organization").trim(),
+            company_legal_name: o.company_legal_name || null,
+            joinCode: o.join_code != null ? o.join_code : null,
+            role: m.role || "member",
+          };
+          try {
+            localStorage.setItem(
+              "gilberto_active_org:" + uid,
+              JSON.stringify(one)
+            );
+          } catch (_) {}
+          window.location.replace("dashboard.html");
+          return;
+        }
+
+        listEl.innerHTML = memberships
+          .map(function (mem, idx) {
+            var o = mem.organizations || {};
+            var name = escHtml(
+              (o.company_display_name || "Untitled organization").trim()
+            );
+            var legal =
+              (o.company_legal_name &&
+                String(o.company_legal_name).trim()) || "";
+            var role = escHtml((mem.role || "member").replace(/_/g, " "));
+            var sub = legal
+              ? escHtml(legal) + " · " + role
+              : role;
+            var oid = escAttr(mem.organization_id || "");
+            return (
+              '<label class="org-choice" for="' +
+              orgRadioId(idx) +
+              '">' +
+              '<input type="radio" name="gilbertoOrgPick" value="' +
+              oid +
+              '" id="' +
+              orgRadioId(idx) +
+              '"/>' +
+              "<div><strong>" +
+              name +
+              "</strong><small>" +
+              sub +
+              "</small></div></label>"
+            );
+          })
+          .join("");
+
+        function escHtml(t) {
+          return String(t || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        function escAttr(t) {
+          return escHtml(t).replace(/'/g, "&#39;");
+        }
+
+        listEl.querySelectorAll('input[type="radio"]').forEach(function (inp) {
+          inp.addEventListener("change", function () {
+            listEl.querySelectorAll("label.org-choice").forEach(function (lbl) {
+              lbl.classList.remove("org-choice-selected");
+            });
+            var par = inp.closest("label.org-choice");
+            if (par) par.classList.add("org-choice-selected");
+            btn.disabled = false;
+          });
+        });
+
+        btn.addEventListener("click", function () {
+          var sel = listEl.querySelector('input[name="gilbertoOrgPick"]:checked');
+          if (!sel || !sel.value) {
+            setStatus(statusEl, "Please select a company.", true);
+            return;
+          }
+          var chosen = memberships.find(function (mem) {
+            return mem.organization_id === sel.value;
+          });
+          if (!chosen) {
+            setStatus(statusEl, "Invalid selection.", true);
+            return;
+          }
+          var orgRow = chosen.organizations || {};
+          var payload = {
+            id: chosen.organization_id,
+            name: (orgRow.company_display_name || "My Organization").trim(),
+            company_legal_name: orgRow.company_legal_name || null,
+            joinCode: orgRow.join_code != null ? orgRow.join_code : null,
+            role: chosen.role || "member",
+          };
+          try {
+            localStorage.setItem(
+              "gilberto_active_org:" + uid,
+              JSON.stringify(payload)
+            );
+          } catch (e2) {
+            setStatus(statusEl, "Could not save workspace choice.", true);
+            return;
+          }
+          window.location.href = "dashboard.html";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

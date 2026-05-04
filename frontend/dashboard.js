@@ -196,6 +196,13 @@
     const userId = data.session.user.id;
     const supa = window.supabaseClient;
     if (await isOnboardingComplete(supa, userId)) {
+      if (typeof window.gilbertoShouldOpenCompanyPickerAfterAuth === "function") {
+        const needPicker = await window.gilbertoShouldOpenCompanyPickerAfterAuth(supa, userId);
+        if (needPicker) {
+          window.location.href = "company-picker.html";
+          return;
+        }
+      }
       window.location.href = "dashboard.html";
       return;
     }
@@ -223,6 +230,57 @@
     goToAppAfterAuth,
   };
 })();
+
+function gilbertoCurrentPageFile() {
+  return (window.location.pathname.split("/").pop() || "").toLowerCase();
+}
+
+function gilbertoIsOrgPickerPage() {
+  return gilbertoCurrentPageFile() === "company-picker.html";
+}
+
+/**
+ * Every organization_members row for this user (supports multiple companies per login).
+ */
+async function gilbertoFetchOrgMembershipsForUser(client, uid) {
+  if (!client || !uid) return [];
+  try {
+    const { data, error } = await client
+      .from("organization_members")
+      .select(
+        "organization_id, role, organizations ( id, company_display_name, company_legal_name, join_code )"
+      )
+      .eq("user_id", uid);
+    if (!error && Array.isArray(data) && data.length) return data;
+  } catch (_) {
+    /* fall back */
+  }
+  try {
+    const { data: m2, error: e2 } = await client
+      .from("organization_members")
+      .select("organization_id, role")
+      .eq("user_id", uid);
+    if (e2 || !Array.isArray(m2) || !m2.length) return [];
+    const ids = [...new Set(m2.map((x) => x.organization_id).filter(Boolean))];
+    const { data: orgRows } = await client
+      .from("organizations")
+      .select("id, company_display_name, company_legal_name, join_code")
+      .in("id", ids);
+    const omap = {};
+    (orgRows || []).forEach(function (o) {
+      if (o && o.id) omap[o.id] = o;
+    });
+    return m2.map(function (m) {
+      return {
+        organization_id: m.organization_id,
+        role: m.role,
+        organizations: omap[m.organization_id] || null,
+      };
+    });
+  } catch (_) {
+    return [];
+  }
+}
 
 // handles page navigation, called from every sidebar button
 function goToPage(page) {
@@ -311,6 +369,16 @@ document.addEventListener('DOMContentLoaded', function () {
   void (async function gilbertoBootShell() {
     applyAutoTheme();
     enhanceInteractivity();
+
+    const bootPage = gilbertoCurrentPageFile();
+    if (bootPage === "company-picker.html") {
+      await enforceAuthGuard();
+      await resolveCurrentUserIdentity();
+      applyUserIdentityPills();
+      maybeSetupToast();
+      return;
+    }
+
     await enforceAuthGuard();
 
     await resolveCurrentUserIdentity();
@@ -320,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.querySelector(".sidebar");
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
+      gilbertoInjectSwitchCompanyMenuItem();
       maybeSetupToast();
       return;
     }
@@ -344,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     await applyWorkspaceWithOrg();
+    gilbertoInjectSwitchCompanyMenuItem();
     maybeSetupToast();
   })();
 });
@@ -449,16 +519,38 @@ async function loadGilbertoOrganization() {
 
     let orgId = null;
     let role = provisional?.role || "member";
+    let chosenMember = null;
+    let memberships = [];
 
-    const { data: mRows, error: mErr } = await window.supabaseClient
-      .from("organization_members")
-      .select("organization_id, role")
-      .eq("user_id", uid)
-      .limit(1);
+    try {
+      memberships = await gilbertoFetchOrgMembershipsForUser(window.supabaseClient, uid);
+    } catch (_) {
+      memberships = [];
+    }
 
-    if (!mErr && mRows && mRows.length) {
-      orgId = mRows[0].organization_id || null;
-      role = mRows[0].role || "member";
+    if (memberships.length > 0) {
+      const prefId = provisional?.id || null;
+      const byId = {};
+      memberships.forEach(function (m) {
+        if (m && m.organization_id) byId[m.organization_id] = m;
+      });
+
+      if (prefId && byId[prefId]) {
+        chosenMember = byId[prefId];
+      } else if (memberships.length === 1) {
+        chosenMember = memberships[0];
+      } else if (memberships.length > 1) {
+        if (!gilbertoIsOrgPickerPage()) {
+          window.location.replace("company-picker.html");
+          return null;
+        }
+        return null;
+      }
+
+      if (chosenMember) {
+        orgId = chosenMember.organization_id || null;
+        role = chosenMember.role || role || "member";
+      }
     }
 
     if (!orgId) {
@@ -490,7 +582,9 @@ async function loadGilbertoOrganization() {
       }
     }
 
-    if (!orgId) orgId = await inferOrgIdFromTenantTables(window.supabaseClient);
+    if (!orgId && memberships.length === 0) {
+      orgId = await inferOrgIdFromTenantTables(window.supabaseClient);
+    }
 
     if (!orgId) {
       if (window.gilbertoCurrentOrg?.id) {
@@ -501,16 +595,19 @@ async function loadGilbertoOrganization() {
 
     role = provisional?.role && provisional.id === orgId ? provisional.role : role;
 
-    let org = null;
-    try {
-      const { data: oRows } = await window.supabaseClient
+    let org =
+      chosenMember && chosenMember.organizations ? chosenMember.organizations : null;
+    if (!org && orgId) {
+      try {
+        const { data: oRows } = await window.supabaseClient
         .from("organizations")
         .select("id, company_display_name, company_legal_name, join_code")
         .eq("id", orgId)
         .limit(1);
-      if (oRows && oRows.length) org = oRows[0];
-    } catch (_) {
-      /* keep minimal org object */
+        if (oRows && oRows.length) org = oRows[0];
+      } catch (_) {
+        /* keep minimal org object */
+      }
     }
 
     window.gilbertoCurrentOrg = normalizeOrgShape(
@@ -582,6 +679,62 @@ async function applyWorkspaceWithOrg() {
 }
 
 window.loadGilbertoOrganization = loadGilbertoOrganization;
+
+async function gilbertoShouldOpenCompanyPickerAfterAuth(client, uid) {
+  if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) {
+    return false;
+  }
+  if (!client || !uid) return false;
+  const rows = await gilbertoFetchOrgMembershipsForUser(client, uid);
+  if (!Array.isArray(rows) || rows.length < 2) return false;
+  const key = "gilberto_active_org:" + uid;
+  let prefId = null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const o = JSON.parse(raw);
+      prefId = o && o.id ? o.id : null;
+    }
+  } catch (_) {}
+  if (!prefId) return true;
+  return !rows.some((r) => r.organization_id === prefId);
+}
+
+window.gilbertoFetchOrgMembershipsForUser = gilbertoFetchOrgMembershipsForUser;
+window.gilbertoShouldOpenCompanyPickerAfterAuth = gilbertoShouldOpenCompanyPickerAfterAuth;
+
+function gilbertoInjectSwitchCompanyMenuItem() {
+  if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) return;
+  if (!window.supabaseClient) return;
+  document.querySelectorAll(".top-actions .menu-wrap").forEach(function (wrap) {
+    const chip = wrap.querySelector(".profile-chip");
+    const menu = wrap.querySelector(".top-menu");
+    if (!chip || !menu || menu.dataset.gilbertoSwitchInjected === "1") return;
+    const looksProfile =
+      chip.classList.contains("menu-caret") || chip.classList.contains("profile-action");
+    if (!looksProfile) return;
+    menu.dataset.gilbertoSwitchInjected = "1";
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "top-menu-item";
+    item.setAttribute("role", "menuitem");
+    item.textContent = "🏢 Switch company";
+    item.addEventListener("click", function () {
+      window.location.href = "company-picker.html";
+    });
+    const items = Array.from(menu.querySelectorAll(".top-menu-item"));
+    const signOutEl = items.find(function (el) {
+      const t = String(el.textContent || "").toLowerCase();
+      return t.includes("sign out");
+    });
+    if (signOutEl && signOutEl.parentNode) {
+      signOutEl.parentNode.insertBefore(item, signOutEl);
+    } else {
+      menu.appendChild(item);
+    }
+  });
+}
+window.gilbertoInjectSwitchCompanyMenuItem = gilbertoInjectSwitchCompanyMenuItem;
 
 function makeJoinCode8() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
