@@ -861,57 +861,11 @@ function docsNormalizeRow(r) {
   return r;
 }
 
-async function loadDocumentsSupabase(orgId) {
-  var sel =
-    'id, org_id, client_id, requirement_key, provider_id, doc_name, doc_type, linked_name, upload_date, expiry_date, status, content_text, attachment_mime, attachment_filename';
-  var q = await window.supabaseClient
-    .from('documents')
-    .select(sel)
-    .eq('org_id', orgId)
-    .order('upload_date', { ascending: false })
-    .limit(500);
-  if (q.error) throw q.error;
-  docsData = (q.data || []).map(docsNormalizeRow);
-}
-
-async function saveDocumentSupabase(payload, editId) {
-  var orgId = payload.org_id;
-  var row = {
-    org_id: orgId,
-    doc_name: payload.doc_name,
-    doc_type: payload.doc_type || null,
-    linked_name: payload.linked_name || null,
-    upload_date: payload.upload_date || null,
-    expiry_date: payload.expiry_date || null,
-    status: payload.status || 'active',
-    content_text: payload.content_text != null ? payload.content_text : null,
-    client_id: payload.client_id || null,
-    requirement_key: payload.requirement_key || null,
-    provider_id: payload.provider_id || null
-  };
-  if (payload.attachment_base64) {
-    row.attachment_mime = payload.attachment_mime || null;
-    row.attachment_filename = payload.attachment_filename || null;
-    row.attachment_base64 = payload.attachment_base64;
-  }
-  if (editId) {
-    var up = await window.supabaseClient.from('documents').update(row).eq('id', editId).eq('org_id', orgId);
-    if (up.error) throw up.error;
-  } else {
-    var ins = await window.supabaseClient.from('documents').insert(row).select('id');
-    if (ins.error) throw ins.error;
-  }
-}
-
-async function fetchDocumentFullSupabase(orgId, docId) {
-  var q = await window.supabaseClient
-    .from('documents')
-    .select('*')
-    .eq('id', docId)
-    .eq('org_id', orgId)
-    .maybeSingle();
-  if (q.error) throw q.error;
-  return q.data ? docsNormalizeRow(q.data) : null;
+function docsJavaApiRequiredMessage() {
+  return (
+    'Documents are read and written through the Gilberto Java API to your MySQL database. ' +
+    'Set window.JAVA_SUPABASE_BRIDGE in supabaseConfig.js (or your host config) to your Calendar/Java base URL, restart the backend after applying sql/schema, then reload.'
+  );
 }
 
 async function loadLinkedOptions() {
@@ -930,32 +884,15 @@ async function loadLinkedOptions() {
     sel.innerHTML += '<option value="' + esc(value) + '">' + esc(value) + '</option>';
   };
   try {
-    if (docsApiUseBridge()) {
-      const [cRes, sRes, pRes] = await Promise.all([
-        jvmFetchClients(orgId, null),
-        jvmFetchStaff(orgId, null),
-        providerJvmFetch(orgId)
-      ]);
-      if (cRes.ok) (await cRes.json()).forEach((x) => add('Client', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-      if (sRes.ok) (await sRes.json()).forEach((x) => add('Staff', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-      if (pRes.ok) (await pRes.json()).forEach((x) => add('Provider', x.full_name || ''));
-      return;
-    }
-    if (!window.supabaseClient) return;
-    var cq = await window.supabaseClient
-      .from('clients')
-      .select('first_name,last_name')
-      .eq('org_id', orgId)
-      .order('last_name', { ascending: true });
-    if (!cq.error) (cq.data || []).forEach((x) => add('Client', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-    var sq = await window.supabaseClient
-      .from('staff')
-      .select('first_name,last_name')
-      .eq('org_id', orgId)
-      .order('last_name', { ascending: true });
-    if (!sq.error) (sq.data || []).forEach((x) => add('Staff', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
-    var pq = await window.supabaseClient.from('providers').select('full_name').eq('org_id', orgId);
-    if (!pq.error) (pq.data || []).forEach((x) => add('Provider', x.full_name || ''));
+    if (!docsApiUseBridge()) return;
+    const [cRes, sRes, pRes] = await Promise.all([
+      jvmFetchClients(orgId, null),
+      jvmFetchStaff(orgId, null),
+      providerJvmFetch(orgId)
+    ]);
+    if (cRes.ok) (await cRes.json()).forEach((x) => add('Client', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
+    if (sRes.ok) (await sRes.json()).forEach((x) => add('Staff', String((x.first_name || '') + ' ' + (x.last_name || '')).trim()));
+    if (pRes.ok) (await pRes.json()).forEach((x) => add('Provider', x.full_name || ''));
   } catch (_) {}
 }
 
@@ -975,31 +912,25 @@ async function loadDocuments() {
     if (shell) shell.classList.remove('doc-shell-loading');
     return;
   }
-  if (!docsApiUseBridge() && !window.supabaseClient) {
-    const msg = docEmptyHtml('Sign in required', 'Use Gilberto signed in to Supabase, or enable the Java bridge.', false);
+  if (!docsApiUseBridge()) {
+    const msg = docEmptyHtml('Java API required', docsJavaApiRequiredMessage(), false);
     bodyReq.innerHTML = msg;
     bodyOth.innerHTML = msg;
     if (shell) shell.classList.remove('doc-shell-loading');
     return;
   }
   try {
-    if (docsApiUseBridge()) {
-      if (typeof documentJvmEnsureOrgRequirements === 'function') {
-        await documentJvmEnsureOrgRequirements(orgId).catch(function () {});
-      }
-      const res = await documentJvmFetch(orgId, null);
-      if (!res.ok)
-        throw new Error(
-          typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
-        );
-      docsData = (await res.json()).map(docsNormalizeRow);
-    } else {
-      await loadDocumentsSupabase(orgId);
+    if (typeof documentJvmEnsureOrgRequirements === 'function') {
+      await documentJvmEnsureOrgRequirements(orgId).catch(function () {});
     }
+    const res = await documentJvmFetch(orgId, null);
+    if (!res.ok)
+      throw new Error(
+        typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
+      );
+    docsData = (await res.json()).map(docsNormalizeRow);
     if (!docsData.length) {
-      const hint = docsApiUseBridge()
-        ? 'Upload a file or activate clients to see intake requirements.'
-        : 'Run security/supabase-documents.sql in Supabase if this table is missing, then upload files here.';
+      const hint = 'Upload a file or activate clients to see intake requirements. Data lives in MySQL via the Java API.';
       const msg = docEmptyHtml('No documents yet', hint, true);
       bodyReq.innerHTML = msg;
       bodyOth.innerHTML = msg;
@@ -1017,9 +948,8 @@ async function loadDocuments() {
       '<code style="font-size:11px;background:#f4f7f5;padding:2px 6px;border-radius:4px;">backend/sql/schema/002_documents_attachment_columns.sql</code> ' +
       '(skip lines that error with “duplicate column”). Then reload this page.</p>';
     var showJvmHint =
-      docsApiUseBridge() &&
-      (/failed to fetch documents|unknown column|doesn't exist|does not exist|sqlsyntax/i.test(rawMsg) ||
-        rawMsg.indexOf('HTTP 5') === 0);
+      /failed to fetch documents|unknown column|doesn't exist|does not exist|sqlsyntax/i.test(rawMsg) ||
+      rawMsg.indexOf('HTTP 5') === 0;
     const err =
       '<tr><td colspan="8" class="doc-empty-cell"><div class="doc-empty-state"><p class="doc-empty-title">Could not load documents</p><p class="doc-empty-text">' +
       esc(rawMsg) +
@@ -1141,16 +1071,12 @@ async function saveDocument() {
   var saveBtn = document.getElementById('docSaveBtn');
   if (saveBtn) saveBtn.disabled = true;
   try {
-    if (docsApiUseBridge()) {
-      const res = await documentJvmUpsert(payload);
-      if (!res.ok)
-        throw new Error(
-          typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
-        );
-    } else {
-      if (!window.supabaseClient) throw new Error('Supabase client not available');
-      await saveDocumentSupabase(payload, editId);
-    }
+    if (!docsApiUseBridge()) throw new Error(docsJavaApiRequiredMessage());
+    const res = await documentJvmUpsert(payload);
+    if (!res.ok)
+      throw new Error(
+        typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
+      );
     closeModal('uploadDocModal');
     document.getElementById('editDocId').value = '';
     if (inp) inp.value = '';
@@ -1184,19 +1110,15 @@ async function openViewDoc(id) {
     note.style.display = 'none';
     link.removeAttribute('href');
     var wantsAtt = d.attachment_present === true || d.attachment_present === 'true' || !!d.attachment_base64;
-    if (wantsAtt && orgId && (typeof documentJvmFetchById === 'function' || window.supabaseClient)) {
+    if (wantsAtt && orgId && typeof documentJvmFetchById === 'function' && docsApiUseBridge()) {
       wrap.style.display = '';
       try {
         var full = d.attachment_base64 ? d : null;
         if (!full) {
-          if (docsApiUseBridge() && typeof documentJvmFetchById === 'function') {
-            var res = await documentJvmFetchById(orgId, id);
-            if (res.ok) {
-              var arr = await res.json();
-              if (arr && arr[0]) full = arr[0];
-            }
-          } else if (window.supabaseClient) {
-            full = await fetchDocumentFullSupabase(orgId, id);
+          var res = await documentJvmFetchById(orgId, id);
+          if (res.ok) {
+            var arr = await res.json();
+            if (arr && arr[0]) full = arr[0];
           }
         }
         if (full && full.attachment_base64) {
@@ -1226,22 +1148,12 @@ function openDeleteDoc(id) {
 async function confirmDeleteDoc() {
   if (!pendingDeleteDocId) return;
   try {
-    var orgDel = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
-    if (docsApiUseBridge()) {
-      const res = await documentJvmDelete(pendingDeleteDocId);
-      if (!res.ok)
-        throw new Error(
-          typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
-        );
-    } else {
-      if (!orgDel || !window.supabaseClient) throw new Error('Organization not loaded');
-      var dq = await window.supabaseClient
-        .from('documents')
-        .delete()
-        .eq('id', pendingDeleteDocId)
-        .eq('org_id', orgDel);
-      if (dq.error) throw dq.error;
-    }
+    if (!docsApiUseBridge()) throw new Error(docsJavaApiRequiredMessage());
+    const res = await documentJvmDelete(pendingDeleteDocId);
+    if (!res.ok)
+      throw new Error(
+        typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse(res) : 'HTTP ' + res.status
+      );
     closeModal('deleteDocModal');
     showToast('Document deleted');
     pendingDeleteDocId = null;

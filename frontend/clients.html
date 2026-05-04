@@ -359,7 +359,7 @@
     <div class="modal-body">
       <p style="font-size:14px;color:#2d4a3e;line-height:1.5;"><strong id="intakePromptClientName">—</strong> — a HIPAA-aligned healthcare intake checklist was created automatically (Consent, ROI, HIPAA, insurance, emergencies, policies, …).</p>
       <p style="font-size:13px;color:#597568;margin-top:10px;line-height:1.45;">Documents are listed <strong>in priority order</strong> on the Documents page. Upload or paste details for each item—click any row or use <strong>Upload now</strong>.</p>
-      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">Java bridge: placeholders sync immediately. Cloud-only: run <code style="font-size:11px;">security/supabase-documents.sql</code> once so uploads store in Supabase.</div>
+      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">With the <strong>Java API</strong> enabled, placeholders sync to MySQL immediately; uploads and edits on the Documents page are stored in your SQL database (not a separate cloud documents table).</div>
     </div>
     <div class="modal-footer">
       <button type="button" class="small-btn" onclick="closeModal('intakeDocPromptModal')">Later</button>
