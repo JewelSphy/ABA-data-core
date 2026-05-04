@@ -79,6 +79,8 @@
     };
     flow.markCompleteLocal(userId, profile);
     try {
+      sessionStorage.removeItem("gilberto_after_auth_join");
+      sessionStorage.removeItem("gilberto_join_code_prefill");
       localStorage.setItem(
         "gilberto_active_org:" + userId,
         JSON.stringify({ id: orgId, name: org.company_display_name, company_legal_name: org.company_legal_name })
@@ -113,6 +115,15 @@
       if (tag) {
         tag.textContent =
           "You're signed in with this email. Enter an invite code from another company's admin to add that workspace — no second account.";
+      }
+      try {
+        const prefill = sessionStorage.getItem("gilberto_join_code_prefill") || "";
+        if (prefill && document.getElementById("joinCodeInput")) {
+          document.getElementById("joinCodeInput").value = prefill;
+          setStatus("Invite code ready. Click Join with this code.", false);
+        }
+      } catch (_) {
+        /* empty */
       }
     } else if (qs.get("settings") === "1") {
       const tag2 = document.querySelector(".ws-card .card-header-tagline p");

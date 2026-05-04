@@ -81,6 +81,22 @@ function showLogin() {
     btn.textContent = loading ? "Please wait..." : label;
   }
 
+  function queueJoinCompanyFromLogin(sourceCode) {
+    var code = String(sourceCode || "").trim().toUpperCase();
+    if (code && code.length < 4) {
+      setAuthMessage("Join code looks too short. Usually it is 8 characters.", true);
+      return false;
+    }
+    try {
+      sessionStorage.setItem("gilberto_after_auth_join", "1");
+      if (code) sessionStorage.setItem("gilberto_join_code_prefill", code);
+      else sessionStorage.removeItem("gilberto_join_code_prefill");
+    } catch (_) {
+      /* empty */
+    }
+    return true;
+  }
+
   function getSignupRedirectUrl() {
     const configured = String(window.AUTH_REDIRECT_URL || "").trim();
     if (configured) return configured;
@@ -237,14 +253,21 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   });
   loadRememberedEmail();
+  document.getElementById("authJoinCodeBtn")?.addEventListener("click", function () {
+    var code = (document.getElementById("authJoinCodeInput")?.value || "").trim();
+    if (!queueJoinCompanyFromLogin(code)) return;
+    var hint = document.getElementById("authJoinCodeHint");
+    if (hint) {
+      hint.textContent = code
+        ? "Code saved. Sign in now and we'll open the company-join screen with this code prefilled."
+        : "We'll open the company-join screen right after sign in.";
+    }
+    setAuthMessage("Invite-code flow enabled. Continue with sign in.", false);
+  });
 
   const params = new URLSearchParams(window.location.search);
   if (params.get("join") === "1" || params.get("invite") === "1") {
-    try {
-      sessionStorage.setItem("gilberto_after_auth_join", "1");
-    } catch (_) {
-      /* empty */
-    }
+    queueJoinCompanyFromLogin("");
     const joinBanner = document.getElementById("authJoinBanner");
     if (joinBanner) joinBanner.hidden = false;
     try {

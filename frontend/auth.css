@@ -426,6 +426,46 @@ body.auth-page::after {
   margin: 0;
 }
 
+.auth-invite-code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.auth-invite-code-row input {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(96, 122, 111, 0.45);
+  background: #f8fbfa;
+  color: #1f3a33;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-invite-code-row input:focus {
+  outline: none;
+  border-color: #3f7667;
+  box-shadow: 0 0 0 3px rgba(63, 118, 103, 0.18);
+}
+
+.auth-invite-code-row button {
+  border: 1.5px solid #5d7f74;
+  background: linear-gradient(180deg, #f2f6f4 0%, #ffffff 100%);
+  color: #23443b;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.auth-invite-code-row button:hover {
+  background: linear-gradient(180deg, #e8efec 0%, #f6faf8 100%);
+}
+
 .auth-invite-panel-link a {
   color: #059669;
   font-weight: 800;

@@ -105,6 +105,17 @@
           <p class="auth-invite-panel-body">
             Use <strong>one email</strong> for every clinic. If you already have Gilberto access, <strong>don&apos;t sign up again</strong> — sign in, then use <strong>Workspace → Join another company</strong> and paste the code.
           </p>
+          <div class="auth-invite-code-row">
+            <input
+              id="authJoinCodeInput"
+              type="text"
+              maxlength="12"
+              placeholder="Enter company code (e.g. A1B2C3D4)"
+              autocomplete="one-time-code"
+            />
+            <button id="authJoinCodeBtn" type="button">Use this code after sign in</button>
+          </div>
+          <p id="authJoinCodeHint" class="auth-invite-panel-muted" style="margin-top:8px;"></p>
           <p class="auth-invite-panel-link">
             <a href="index.html?join=1">Open sign-in for invite codes</a>
             <span class="auth-invite-panel-muted"> (after login we open the join screen)</span>
