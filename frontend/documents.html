@@ -1010,10 +1010,22 @@ async function loadDocuments() {
     renderDocTables();
     applyDocumentsUrlParams();
   } catch (e) {
+    var rawMsg = e && e.message ? String(e.message) : 'unknown error';
+    var hintJvm =
+      '<p class="doc-empty-text" style="margin-top:12px;line-height:1.45;font-size:12px;">' +
+      '<strong>Java API:</strong> restart the backend so it can apply document-table migrations, or run ' +
+      '<code style="font-size:11px;background:#f4f7f5;padding:2px 6px;border-radius:4px;">backend/sql/schema/002_documents_attachment_columns.sql</code> ' +
+      'on your database. Then reload this page.</p>';
+    var showJvmHint =
+      docsApiUseBridge() &&
+      (/failed to fetch documents|unknown column|doesn't exist|does not exist|sqlsyntax/i.test(rawMsg) ||
+        rawMsg.indexOf('HTTP 5') === 0);
     const err =
       '<tr><td colspan="8" class="doc-empty-cell"><div class="doc-empty-state"><p class="doc-empty-title">Could not load documents</p><p class="doc-empty-text">' +
-      esc(e && e.message ? e.message : 'unknown error') +
-      '</p></div></td></tr>';
+      esc(rawMsg) +
+      '</p>' +
+      (showJvmHint ? hintJvm : '') +
+      '</div></td></tr>';
     bodyReq.innerHTML = err;
     bodyOth.innerHTML = err;
   } finally {

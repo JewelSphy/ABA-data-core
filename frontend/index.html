@@ -36,6 +36,10 @@
           <button type="button" id="signupTab" onclick="showSignup()" role="tab" aria-selected="false">Create account</button>
         </div>
 
+        <p id="authJoinBanner" class="auth-join-banner" hidden>
+          You opened the <strong>invite-code</strong> link — sign in below (or create an account). Right after that we&apos;ll take you to the screen where you enter your admin&apos;s company code.
+        </p>
+
         <p id="authMessage" class="auth-feedback"></p>
 
         <form id="loginForm" class="auth-form" autocomplete="on">
@@ -95,6 +99,17 @@
             <span class="auth-chip">Verify email if prompted</span>
           </div>
         </form>
+
+        <div class="auth-invite-panel" aria-label="Join an existing company">
+          <p class="auth-invite-panel-title">Have an admin invite code?</p>
+          <p class="auth-invite-panel-body">
+            Use <strong>one email</strong> for every clinic. If you already have Gilberto access, <strong>don&apos;t sign up again</strong> — sign in, then use <strong>Workspace → Join another company</strong> and paste the code.
+          </p>
+          <p class="auth-invite-panel-link">
+            <a href="index.html?join=1">Open sign-in for invite codes</a>
+            <span class="auth-invite-panel-muted"> (after login we open the join screen)</span>
+          </p>
+        </div>
       </div>
     </section>
   </div>

@@ -239,6 +239,26 @@ document.addEventListener("DOMContentLoaded", async function () {
   loadRememberedEmail();
 
   const params = new URLSearchParams(window.location.search);
+  if (params.get("join") === "1" || params.get("invite") === "1") {
+    try {
+      sessionStorage.setItem("gilberto_after_auth_join", "1");
+    } catch (_) {
+      /* empty */
+    }
+    const joinBanner = document.getElementById("authJoinBanner");
+    if (joinBanner) joinBanner.hidden = false;
+    try {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("join");
+      clean.searchParams.delete("invite");
+      if (clean.search !== window.location.search) {
+        window.history.replaceState({}, document.title, clean.pathname + clean.search + clean.hash);
+      }
+    } catch (_) {
+      /* empty */
+    }
+  }
+
   const stayOnLogin =
     params.get("stay") === "1" ||
     params.get("login") === "1" ||
@@ -260,6 +280,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   // Skip auto-redirect if user just logged out (lo=1 flag set by logout())
   const justLoggedOut = new URLSearchParams(window.location.search).get("lo") === "1";
   if (justLoggedOut) {
+    try {
+      sessionStorage.removeItem("gilberto_after_auth_join");
+    } catch (_) {
+      /* empty */
+    }
     const clean = new URL(window.location.href);
     clean.search = "";
     window.history.replaceState({}, document.title, clean.toString());

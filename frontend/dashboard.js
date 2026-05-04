@@ -195,7 +195,25 @@
     }
     const userId = data.session.user.id;
     const supa = window.supabaseClient;
+    let wantsJoinCompany = false;
+    try {
+      wantsJoinCompany = sessionStorage.getItem("gilberto_after_auth_join") === "1";
+    } catch (_) {
+      /* empty */
+    }
+    const bridgeMode =
+      typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled();
+
     if (await isOnboardingComplete(supa, userId)) {
+      if (!bridgeMode && wantsJoinCompany) {
+        try {
+          sessionStorage.removeItem("gilberto_after_auth_join");
+        } catch (_) {
+          /* empty */
+        }
+        window.location.href = "workspace-setup.html?join=1";
+        return;
+      }
       if (typeof window.gilbertoShouldOpenCompanyPickerAfterAuth === "function") {
         const needPicker = await window.gilbertoShouldOpenCompanyPickerAfterAuth(supa, userId);
         if (needPicker) {
@@ -208,6 +226,15 @@
     }
     if (await hasIncompleteOnboardingDraft(supa, userId)) {
       window.location.href = "onboarding.html";
+      return;
+    }
+    if (!bridgeMode && wantsJoinCompany) {
+      try {
+        sessionStorage.removeItem("gilberto_after_auth_join");
+      } catch (_) {
+        /* empty */
+      }
+      window.location.href = "workspace-setup.html?join=1";
       return;
     }
     window.location.href = "workspace-setup.html";

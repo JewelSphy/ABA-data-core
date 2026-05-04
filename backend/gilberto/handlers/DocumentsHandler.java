@@ -96,7 +96,10 @@ public final class DocumentsHandler implements HttpHandler {
         HttpUtil.json ( ex, 200, "[" + String.join ( ",", rows ) + "]" );
       }
     } catch ( Exception e ) {
-      HttpUtil.err ( ex, 500, "Failed to fetch documents" );
+      String detail = e.getMessage ();
+      if ( detail == null || detail.isBlank () ) detail = e.getClass ().getSimpleName ();
+      if ( detail.length () > 300 ) detail = detail.substring ( 0, 300 ) + "…";
+      HttpUtil.err ( ex, 500, "Failed to fetch documents — " + detail );
     }
   }
 

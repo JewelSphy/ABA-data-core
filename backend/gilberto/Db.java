@@ -40,6 +40,11 @@ public final class Db {
     try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS client_id VARCHAR(36) NULL" ); } catch ( Exception ignored ) {}
     try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS requirement_key VARCHAR(80) NULL" ); } catch ( Exception ignored ) {}
     try { st.execute ( "ALTER TABLE documents ADD INDEX idx_documents_client (client_id)" ); } catch ( Exception ignored ) {}
+    /* Older DBs created before file columns existed — DocumentsHandler SELECT expects these */
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS attachment_mime VARCHAR(120) NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS attachment_filename VARCHAR(255) NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS attachment_base64 LONGTEXT NULL" ); } catch ( Exception ignored ) {}
+    try { st.execute ( "ALTER TABLE documents ADD COLUMN IF NOT EXISTS content_text LONGTEXT NULL" ); } catch ( Exception ignored ) {}
   }
 
   public static String readSql ( String rel ) {
