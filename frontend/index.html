@@ -24,8 +24,9 @@
         Sessions, notes, documents, and clients — built for ABA teams who need clarity without clutter.
       </p>
       <ul class="auth-hero-list" role="list">
-        <li>One login, multiple organizations — pick your workspace after sign-in.</li>
-        <li>After sign-in, use <strong>Workspace</strong> in the top bar to switch companies or join another with an admin code — same email, no duplicate signup.</li>
+        <li>One login for every organization you belong to.</li>
+        <li>After sign-in, open <strong>Workspace</strong> in the top bar to switch companies or join another with an admin code.</li>
+        <li>Same email everywhere — no duplicate signup.</li>
       </ul>
     </section>
 
@@ -59,10 +60,10 @@
           <button id="loginEmailContinue" type="button" class="auth-btn auth-btn--primary">Continue</button>
 
           <div id="loginPasswordStep" class="hidden">
-            <p class="auth-recap">
-              Signing in as <strong id="loginEmailRecap"></strong><br />
-              <button type="button" id="loginChangeEmailBtn" class="auth-link-inline">Use a different email</button>
-            </p>
+            <div class="auth-recap-block">
+              <p class="auth-recap">Signing in as <strong id="loginEmailRecap"></strong></p>
+              <button type="button" id="loginChangeEmailBtn" class="auth-btn auth-btn--ghost">Use a different email</button>
+            </div>
             <label for="loginPassword">Password</label>
             <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
 
@@ -110,12 +111,12 @@
               id="authJoinCodeInput"
               type="text"
               maxlength="12"
-              placeholder="Enter company code (e.g. A1B2C3D4)"
+              placeholder="8-character admin code"
               autocomplete="one-time-code"
             />
-            <button id="authJoinCodeBtn" type="button">Use this code after sign in</button>
+            <button id="authJoinCodeBtn" type="button" class="auth-btn auth-btn--secondary">Save code &amp; sign in</button>
           </div>
-          <p id="authJoinCodeHint" class="auth-invite-panel-muted" style="margin-top:8px;"></p>
+          <p id="authJoinCodeHint" class="auth-invite-panel-muted"></p>
           <p class="auth-invite-panel-link">
             <a href="index.html?join=1">Open sign-in for invite codes</a>
             <span class="auth-invite-panel-muted"> (after login we open the join screen)</span>

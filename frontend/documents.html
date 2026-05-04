@@ -8,34 +8,34 @@
   <style>
     /* Same shell treatment as Sessions / Reports */
     body.page-documents .main-area {
-      background: linear-gradient(180deg, #eef7ff 0%, #ffffff 38%, #f5fbff 100%);
+      background: linear-gradient(180deg, #e7eeec 0%, #edf3f0 40%, #e6edea 100%);
       min-height: 100%;
     }
     .page-documents .topbar {
-      background: linear-gradient(120deg, rgba(41, 121, 255, 0.08), rgba(46, 204, 113, 0.08));
-      border: 1px solid #dbe8ef;
+      background: linear-gradient(120deg, rgba(70, 97, 88, 0.12), rgba(119, 146, 136, 0.08));
+      border: 1px solid #cfdcd6;
       border-radius: 14px;
       padding: 14px 16px;
       margin-bottom: 14px;
     }
     .page-documents .topbar h1 {
-      background: linear-gradient(90deg, #1d6fd8, #1f9e67);
+      background: linear-gradient(90deg, #315950, #4d7a6f);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
     }
     .page-documents .table-wrapper {
-      border: 1px solid #dbe7e2;
+      border: 1px solid #d1ddd8;
       border-radius: 14px;
       box-shadow: 0 12px 26px rgba(22, 61, 48, 0.08);
-      background: linear-gradient(180deg, #ffffff, #fbfffd);
+      background: linear-gradient(180deg, #f9fbfa, #f1f6f4);
       transition: opacity .22s ease;
     }
     .page-documents .table-wrapper.doc-shell-loading { opacity: .72; pointer-events: none; }
     .page-documents .data-table thead th {
-      background: linear-gradient(90deg, #eef7ff, #effbf4);
-      color: #22493b;
-      border-bottom: 1px solid #d9e9df;
+      background: linear-gradient(90deg, #e7efec, #e4eee9);
+      color: #2b4b43;
+      border-bottom: 1px solid #cfdcd6;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .04em;
@@ -1013,9 +1013,9 @@ async function loadDocuments() {
     var rawMsg = e && e.message ? String(e.message) : 'unknown error';
     var hintJvm =
       '<p class="doc-empty-text" style="margin-top:12px;line-height:1.45;font-size:12px;">' +
-      '<strong>Java API:</strong> restart the backend so it can apply document-table migrations, or run ' +
+      '<strong>Java API:</strong> restart the backend so it can add any missing <code>documents</code> columns, or run ' +
       '<code style="font-size:11px;background:#f4f7f5;padding:2px 6px;border-radius:4px;">backend/sql/schema/002_documents_attachment_columns.sql</code> ' +
-      'on your database. Then reload this page.</p>';
+      '(skip lines that error with “duplicate column”). Then reload this page.</p>';
     var showJvmHint =
       docsApiUseBridge() &&
       (/failed to fetch documents|unknown column|doesn't exist|does not exist|sqlsyntax/i.test(rawMsg) ||
