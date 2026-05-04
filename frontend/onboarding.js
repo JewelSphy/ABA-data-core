@@ -123,22 +123,14 @@
     return [f, l].filter(Boolean).join(" ");
   }
 
-  function makeJoinCode() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let s = "";
-    for (let i = 0; i < 8; i += 1) s += chars[Math.floor(Math.random() * chars.length)];
-    return s;
-  }
-
   async function createCompanyOrganization(supabase, userId, row) {
-    const joinCode = makeJoinCode();
     const { data, error: e1 } = await supabase
       .from("organizations")
       .insert({
         company_legal_name: row.company_legal_name || null,
         company_display_name: row.company_display_name,
         created_by: userId,
-        join_code: joinCode,
+        join_code: null,
       })
       .select("id, join_code")
       .single();

@@ -684,7 +684,7 @@ async function applyWorkspaceWithOrg() {
 
   applyTopbarCompanyName();
   applyWorkspaceBanner();
-  applyInviteTeamPanel();
+  await applyInviteTeamPanel();
 
   if (scroller && beforeTop > 40) {
     requestAnimationFrame(function () {
@@ -800,17 +800,14 @@ function gilbertoInjectTopBarWorkspaceNavIfNeeded() {
 }
 window.gilbertoInjectTopBarWorkspaceNavIfNeeded = gilbertoInjectTopBarWorkspaceNavIfNeeded;
 
-function makeJoinCode8() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 8; i += 1) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+function gilbertoInviteCodeLooksDailyUtc(code) {
+  return typeof code === "string" && /^[0-9a-f]{8}$/i.test(code.trim());
 }
 
 /**
- * Owner/admin: show join code with Copy, or a button to generate one (older orgs may have none).
+ * Owner/admin: show today's invite code (daily UTC when migration is applied) or legacy static code.
  */
-function applyInviteTeamPanel() {
+async function applyInviteTeamPanel() {
   // Only show on the main dashboard page
   if (!document.body.classList.contains("page-dashboard")) return;
   const main = document.querySelector("main.main-area");
@@ -822,25 +819,45 @@ function applyInviteTeamPanel() {
   const isMgr = o.role === "owner" || o.role === "admin";
   if (!isMgr) return;
 
+  let displayCode = (o.joinCode || "").trim();
+  if (window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient.rpc("organization_todays_invite_code", {
+        p_org_id: o.id,
+      });
+      if (!error && data != null && String(data).trim() !== "") {
+        displayCode = String(data).trim();
+      }
+    } catch (_) {
+      /* RPC missing until supabase-organizations-daily-invite.sql is applied */
+    }
+  }
+
+  const dailyUtcHint = gilbertoInviteCodeLooksDailyUtc(displayCode)
+    ? "<p class=\"invite-daily-hint\" style=\"margin:10px 0 0;font-size:12px;color:#5f7669;line-height:1.45;\">This code <strong>changes at midnight UTC</strong> each day. Share today’s code with people joining now; yesterday’s code still works for joins until the UTC day rolls over (covers clock skew).</p>"
+    : "<p class=\"invite-daily-hint\" style=\"margin:10px 0 0;font-size:12px;color:#5f7669;line-height:1.45;\">For automatic daily rotation, run <code style=\"font-size:11px;\">security/supabase-organizations-daily-invite.sql</code> in Supabase. Until then, this is a fixed invite code.</p>";
+
   const box = document.createElement("div");
   box.id = "gilbertoInvitePanel";
   box.className = "invite-team-panel";
   box.setAttribute("role", "region");
   box.setAttribute("aria-label", "Invite team");
-  if (o.joinCode) {
+  if (displayCode) {
     box.innerHTML =
-      "<div class=\"invite-team-header\"><strong>Invite your team</strong><span class=\"invite-team-hint\">New users sign in, choose “Join an existing company,” and enter this code. Same Supabase app — their account is tied to your organization only.</span></div>" +
+      "<div class=\"invite-team-header\"><strong>Invite your team</strong><span class=\"invite-team-hint\">New users sign in, choose “Join an existing company,” and enter this code. Their login stays the same — they’re only added to your organization.</span></div>" +
       "<div class=\"invite-code-row\">" +
       "<code class=\"invite-code\" id=\"gilbertoJoinCodeDisplay\">" +
-      o.joinCode +
+      displayCode +
       "</code> " +
       "<button type=\"button\" class=\"small-btn\" id=\"gilbertoCopyJoinCode\">Copy code</button>" +
-      "</div>";
+      "</div>" +
+      dailyUtcHint +
+      "<p style=\"margin:12px 0 0;font-size:12px;color:#597568;\"><button type=\"button\" class=\"small-btn\" id=\"gilbertoGenJoinCode\">Rotate invite secret</button> <span style=\"margin-left:6px;\">Invalidates old codes and starts a new daily sequence.</span></p>";
   } else {
     box.innerHTML =
-      "<div class=\"invite-team-header\"><strong>Invite your team</strong><span class=\"invite-team-hint\">Generate a one-time style code (8 characters) to share. Teammates use it on the “Join an existing company” screen after they sign in.</span></div>" +
-      "<p class=\"invite-no-code\">No join code for this company yet.</p>" +
-      "<button type=\"button\" class=\"small-btn\" id=\"gilbertoGenJoinCode\">Generate join code</button>";
+      "<div class=\"invite-team-header\"><strong>Invite your team</strong><span class=\"invite-team-hint\">Create an invite secret so teammates can join after they sign in.</span></div>" +
+      "<p class=\"invite-no-code\">No invite secret for this company yet.</p>" +
+      "<button type=\"button\" class=\"small-btn\" id=\"gilbertoGenJoinCode\">Set up invite secret</button>";
   }
   if (document.getElementById("workspaceBanner")) {
     document.getElementById("workspaceBanner").insertAdjacentElement("afterend", box);
@@ -852,7 +869,7 @@ function applyInviteTeamPanel() {
 
   document.getElementById("gilbertoCopyJoinCode")?.addEventListener("click", async function () {
     const btn = this;
-    const t = o.joinCode || document.getElementById("gilbertoJoinCodeDisplay")?.textContent || "";
+    const t = document.getElementById("gilbertoJoinCodeDisplay")?.textContent || displayCode || "";
     try {
       await navigator.clipboard.writeText(t.trim());
       btn.textContent = "Copied!";
@@ -867,24 +884,22 @@ function applyInviteTeamPanel() {
   document.getElementById("gilbertoGenJoinCode")?.addEventListener("click", async function () {
     if (!window.supabaseClient) return;
     this.disabled = true;
-    let code = makeJoinCode8();
-    let { error } = await window.supabaseClient
-      .from("organizations")
-      .update({ join_code: code, updated_at: new Date().toISOString() })
-      .eq("id", o.id);
-    if (error) {
-      code = makeJoinCode8();
-      ({ error } = await window.supabaseClient
-        .from("organizations")
-        .update({ join_code: code, updated_at: new Date().toISOString() })
-        .eq("id", o.id));
+    let error = null;
+    try {
+      const r = await window.supabaseClient.rpc("organization_rotate_invite_salt", { p_org_id: o.id });
+      error = r.error || null;
+    } catch (e) {
+      error = e;
     }
     if (error) {
-      alert(error.message || "Could not save code");
+      alert(
+        (error && error.message) ||
+          "Could not rotate invite secret. Run security/supabase-organizations-daily-invite.sql in Supabase."
+      );
       this.disabled = false;
       return;
     }
-    window.gilbertoCurrentOrg = { ...o, joinCode: code };
+    window.gilbertoCurrentOrg = { ...o, joinCode: null };
     try {
       const { data: s } = await window.supabaseClient.auth.getSession();
       const uid = s?.session?.user?.id;
@@ -893,7 +908,7 @@ function applyInviteTeamPanel() {
       /* empty */
     }
     await loadGilbertoOrganization();
-    applyInviteTeamPanel();
+    await applyInviteTeamPanel();
     applyWorkspaceBanner();
   });
 }
