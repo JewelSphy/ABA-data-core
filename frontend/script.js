@@ -128,7 +128,7 @@ function showLogin() {
       return;
     }
 
-    setButtonLoading("loginBtn", true, "Log In");
+    setButtonLoading("loginBtn", true, "Sign in");
     setAuthMessage("Signing in...");
     try {
       const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
@@ -151,7 +151,7 @@ function showLogin() {
     } catch (err) {
       setAuthMessage(humanizeAuthError(err?.message), true);
     } finally {
-      setButtonLoading("loginBtn", false, "Log In");
+      setButtonLoading("loginBtn", false, "Sign in");
     }
   }
 

@@ -4,107 +4,105 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gilberto - ABA Care CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
 </head>
-<body>
+<body class="auth-page">
 
-  <div class="container">
-    <div class="card">
+  <div class="auth-visual" aria-hidden="true"></div>
 
-      <!-- Dark header -->
-      <div class="card-header">
-        <div class="login-logo">
-          <svg class="login-logo-icon" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="50" height="50" rx="14" fill="rgba(255,255,255,0.12)"/>
-            <ellipse cx="37" cy="13" rx="5" ry="8" fill="rgba(107,158,126,0.9)" transform="rotate(-40 37 13)"/>
-            <text x="23" y="32" font-family="Georgia, serif" font-weight="700" font-style="italic" font-size="26" fill="white" text-anchor="middle">G</text>
-          </svg>
-          <div class="login-logo-text">
-            <span class="login-logo-name">Gilberto</span>
-            <span class="login-logo-sub">ABA Care CRM</span>
-          </div>
-        </div>
-        <div class="card-header-tagline">
-          <h1>Welcome back</h1>
-          <p>Sign in to your workspace to continue.</p>
-        </div>
+  <div class="auth-grid">
+    <section class="auth-hero" aria-labelledby="auth-brand-title">
+      <div class="auth-logo-ring" aria-hidden="true">
+        <span class="auth-logo-letter">G</span>
       </div>
+      <h1 id="auth-brand-title" class="auth-hero-title">Gilberto</h1>
+      <p class="auth-hero-subhead">
+        Sessions, notes, documents, and clients — built for ABA teams who need clarity without clutter.
+      </p>
+      <ul class="auth-hero-list" role="list">
+        <li>One login, multiple organizations — pick your workspace after sign-in.</li>
+        <li>Join additional companies with an admin join code (no duplicate signup).</li>
+      </ul>
+    </section>
 
-      <!--Form body -->
-      <div class="card-body">
+    <section class="auth-panel">
+      <div class="auth-panel-inner">
+        <div class="auth-segment" role="tablist" aria-label="Account access">
+          <button type="button" id="loginTab" class="active" onclick="showLogin()" role="tab" aria-selected="true">Sign in</button>
+          <button type="button" id="signupTab" onclick="showSignup()" role="tab" aria-selected="false">Create account</button>
+        </div>
 
-        <!-- LOGIN FORM -->
-        <form id="loginForm">
+        <p id="authMessage" class="auth-feedback"></p>
+
+        <form id="loginForm" class="auth-form" autocomplete="on">
           <div id="loginEmailStep">
-            <label>Email</label>
-            <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="username" />
-            <p style="font-size:12px;line-height:1.45;color:#5f7a6d;margin:-4px 0 14px;">
-              One Gilberto login can access <strong>several organizations</strong>. After signing in we&apos;ll open the workspace you chose (or ask you to pick one).
-              If this email belongs to multiple companies already, join new ones via <strong>Join code</strong> after logging in—not a second signup.
+            <label for="loginEmail">Work email</label>
+            <input id="loginEmail" type="email" placeholder="you@clinic.com" autocomplete="username" />
+            <p class="auth-hint">
+              We&apos;ll remember your organization choice on this device when you enable it below.
             </p>
           </div>
 
-          <div id="loginRememberWrap" style="display:flex;align-items:center;gap:8px;margin:4px 0 12px;">
-            <input id="rememberEmail" type="checkbox" style="width:auto;margin:0;" />
-            <label for="rememberEmail" style="margin:0;font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:#5f7a6d;">Remember email on this device</label>
+          <div id="loginRememberWrap" class="auth-remember">
+            <input id="rememberEmail" type="checkbox" />
+            <label for="rememberEmail">Remember email on this device</label>
           </div>
 
-          <button id="loginEmailContinue" type="button">Continue</button>
+          <button id="loginEmailContinue" type="button" class="auth-btn auth-btn--primary">Continue</button>
 
           <div id="loginPasswordStep" class="hidden">
-            <p style="font-size:13px;margin:0 0 12px;color:#2d4a3e;">
-              Signing in as <strong id="loginEmailRecap"></strong><br/>
-              <button type="button" id="loginChangeEmailBtn" style="margin-top:6px;background:none;border:none;padding:0;color:#1d6fd8;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">Use a different email</button>
+            <p class="auth-recap">
+              Signing in as <strong id="loginEmailRecap"></strong><br />
+              <button type="button" id="loginChangeEmailBtn" class="auth-link-inline">Use a different email</button>
             </p>
-            <label>Password</label>
-            <input id="loginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" />
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
 
-            <button id="loginBtn" type="button" onclick="login()">Log In</button>
+            <button id="loginBtn" type="button" class="auth-btn auth-btn--primary" onclick="login()">Sign in</button>
           </div>
-          <div class="login-helper-row">
-            <span class="login-helper-pill">Secure workspace access</span>
-            <span class="login-helper-pill">HIPAA-ready workflow</span>
+
+          <div class="auth-footnote">
+            <span class="auth-chip">Encrypted session</span>
+            <span class="auth-chip">Tenant-scoped data</span>
           </div>
         </form>
 
-        <!-- SIGNUP FORM -->
-        <form id="signupForm" class="hidden">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <form id="signupForm" class="auth-form hidden" autocomplete="on">
+          <div class="auth-signup-grid">
             <div>
-              <label>First Name</label>
-              <input id="signupFirstName" type="text" placeholder="First name" style="margin-bottom:0;" />
+              <label for="signupFirstName">First name</label>
+              <input id="signupFirstName" type="text" placeholder="First name" autocomplete="given-name" />
             </div>
             <div>
-              <label>Last Name</label>
-              <input id="signupLastName" type="text" placeholder="Last name" style="margin-bottom:0;" />
+              <label for="signupLastName">Last name</label>
+              <input id="signupLastName" type="text" placeholder="Last name" autocomplete="family-name" />
             </div>
           </div>
 
-          <label>Email</label>
-          <input id="signupEmail" type="email" placeholder="you@example.com" />
+          <label for="signupEmail">Email</label>
+          <input id="signupEmail" type="email" placeholder="you@clinic.com" autocomplete="email" />
 
-          <label>Password</label>
-          <input id="signupPassword" type="password" placeholder="Create a password" />
+          <label for="signupPassword">Password</label>
+          <input id="signupPassword" type="password" placeholder="Create a strong password" autocomplete="new-password" />
 
-          <button id="signupBtn" type="button" onclick="signup()">Create Account</button>
+          <button id="signupBtn" type="button" class="auth-btn auth-btn--primary" onclick="signup()">Create account</button>
+
+          <div class="auth-footnote">
+            <span class="auth-chip">Verify email if prompted</span>
+          </div>
         </form>
-
-        <p id="authMessage" style="margin-top:12px;font-size:12px;color:#2d4a3e;min-height:18px;"></p>
-
-        <!-- TABS -->
-        <div class="tabs">
-          <button id="loginTab" class="active" onclick="showLogin()">Log In</button>
-          <button id="signupTab" onclick="showSignup()">Sign Up</button>
-        </div>
-
       </div>
-    </div>
+    </section>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabaseConfig.js"></script>
   <script src="supabaseClient.js"></script>
-<script src="jvmSupabaseBridge.js"></script>
+  <script src="jvmSupabaseBridge.js"></script>
   <script src="dashboard.js"></script>
   <script src="script.js"></script>
 </body>
