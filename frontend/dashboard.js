@@ -304,45 +304,48 @@ function applyUserIdentityPills() {
 
 // Sidebar collapse — injected on every page so we don't have to touch each html file
 document.addEventListener('DOMContentLoaded', function () {
-  applyAutoTheme();
-  enhanceInteractivity();
-  void enforceAuthGuard();
-  void resolveCurrentUserIdentity().then(applyUserIdentityPills);
   window.addEventListener("gilberto-profile-updated", function () {
     void resolveCurrentUserIdentity().then(applyUserIdentityPills);
   });
 
-  const layout  = document.querySelector('.app-layout');
-  const sidebar = document.querySelector('.sidebar');
-  if (!layout || !sidebar) {
-    void applyWorkspaceWithOrg();
+  void (async function gilbertoBootShell() {
+    applyAutoTheme();
+    enhanceInteractivity();
+    await enforceAuthGuard();
+
+    await resolveCurrentUserIdentity();
+    applyUserIdentityPills();
+
+    const layout = document.querySelector(".app-layout");
+    const sidebar = document.querySelector(".sidebar");
+    if (!layout || !sidebar) {
+      await applyWorkspaceWithOrg();
+      maybeSetupToast();
+      return;
+    }
+
+    const btn = document.createElement("button");
+    btn.className = "sidebar-collapse-btn";
+    btn.title = "Toggle sidebar";
+    document.body.appendChild(btn);
+
+    function applyState(collapsed) {
+      document.body.classList.toggle("sidebar-collapsed", collapsed);
+      btn.innerHTML = collapsed ? "&#8250;" : "&#8249;";
+      btn.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+    }
+
+    applyState(localStorage.getItem("gilberto_sidebar") === "collapsed");
+
+    btn.addEventListener("click", function () {
+      const collapsed = !document.body.classList.contains("sidebar-collapsed");
+      applyState(collapsed);
+      localStorage.setItem("gilberto_sidebar", collapsed ? "collapsed" : "expanded");
+    });
+
+    await applyWorkspaceWithOrg();
     maybeSetupToast();
-    return;
-  }
-
-  // button sits fixed on the right edge of the sidebar
-  const btn = document.createElement('button');
-  btn.className = 'sidebar-collapse-btn';
-  btn.title = 'Toggle sidebar';
-  document.body.appendChild(btn);
-
-  function applyState(collapsed) {
-    document.body.classList.toggle('sidebar-collapsed', collapsed);
-    btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
-    btn.title     = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-  }
-
-  // restore whatever state the user left it in
-  applyState(localStorage.getItem('gilberto_sidebar') === 'collapsed');
-
-  btn.addEventListener('click', function () {
-    const collapsed = !document.body.classList.contains('sidebar-collapsed');
-    applyState(collapsed);
-    localStorage.setItem('gilberto_sidebar', collapsed ? 'collapsed' : 'expanded');
-  });
-
-  void applyWorkspaceWithOrg();
-  maybeSetupToast();
+  })();
 });
 
 /**
@@ -350,39 +353,114 @@ document.addEventListener('DOMContentLoaded', function () {
  * Later: add organization_id to clients, sessions, etc., and always filter with .eq('organization_id', window.gilbertoCurrentOrg.id).
  */
 async function loadGilbertoOrganization() {
-  window.gilbertoCurrentOrg = null;
-  if (!window.supabaseClient) return null;
-  try {
-    const { data: s } = await window.supabaseClient.auth.getSession();
-    const uid = s?.session?.user?.id;
-    if (!uid) return null;
-    const key = "gilberto_active_org:" + uid;
+  const prevSnap =
+    window.gilbertoCurrentOrg &&
+    typeof window.gilbertoCurrentOrg.id === "string" &&
+    window.gilbertoCurrentOrg.id.length > 30
+      ? { ...window.gilbertoCurrentOrg }
+      : null;
+
+  function normalizeOrgShape(o, roleFallback) {
+    if (!o || !o.id) return null;
+    const rf = roleFallback || o.role || "member";
+    return {
+      id: o.id,
+      name: (o.name && String(o.name).trim()) ? o.name : "My Organization",
+      company_legal_name: o.company_legal_name != null ? o.company_legal_name : null,
+      joinCode: o.joinCode != null ? o.joinCode : null,
+      role: rf || "member",
+    };
+  }
+
+  function readCachedOrgLs(key) {
     try {
       const raw = localStorage.getItem(key);
-      if (raw) {
-        const o = JSON.parse(raw);
-        if (o && o.id) {
-          window.gilbertoCurrentOrg = o;
-          return o;
-        }
-      }
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      return normalizeOrgShape(o, "member");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function resolveSignedInUserId(client) {
+    const { data: s } = await client.auth.getSession();
+    let uid = s?.session?.user?.id;
+    if (uid) return uid;
+    try {
+      const { data: gu } = await client.auth.getUser();
+      uid = gu?.user?.id || null;
+      if (uid) return uid;
     } catch (_) {
       /* empty */
     }
-    // Step 1: get org_id from membership (least restrictive query).
+    for (let i = 0; i < 5; i += 1) {
+      await new Promise((r) => setTimeout(r, 120));
+      const { data: s2 } = await client.auth.getSession();
+      uid = s2?.session?.user?.id || null;
+      if (uid) return uid;
+    }
+    return null;
+  }
+
+  /** When membership/onboarding lookups hiccup, any row visible under org RLS exposes org_id. */
+  async function inferOrgIdFromTenantTables(client) {
+    try {
+      const { data: cRows, error: cErr } = await client
+        .from("clients")
+        .select("org_id")
+        .not("org_id", "is", null)
+        .limit(1);
+      if (!cErr && Array.isArray(cRows) && cRows[0]?.org_id) return cRows[0].org_id;
+    } catch (_) {
+      /* empty */
+    }
+    try {
+      const { data: sRows, error: sErr } = await client
+        .from("staff")
+        .select("org_id")
+        .not("org_id", "is", null)
+        .limit(1);
+      if (!sErr && Array.isArray(sRows) && sRows[0]?.org_id) return sRows[0].org_id;
+    } catch (_) {
+      /* empty */
+    }
+    return null;
+  }
+
+  if (!window.supabaseClient) {
+    if (prevSnap) window.gilbertoCurrentOrg = prevSnap;
+    return prevSnap;
+  }
+
+  try {
+    const uid = await resolveSignedInUserId(window.supabaseClient);
+    const key = uid ? "gilberto_active_org:" + uid : null;
+
+    let provisional = key ? readCachedOrgLs(key) : null;
+    if (!provisional && prevSnap) provisional = normalizeOrgShape(prevSnap, prevSnap.role);
+    if (provisional?.id) {
+      window.gilbertoCurrentOrg = provisional;
+    }
+
+    if (!uid || !key) {
+      return window.gilbertoCurrentOrg || null;
+    }
+
+    let orgId = null;
+    let role = provisional?.role || "member";
+
     const { data: mRows, error: mErr } = await window.supabaseClient
       .from("organization_members")
       .select("organization_id, role")
       .eq("user_id", uid)
       .limit(1);
-    let orgId = null;
-    let role = "member";
+
     if (!mErr && mRows && mRows.length) {
       orgId = mRows[0].organization_id || null;
       role = mRows[0].role || "member";
     }
 
-    // Fallback for teammates whose membership select is blocked by policy but onboarding row exists.
     if (!orgId) {
       try {
         const { data: onb } = await window.supabaseClient
@@ -391,25 +469,38 @@ async function loadGilbertoOrganization() {
           .eq("user_id", uid)
           .limit(1)
           .maybeSingle();
-        if (onb && onb.organization_id) {
+        if (onb?.organization_id) {
           orgId = onb.organization_id;
-          window.gilbertoCurrentOrg = {
-            id: orgId,
-            name: onb.company_display_name || "My Organization",
-            company_legal_name: onb.company_legal_name || null,
-            joinCode: null,
-            role: "member",
-          };
-          try { localStorage.setItem(key, JSON.stringify(window.gilbertoCurrentOrg)); } catch (_) {}
-          return window.gilbertoCurrentOrg;
+          const merged = normalizeOrgShape(
+            {
+              id: orgId,
+              name: onb.company_display_name || provisional?.name,
+              company_legal_name: onb.company_legal_name ?? provisional?.company_legal_name ?? null,
+              joinCode: provisional?.joinCode ?? null,
+            },
+            role
+          );
+          window.gilbertoCurrentOrg = merged;
+          try {
+            localStorage.setItem(key, JSON.stringify(window.gilbertoCurrentOrg));
+          } catch (_) {}
         }
       } catch (_) {
-        /* continue to bridge fallback */
+        /* empty */
       }
     }
-    if (!orgId) return null;
 
-    // Step 2: best-effort fetch org display fields. If blocked by RLS, still keep org id.
+    if (!orgId) orgId = await inferOrgIdFromTenantTables(window.supabaseClient);
+
+    if (!orgId) {
+      if (window.gilbertoCurrentOrg?.id) {
+        return window.gilbertoCurrentOrg;
+      }
+      return null;
+    }
+
+    role = provisional?.role && provisional.id === orgId ? provisional.role : role;
+
     let org = null;
     try {
       const { data: oRows } = await window.supabaseClient
@@ -421,20 +512,35 @@ async function loadGilbertoOrganization() {
     } catch (_) {
       /* keep minimal org object */
     }
-    window.gilbertoCurrentOrg = {
-      id: orgId,
-      name: org && org.company_display_name ? org.company_display_name : "My Organization",
-      company_legal_name: org ? org.company_legal_name : null,
-      joinCode: org && org.join_code ? org.join_code : null,
-      role: role || "member",
-    };
+
+    window.gilbertoCurrentOrg = normalizeOrgShape(
+      {
+        id: orgId,
+        name: org && org.company_display_name ? org.company_display_name : provisional?.name,
+        company_legal_name: org ? org.company_legal_name : provisional?.company_legal_name ?? null,
+        joinCode:
+          org && org.join_code
+            ? org.join_code
+            : provisional?.joinCode != null
+              ? provisional.joinCode
+              : null,
+      },
+      role || "member"
+    );
+
     try {
       localStorage.setItem(key, JSON.stringify(window.gilbertoCurrentOrg));
-    } catch (_) {
-      /* empty */
-    }
+    } catch (_) {}
+
     return window.gilbertoCurrentOrg;
   } catch (_) {
+    if (window.gilbertoCurrentOrg?.id) {
+      return window.gilbertoCurrentOrg;
+    }
+    if (prevSnap?.id) {
+      window.gilbertoCurrentOrg = prevSnap;
+      return prevSnap;
+    }
     return null;
   }
 }

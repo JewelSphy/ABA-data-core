@@ -606,6 +606,55 @@ async function ensureClientOrgReady() {
       if (org && org.id) return org;
     }
   }
+  org = window.gilbertoCurrentOrg;
+  if ((!org || !org.id) && window.supabaseClient) {
+    try {
+      var pq = await window.supabaseClient
+        .from('clients')
+        .select('org_id')
+        .not('org_id', 'is', null)
+        .limit(1);
+      if (!pq.error && pq.data && pq.data[0] && pq.data[0].org_id) {
+        org = {
+          id: pq.data[0].org_id,
+          name: 'My Organization',
+          joinCode: null,
+          role: 'member'
+        };
+        window.gilbertoCurrentOrg = org;
+        if (typeof window.resolveCurrentUserIdentity === 'function') {
+          try {
+            var u2 = await window.resolveCurrentUserIdentity();
+            if (u2 && u2.id) localStorage.setItem('gilberto_active_org:' + u2.id, JSON.stringify(org));
+          } catch (_) {}
+        }
+        return org;
+      }
+    } catch (_) {}
+    try {
+      var stq = await window.supabaseClient
+        .from('staff')
+        .select('org_id')
+        .not('org_id', 'is', null)
+        .limit(1);
+      if (!stq.error && stq.data && stq.data[0] && stq.data[0].org_id) {
+        org = {
+          id: stq.data[0].org_id,
+          name: 'My Organization',
+          joinCode: null,
+          role: 'member'
+        };
+        window.gilbertoCurrentOrg = org;
+        if (typeof window.resolveCurrentUserIdentity === 'function') {
+          try {
+            var u3 = await window.resolveCurrentUserIdentity();
+            if (u3 && u3.id) localStorage.setItem('gilberto_active_org:' + u3.id, JSON.stringify(org));
+          } catch (_) {}
+        }
+        return org;
+      }
+    } catch (_) {}
+  }
   // Last-resort bridge inference for org-scoped Java mode.
   if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled() && typeof jvmFetchClients === 'function') {
     try {
@@ -633,19 +682,22 @@ async function ensureClientOrgReady() {
 // ── Load + render table ───────────────────────────────────────────────────────
 async function loadClientsTable () {
   var org = await ensureClientOrgReady ();
+  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
   if (!org || !org.id) {
+    if (!bridgeMode) {
     document.getElementById ('clientBody').innerHTML =
       '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>';
     return;
+    }
   }
 
   try {
     var rows;
     var staffRows = [];
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      var sres = await jvmFetchStaff (org.id, null);
+    if (bridgeMode) {
+      var sres = await jvmFetchStaff (org && org.id ? org.id : null, null);
       if (sres.ok) staffRows = await sres.json ();
-      var cgres = await jvmFetchCaregivers (org.id, null);
+      var cgres = await jvmFetchCaregivers (org && org.id ? org.id : null, null);
       var cgRows = cgres.ok ? await cgres.json () : [];
       _caregiverByClientId = {};
       (cgRows || []).forEach(function (cg) {
@@ -677,8 +729,8 @@ async function loadClientsTable () {
       return acc;
     }, {});
 
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      var res = await jvmFetchClients (org.id);
+    if (bridgeMode) {
+      var res = await jvmFetchClients (org && org.id ? org.id : null);
       if (!res.ok) throw new Error (typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse (res) : ('HTTP ' + res.status));
       rows = await res.json ();
     } else {
@@ -692,7 +744,7 @@ async function loadClientsTable () {
     }
     _clientsData = rows;
     renderClientsTable (rows);
-    loadClientStats (org.id);
+    if (org && org.id) loadClientStats (org.id);
   } catch (e) {
     console.warn ('loadClientsTable error:', e);
     document.getElementById ('clientBody').innerHTML =
@@ -815,7 +867,8 @@ function openAddClient () {
 
 async function createClient () {
   var org = await ensureClientOrgReady ();
-  if (!org || !org.id) { clientToast ('Organization not loaded — please reload.'); return; }
+  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
+  if ((!org || !org.id) && !bridgeMode) { clientToast ('Organization not loaded — please reload.'); return; }
 
   var row = buildClientInsertRow ({
     first_name:         (document.getElementById ('addFirstName').value  || '').trim (),
@@ -830,7 +883,7 @@ async function createClient () {
     auth_status:        document.getElementById ('addAuthStatus').value  || 'active',
     notes:              (document.getElementById ('addNotes').value      || '').trim (),
     status:             'active',
-  }, org.id);
+  }, org && org.id ? org.id : null);
 
   if (!row.first_name || !row.last_name) {
     clientToast ('First and last name are required.'); return;
@@ -871,7 +924,7 @@ async function createClient () {
     if (cgName && createdClientId) {
       var n = cgName.split (/\s+/);
       var cgPayload = {
-        org_id: org.id,
+        org_id: org && org.id ? org.id : null,
         client_id: createdClientId,
         first_name: n[0] || 'Caregiver',
         last_name: n.slice(1).join(' ') || 'Contact',
@@ -1043,11 +1096,12 @@ async function updateClient () {
 // ── Staff dropdowns ───────────────────────────────────────────────────────────
 async function loadStaffDropdowns (rbtElId, bcbaElId, selectedRbt, selectedBcba) {
   var org = await ensureClientOrgReady ();
+  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
   var staffRows = [];
   try {
-    if (org && org.id) {
-      if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-        var res = await jvmFetchStaff (org.id, 'active');
+    if ((org && org.id) || bridgeMode) {
+      if (bridgeMode) {
+        var res = await jvmFetchStaff (org && org.id ? org.id : null, 'active');
         if (res.ok) staffRows = await res.json ();
       } else if (window.supabaseClient) {
         var q = await window.supabaseClient.from ('staff')
