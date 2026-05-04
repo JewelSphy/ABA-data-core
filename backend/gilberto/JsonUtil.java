@@ -65,5 +65,72 @@ public final class JsonUtil {
     return json.indexOf ( "\"" + key + "\"" ) >= 0;
   }
 
+  /**
+   * Reads a JSON string value for {@code key} with correct escape handling (including {@code \\uXXXX}),
+   * suitable for very large values such as base64 payloads. Returns null if absent or not a string.
+   */
+  public static String jsonQuotedStringValue ( String json, String key ) {
+    if ( json == null || key == null || key.isBlank () ) return null;
+    String needle = "\"" + key + "\"";
+    int pk = json.indexOf ( needle );
+    if ( pk < 0 ) return null;
+    int colon = json.indexOf ( ':', pk + needle.length () );
+    if ( colon < 0 ) return null;
+    int i = colon + 1;
+    while ( i < json.length () && Character.isWhitespace ( json.charAt ( i ) ) ) i++;
+    if ( i >= json.length () ) return null;
+    if ( json.startsWith ( "null", i ) ) return null;
+    if ( json.charAt ( i ) != '"' ) return null;
+    i++;
+    StringBuilder out = new StringBuilder ();
+    while ( i < json.length () ) {
+      char ch = json.charAt ( i++ );
+      if ( ch == '"' ) return out.toString ();
+      if ( ch != '\\' ) {
+        out.append ( ch );
+        continue;
+      }
+      if ( i >= json.length () ) return null;
+      char esc = json.charAt ( i++ );
+      switch ( esc ) {
+        case '"':
+        case '\\':
+        case '/':
+          out.append ( esc );
+          break;
+        case 'b':
+          out.append ( '\b' );
+          break;
+        case 'f':
+          out.append ( '\f' );
+          break;
+        case 'n':
+          out.append ( '\n' );
+          break;
+        case 'r':
+          out.append ( '\r' );
+          break;
+        case 't':
+          out.append ( '\t' );
+          break;
+        case 'u':
+          if ( i + 4 <= json.length () ) {
+            try {
+              int cp = Integer.parseInt ( json.substring ( i, i + 4 ), 16 );
+              out.append ( (char) cp );
+            } catch ( NumberFormatException ignored ) {
+              /* skip malformed */
+            }
+            i += 4;
+          }
+          break;
+        default:
+          out.append ( esc );
+          break;
+      }
+    }
+    return null;
+  }
+
   private JsonUtil () {}
 }

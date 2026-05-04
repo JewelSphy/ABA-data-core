@@ -136,15 +136,20 @@ public final class DocumentsHandler implements HttpHandler {
 
     String attMime = JsonUtil.field ( b, "attachment_mime" );
     String attFn = JsonUtil.field ( b, "attachment_filename" );
-    String attB64 = JsonUtil.field ( b, "attachment_base64" );
+    String attB64 = JsonUtil.jsonQuotedStringValue ( b, "attachment_base64" );
+    if ( attB64 == null && JsonUtil.hasField ( b, "attachment_base64" ) ) attB64 = JsonUtil.field ( b, "attachment_base64" );
     boolean patchAtt = JsonUtil.hasField ( b, "attachment_base64" );
+
+    boolean patchContent = JsonUtil.hasField ( b, "content_text" );
+    String contentText = patchContent ? JsonUtil.jsonQuotedStringValue ( b, "content_text" ) : null;
+    if ( patchContent && contentText == null ) contentText = JsonUtil.field ( b, "content_text" );
 
     String sql =
         "UPDATE documents SET doc_name = ?, doc_type = ?, linked_name = ?, upload_date = ?, expiry_date = ?, status = ?, content_text = ?, attachment_mime = ?, attachment_filename = ?, attachment_base64 = ?, client_id = ?, requirement_key = ?, provider_id = ? WHERE id = ? AND org_id = ?";
     try ( Connection c = Db.open () ) {
       if ( !patchAtt ) {
         try ( PreparedStatement prev = c.prepareStatement (
-            "SELECT attachment_mime, attachment_filename, attachment_base64 FROM documents WHERE id = ? AND org_id = ?" ) ) {
+            "SELECT attachment_mime, attachment_filename, attachment_base64, content_text FROM documents WHERE id = ? AND org_id = ?" ) ) {
           prev.setString ( 1, id );
           prev.setString ( 2, orgId );
           try ( ResultSet rs = prev.executeQuery () ) {
@@ -152,7 +157,17 @@ public final class DocumentsHandler implements HttpHandler {
               attMime = rs.getString ( "attachment_mime" );
               attFn = rs.getString ( "attachment_filename" );
               attB64 = rs.getString ( "attachment_base64" );
+              if ( !patchContent ) contentText = rs.getString ( "content_text" );
             }
+          }
+        }
+      } else if ( !patchContent ) {
+        try ( PreparedStatement prev = c.prepareStatement (
+            "SELECT content_text FROM documents WHERE id = ? AND org_id = ?" ) ) {
+          prev.setString ( 1, id );
+          prev.setString ( 2, orgId );
+          try ( ResultSet rs = prev.executeQuery () ) {
+            if ( rs.next () ) contentText = rs.getString ( "content_text" );
           }
         }
       }
@@ -163,7 +178,7 @@ public final class DocumentsHandler implements HttpHandler {
         ps.setString ( 4, JsonUtil.field ( b, "upload_date" ) );
         ps.setString ( 5, JsonUtil.field ( b, "expiry_date" ) );
         ps.setString ( 6, status );
-        ps.setString ( 7, JsonUtil.field ( b, "content_text" ) );
+        ps.setString ( 7, contentText );
         ps.setString ( 8, attMime );
         ps.setString ( 9, attFn );
         ps.setString ( 10, attB64 );
@@ -202,10 +217,14 @@ public final class DocumentsHandler implements HttpHandler {
       ps.setString ( 10, JsonUtil.field ( b, "expiry_date" ) );
       String st = JsonUtil.field ( b, "status" );
       ps.setString ( 11, JsonUtil.blank ( st ) ? "active" : st );
-      ps.setString ( 12, JsonUtil.field ( b, "content_text" ) );
+      String insCt = JsonUtil.jsonQuotedStringValue ( b, "content_text" );
+      if ( insCt == null ) insCt = JsonUtil.field ( b, "content_text" );
+      ps.setString ( 12, insCt );
       ps.setString ( 13, JsonUtil.field ( b, "attachment_mime" ) );
       ps.setString ( 14, JsonUtil.field ( b, "attachment_filename" ) );
-      ps.setString ( 15, JsonUtil.field ( b, "attachment_base64" ) );
+      String insB64 = JsonUtil.jsonQuotedStringValue ( b, "attachment_base64" );
+      if ( insB64 == null ) insB64 = JsonUtil.field ( b, "attachment_base64" );
+      ps.setString ( 15, insB64 );
       ps.executeUpdate ();
       Audit.log ( ex, "create", "documents", id, "success" );
       HttpUtil.json ( ex, 201, "[{\"id\":\"" + id + "\"}]" );

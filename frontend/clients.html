@@ -359,7 +359,7 @@
     <div class="modal-body">
       <p style="font-size:14px;color:#2d4a3e;line-height:1.5;"><strong id="intakePromptClientName">—</strong> — a HIPAA-aligned healthcare intake checklist was created automatically (Consent, ROI, HIPAA, insurance, emergencies, policies, …).</p>
       <p style="font-size:13px;color:#597568;margin-top:10px;line-height:1.45;">Documents are listed <strong>in priority order</strong> on the Documents page. Upload or paste details for each item—click any row or use <strong>Upload now</strong>.</p>
-      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">Uses the Java API (MySQL) so placeholders appear immediately after save. Pure-Supabase mode may rely on syncing your stack.</div>
+      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">Java bridge: placeholders sync immediately. Cloud-only: run <code style="font-size:11px;">security/supabase-documents.sql</code> once so uploads store in Supabase.</div>
     </div>
     <div class="modal-footer">
       <button type="button" class="small-btn" onclick="closeModal('intakeDocPromptModal')">Later</button>
@@ -398,6 +398,7 @@
         <div class="info-item"><label>Phone</label><span id="viewPhone">—</span></div>
         <div class="info-item"><label>Status</label><span id="viewStatus">—</span></div>
         <div class="info-item" style="grid-column:1/-1"><label>Notes</label><span id="viewNotes">—</span></div>
+        <div class="info-item" style="grid-column:1/-1"><label>Documents &amp; files</label><div id="viewClientDocs" style="font-size:13px;line-height:1.45;color:#2d4a3e;">—</div></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -832,6 +833,63 @@ function filterClients () {
   renderClientsTable (filtered);
 }
 
+// ── Client-linked documents (Documents page + bridge or Supabase) ─────────────
+async function refreshClientDocumentsPanel (clientId) {
+  var box = document.getElementById ('viewClientDocs');
+  if (!box || !clientId) return;
+  box.innerHTML = '<span style="color:#9eb3a8;font-size:13px;">Loading documents…</span>';
+  try {
+    var org = await ensureClientOrgReady ();
+    var orgId = org && org.id;
+    var bridgeMode = typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ();
+    var rows = [];
+    if (!orgId) {
+      box.innerHTML = '<span style="color:#9eb3a8;font-size:13px;">Organization not loaded.</span>';
+      return;
+    }
+    if (bridgeMode && typeof documentJvmFetch === 'function') {
+      var res = await documentJvmFetch (orgId, null);
+      if (res.ok) {
+        var all = await res.json ();
+        rows = (all || []).filter (function (d) {
+          return String (d.client_id || '') === String (clientId);
+        });
+      }
+    } else if (window.supabaseClient) {
+      var q = await window.supabaseClient
+        .from ('documents')
+        .select ('id, doc_name, doc_type, status, upload_date, attachment_filename')
+        .eq ('org_id', orgId)
+        .eq ('client_id', clientId)
+        .order ('upload_date', { ascending: false })
+        .limit (80);
+      if (q.error) throw q.error;
+      rows = q.data || [];
+    } else {
+      box.innerHTML = '<span style="color:#9eb3a8;font-size:13px;">—</span>';
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<span style="color:#6b8c7a;font-size:13px;">No linked documents yet.</span> '
+        + '<a href="documents.html?client_id=' + encodeURIComponent (clientId) + '" style="color:#1d6fd8;font-weight:600;">Upload on Documents</a>';
+      return;
+    }
+    var ul = '<ul style="margin:4px 0 0;padding-left:18px;font-size:13px;line-height:1.55;color:#2d4a3e;">';
+    rows.forEach (function (d) {
+      var fn = d.attachment_filename ? ' · ' + esc (String (d.attachment_filename)) : '';
+      var href = 'documents.html?client_id=' + encodeURIComponent (clientId) + '&doc_id=' + encodeURIComponent (d.id);
+      ul += '<li><a href="' + href + '" style="color:#1d6fd8;font-weight:600;">' + esc (d.doc_name || 'Document') + '</a>'
+        + ' <span style="color:#6b8c7a;">(' + esc (d.doc_type || '—') + ')' + fn + '</span></li>';
+    });
+    ul += '</ul>';
+    box.innerHTML = ul
+      + '<p style="margin:10px 0 0;font-size:12px;"><a href="documents.html?client_id=' + encodeURIComponent (clientId)
+      + '" style="color:#1d6fd8;">Open all documents for this client →</a></p>';
+  } catch (e) {
+    box.innerHTML = '<span style="color:#c0392b;font-size:13px;">Could not load documents.</span>';
+  }
+}
+
 // ── View modal ────────────────────────────────────────────────────────────────
 function openViewClient (clientId) {
   var c = _clientsData.find (function (x) { return x.id === clientId; });
@@ -862,6 +920,7 @@ function openViewClient (clientId) {
   if (statusChip) statusChip.textContent = 'Status: ' + (c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : '—');
 
   openModal ('viewClientModal');
+  void refreshClientDocumentsPanel (clientId);
 }
 
 function openEditFromView () {
