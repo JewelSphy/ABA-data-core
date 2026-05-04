@@ -22,7 +22,8 @@
       setStatus("Supabase is not ready. Refresh the page.", true);
       return;
     }
-    const code = (document.getElementById("joinCodeInput")?.value || "").trim();
+    const rawCode = (document.getElementById("joinCodeInput")?.value || "").trim();
+    const code = rawCode.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     if (code.length < 4) {
       setStatus("Enter the join code your company admin shared (usually 8 characters).", true);
       return;
@@ -69,6 +70,12 @@
     );
     if (upErr) {
       setStatus("Joined the company, but profile row failed: " + upErr.message, true);
+    }
+
+    try {
+      await supabase.auth.refreshSession();
+    } catch (_) {
+      /* non-fatal */
     }
 
     const profile = {

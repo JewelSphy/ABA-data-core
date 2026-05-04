@@ -201,19 +201,21 @@
     } catch (_) {
       /* empty */
     }
-    const bridgeMode =
-      typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled();
+
+    /* Invite / join flow must run for everyone (including Java bridge mode). Previously gated on
+     * !bridgeMode, so users never reached the join screen. Also run before onboarding draft so
+     * join-with-code wins over partial onboarding rows. */
+    if (wantsJoinCompany) {
+      try {
+        sessionStorage.removeItem("gilberto_after_auth_join");
+      } catch (_) {
+        /* empty */
+      }
+      window.location.href = "workspace-setup.html?join=1";
+      return;
+    }
 
     if (await isOnboardingComplete(supa, userId)) {
-      if (!bridgeMode && wantsJoinCompany) {
-        try {
-          sessionStorage.removeItem("gilberto_after_auth_join");
-        } catch (_) {
-          /* empty */
-        }
-        window.location.href = "workspace-setup.html?join=1";
-        return;
-      }
       if (typeof window.gilbertoShouldOpenCompanyPickerAfterAuth === "function") {
         const needPicker = await window.gilbertoShouldOpenCompanyPickerAfterAuth(supa, userId);
         if (needPicker) {
@@ -226,15 +228,6 @@
     }
     if (await hasIncompleteOnboardingDraft(supa, userId)) {
       window.location.href = "onboarding.html";
-      return;
-    }
-    if (!bridgeMode && wantsJoinCompany) {
-      try {
-        sessionStorage.removeItem("gilberto_after_auth_join");
-      } catch (_) {
-        /* empty */
-      }
-      window.location.href = "workspace-setup.html?join=1";
       return;
     }
     window.location.href = "workspace-setup.html";
@@ -846,9 +839,9 @@ async function applyInviteTeamPanel() {
     box.innerHTML =
       "<div class=\"invite-team-header\"><strong>Invite your team</strong><span class=\"invite-team-hint\">New users sign in, choose “Join an existing company,” and enter this code. Their login stays the same — they’re only added to your organization.</span></div>" +
       "<div class=\"invite-code-row\">" +
-      "<code class=\"invite-code\" id=\"gilbertoJoinCodeDisplay\">" +
-      displayCode +
-      "</code> " +
+      "<button type=\"button\" class=\"invite-code invite-code--clickable\" id=\"gilbertoJoinCodeDisplay\" title=\"Copy invite code\" aria-label=\"Invite code. Click to copy.\">" +
+      String(displayCode).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\"/g, "&quot;") +
+      "</button> " +
       "<button type=\"button\" class=\"small-btn\" id=\"gilbertoCopyJoinCode\">Copy code</button>" +
       "</div>" +
       dailyUtcHint +
@@ -867,18 +860,44 @@ async function applyInviteTeamPanel() {
     main.insertBefore(box, main.firstChild);
   }
 
-  document.getElementById("gilbertoCopyJoinCode")?.addEventListener("click", async function () {
-    const btn = this;
-    const t = document.getElementById("gilbertoJoinCodeDisplay")?.textContent || displayCode || "";
+  async function copyGilbertoJoinInviteToClipboard() {
+    const trimmed = String(displayCode || "").trim();
+    if (!trimmed) return;
+    const copyBtn = document.getElementById("gilbertoCopyJoinCode");
+    const chip = document.getElementById("gilbertoJoinCodeDisplay");
     try {
-      await navigator.clipboard.writeText(t.trim());
-      btn.textContent = "Copied!";
-      setTimeout(function () {
-        btn.textContent = "Copy code";
-      }, 1800);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(trimmed);
+      } else {
+        throw new Error("no_clipboard");
+      }
+      if (copyBtn) {
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(function () {
+          copyBtn.textContent = prev || "Copy code";
+        }, 1600);
+      }
+      if (chip) {
+        chip.classList.add("invite-code--copied");
+        setTimeout(function () {
+          chip.classList.remove("invite-code--copied");
+        }, 700);
+      }
     } catch (_) {
-      window.prompt("Copy this code:", t);
+      try {
+        window.prompt("Copy this invite code (Ctrl+C / Cmd+C):", trimmed);
+      } catch (e2) {
+        alert("Invite code: " + trimmed);
+      }
     }
+  }
+
+  document.getElementById("gilbertoJoinCodeDisplay")?.addEventListener("click", function () {
+    void copyGilbertoJoinInviteToClipboard();
+  });
+  document.getElementById("gilbertoCopyJoinCode")?.addEventListener("click", function () {
+    void copyGilbertoJoinInviteToClipboard();
   });
 
   document.getElementById("gilbertoGenJoinCode")?.addEventListener("click", async function () {

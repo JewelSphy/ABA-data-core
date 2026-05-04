@@ -364,6 +364,33 @@ p.topbar-company {
   border-radius: 8px;
   color: #1a2e26;
 }
+
+button.invite-code.invite-code--clickable {
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.invite-code.invite-code--clickable:hover {
+  background: #e8f0ec;
+  border-color: #9bc4b0;
+  box-shadow: 0 2px 8px rgba(22, 61, 48, 0.08);
+}
+
+button.invite-code.invite-code--clickable:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+button.invite-code.invite-code--clickable.invite-code--copied {
+  background: #d1fae5;
+  border-color: #34d399;
+}
 .invite-no-code {
   font-size: 12px;
   color: #6b8c7a;
