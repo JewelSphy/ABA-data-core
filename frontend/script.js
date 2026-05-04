@@ -16,8 +16,12 @@ function showLogin() {
   function loginShowEmailStep() {
     const wrap = document.getElementById("loginPasswordStep");
     const step = document.getElementById("loginEmailStep");
+    const rw = document.getElementById("loginRememberWrap");
+    const cont = document.getElementById("loginEmailContinue");
     if (wrap) wrap.classList.add("hidden");
     if (step) step.classList.remove("hidden");
+    if (rw) rw.style.display = "flex";
+    if (cont) cont.style.display = "";
     const pw = document.getElementById("loginPassword");
     if (pw) pw.value = "";
   }
@@ -32,7 +36,11 @@ function showLogin() {
     if (recap) recap.textContent = email;
     const wrap = document.getElementById("loginPasswordStep");
     const step = document.getElementById("loginEmailStep");
+    const rw = document.getElementById("loginRememberWrap");
+    const cont = document.getElementById("loginEmailContinue");
     if (step) step.classList.add("hidden");
+    if (cont) cont.style.display = "none";
+    if (rw) rw.style.display = "flex";
     if (wrap) {
       wrap.classList.remove("hidden");
       document.getElementById("loginPassword")?.focus();
@@ -54,7 +62,7 @@ function showLogin() {
   function showSignup() {
     document.getElementById("signupForm").classList.remove("hidden");
     document.getElementById("loginForm").classList.add("hidden");
-  
+
     document.getElementById("signupTab").classList.add("active");
     document.getElementById("loginTab").classList.remove("active");
   }
@@ -231,6 +239,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   loadRememberedEmail();
 
   const params = new URLSearchParams(window.location.search);
+  const stayOnLogin =
+    params.get("stay") === "1" ||
+    params.get("login") === "1" ||
+    params.get("signin") === "1";
   const qErr = params.get("error");
   const qDesc = params.get("error_description");
   if (qErr) {
@@ -255,10 +267,19 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   if (!window.supabaseClient) return;
+  if (stayOnLogin) {
+    return;
+  }
   try {
     const { data, error } = await window.supabaseClient.auth.getSession();
     if (!error && data?.session) {
-      await goToDashboard();
+      await new Promise(function (r) {
+        setTimeout(r, 400);
+      });
+      const { data: again } = await window.supabaseClient.auth.getSession();
+      if (again?.session) {
+        await goToDashboard();
+      }
     }
   } catch (_) {
     // no-op
