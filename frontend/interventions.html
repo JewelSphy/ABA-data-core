@@ -257,10 +257,6 @@
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 let interventionRows = [];
-function scopedInterventionsKey() {
-  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
-  return 'gilberto_interventions:' + orgId;
-}
 function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
@@ -268,8 +264,15 @@ function toast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
-function loadInterventions(){ try { interventionRows = JSON.parse(localStorage.getItem(scopedInterventionsKey())||'[]'); } catch(_) { interventionRows = []; } }
-function saveInterventions(){ localStorage.setItem(scopedInterventionsKey(), JSON.stringify(interventionRows)); }
+function loadInterventions() {
+  interventionRows =
+    typeof gilbertoLoadScopedRows === "function" ? gilbertoLoadScopedRows("gilberto_interventions") : [];
+}
+function saveInterventions() {
+  if (typeof gilbertoSaveScopedRows === "function") {
+    gilbertoSaveScopedRows("gilberto_interventions", interventionRows);
+  }
+}
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
 function renderInterventions(){
   const body = document.getElementById('intBody');

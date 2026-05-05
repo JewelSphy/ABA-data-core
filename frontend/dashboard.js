@@ -794,6 +794,57 @@ async function applyWorkspaceWithOrg() {
 
 window.loadGilbertoOrganization = loadGilbertoOrganization;
 
+/**
+ * Behavior-plan tables store rows in localStorage per org (`prefix:<orgId>`).
+ * Rows saved before org resolution used `prefix:no-org`; after login the id becomes a UUID,
+ * so the old bucket looked empty. Migrate legacy keys into the current scope once.
+ */
+function gilbertoScopedStorageKey(prefix) {
+  const id =
+    window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id
+      ? window.gilbertoCurrentOrg.id
+      : "no-org";
+  return prefix + ":" + id;
+}
+
+function gilbertoLoadScopedRows(prefix) {
+  const key = gilbertoScopedStorageKey(prefix);
+  let rows = [];
+  try {
+    rows = JSON.parse(localStorage.getItem(key) || "[]");
+  } catch (_) {
+    rows = [];
+  }
+  if (!Array.isArray(rows)) rows = [];
+  if (rows.length > 0) return rows;
+
+  const legacyKeys = [prefix + ":no-org", prefix];
+  for (let i = 0; i < legacyKeys.length; i += 1) {
+    const lk = legacyKeys[i];
+    if (lk === key) continue;
+    try {
+      const raw = localStorage.getItem(lk);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) continue;
+      localStorage.setItem(key, JSON.stringify(parsed));
+      localStorage.removeItem(lk);
+      return parsed;
+    } catch (_) {
+      /* empty */
+    }
+  }
+  return [];
+}
+
+function gilbertoSaveScopedRows(prefix, rows) {
+  localStorage.setItem(gilbertoScopedStorageKey(prefix), JSON.stringify(rows));
+}
+
+window.gilbertoScopedStorageKey = gilbertoScopedStorageKey;
+window.gilbertoLoadScopedRows = gilbertoLoadScopedRows;
+window.gilbertoSaveScopedRows = gilbertoSaveScopedRows;
+
 async function gilbertoShouldOpenCompanyPickerAfterAuth(client, uid) {
   if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) {
     return false;

@@ -275,10 +275,6 @@
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 let procedureRows = [];
-function scopedProceduresKey() {
-  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
-  return 'gilberto_procedures:' + orgId;
-}
 function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
@@ -287,8 +283,15 @@ function toast(msg) {
   setTimeout(() => t.remove(), 2500);
 }
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
-function loadProcedures(){ try { procedureRows = JSON.parse(localStorage.getItem(scopedProceduresKey())||'[]'); } catch(_) { procedureRows = []; } }
-function saveProcedures(){ localStorage.setItem(scopedProceduresKey(), JSON.stringify(procedureRows)); }
+function loadProcedures() {
+  procedureRows =
+    typeof gilbertoLoadScopedRows === "function" ? gilbertoLoadScopedRows("gilberto_procedures") : [];
+}
+function saveProcedures() {
+  if (typeof gilbertoSaveScopedRows === "function") {
+    gilbertoSaveScopedRows("gilberto_procedures", procedureRows);
+  }
+}
 function renderProcedures(){
   const body = document.getElementById('procBody');
   if (!procedureRows.length) { body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:16px;color:#6b8c7a;">No procedures yet. Click <strong>+ Add Procedure</strong> to get started.</td></tr>'; return; }

@@ -257,10 +257,6 @@
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 let objectiveRows = [];
-function scopedObjectivesKey() {
-  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : 'no-org';
-  return 'gilberto_objectives:' + orgId;
-}
 function toast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
@@ -268,8 +264,17 @@ function toast(msg) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2500);
 }
-function loadObjectives(){ try { objectiveRows = JSON.parse(localStorage.getItem(scopedObjectivesKey())||'[]'); } catch(_) { objectiveRows = []; } }
-function saveObjectives(){ localStorage.setItem(scopedObjectivesKey(), JSON.stringify(objectiveRows)); }
+function loadObjectives() {
+  objectiveRows =
+    typeof gilbertoLoadScopedRows === "function"
+      ? gilbertoLoadScopedRows("gilberto_objectives")
+      : [];
+}
+function saveObjectives() {
+  if (typeof gilbertoSaveScopedRows === "function") {
+    gilbertoSaveScopedRows("gilberto_objectives", objectiveRows);
+  }
+}
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
 function numPct(v){ const n = Number(String(v).replace('%','')); return isNaN(n) ? 0 : Math.max(0, Math.min(100, n)); }
 function renderObjectives(){
