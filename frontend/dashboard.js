@@ -1,4 +1,68 @@
 /**
+ * After `join_organization` succeeds: sync onboarding row, active org, and clear join intent.
+ * Used by workspace-setup and post-login auto-join so invite codes always land on that company’s dashboard.
+ */
+async function gilbertoCompleteOrganizationJoin(supabase, userId, orgId) {
+  if (!supabase || !userId || !orgId) return { ok: false, reason: "bad_args" };
+  const { data: org, error: orgErr } = await supabase
+    .from("organizations")
+    .select("id, company_display_name, company_legal_name")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (orgErr || !org) return { ok: false, reason: "org_load" };
+
+  const { error: upErr } = await supabase.from("user_onboarding").upsert(
+    {
+      user_id: userId,
+      organization_id: orgId,
+      company_display_name: org.company_display_name,
+      company_legal_name: org.company_legal_name,
+      onboarding_completed: true,
+      approval_status: "pending",
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+
+  try {
+    await supabase.auth.refreshSession();
+  } catch (_) {
+    /* non-fatal */
+  }
+
+  const profile = {
+    company_display_name: org.company_display_name,
+    company_legal_name: org.company_legal_name,
+    organization_id: orgId,
+    approval_status: "pending",
+  };
+  if (window.gilbertoAuthFlow) {
+    window.gilbertoAuthFlow.markCompleteLocal(userId, profile);
+  }
+
+  try {
+    sessionStorage.removeItem("gilberto_after_auth_join");
+    sessionStorage.removeItem("gilberto_join_code_prefill");
+    sessionStorage.removeItem("gilberto_auto_join_code");
+    sessionStorage.removeItem("gilberto_wants_create");
+    localStorage.setItem(
+      "gilberto_active_org:" + userId,
+      JSON.stringify({
+        id: orgId,
+        name: org.company_display_name,
+        company_legal_name: org.company_legal_name,
+      })
+    );
+  } catch (_) {
+    /* empty */
+  }
+
+  return { ok: true, profileUpsertError: upErr || null };
+}
+
+window.gilbertoCompleteOrganizationJoin = gilbertoCompleteOrganizationJoin;
+
+/**
  * Post-login routing: onboarding -> dashboard. Sync with authFlow if split later.
  */
 (function initGilbertoAuthFlow() {
@@ -200,6 +264,33 @@
       wantsJoinCompany = sessionStorage.getItem("gilberto_after_auth_join") === "1";
     } catch (_) {
       /* empty */
+    }
+
+    let autoJoinCode = null;
+    try {
+      autoJoinCode = sessionStorage.getItem("gilberto_auto_join_code");
+    } catch (_) {
+      /* empty */
+    }
+    if (autoJoinCode) {
+      const norm = String(autoJoinCode).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      if (norm.length >= 4) {
+        const { data: joinedOrgId, error: joinRpcErr } = await supa.rpc("join_organization", {
+          p_code: norm,
+        });
+        if (!joinRpcErr && joinedOrgId) {
+          const fin = await gilbertoCompleteOrganizationJoin(supa, userId, joinedOrgId);
+          if (fin && fin.ok) {
+            window.location.replace("dashboard.html?setup=1");
+            return;
+          }
+        }
+        try {
+          sessionStorage.removeItem("gilberto_auto_join_code");
+        } catch (_) {
+          /* empty */
+        }
+      }
     }
 
     /* Invite / join flow must run for everyone (including Java bridge mode). Previously gated on

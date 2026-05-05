@@ -46,55 +46,20 @@
       return;
     }
 
-    const { data: org, error: orgErr } = await supabase
-      .from("organizations")
-      .select("id, company_display_name, company_legal_name")
-      .eq("id", orgId)
-      .maybeSingle();
-    if (orgErr || !org) {
-      setStatus("Joined, but could not load company. Try refreshing or contact support.", true);
+    const finish = window.gilbertoCompleteOrganizationJoin;
+    if (typeof finish !== "function") {
+      setStatus("App bundle out of date. Refresh the page.", true);
       return;
     }
-
-    const { error: upErr } = await supabase.from("user_onboarding").upsert(
-      {
-        user_id: userId,
-        organization_id: orgId,
-        company_display_name: org.company_display_name,
-        company_legal_name: org.company_legal_name,
-        onboarding_completed: true,
-        approval_status: "pending",
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
-    if (upErr) {
-      setStatus("Joined the company, but profile row failed: " + upErr.message, true);
+    const fin = await finish(supabase, userId, orgId);
+    if (!fin || !fin.ok) {
+      setStatus("Joined, but could not save workspace. Try refreshing.", true);
+      return;
+    }
+    if (fin.profileUpsertError) {
+      setStatus("Joined the company, but profile row failed: " + fin.profileUpsertError.message, true);
     }
 
-    try {
-      await supabase.auth.refreshSession();
-    } catch (_) {
-      /* non-fatal */
-    }
-
-    const profile = {
-      company_display_name: org.company_display_name,
-      company_legal_name: org.company_legal_name,
-      organization_id: orgId,
-      approval_status: "pending",
-    };
-    flow.markCompleteLocal(userId, profile);
-    try {
-      sessionStorage.removeItem("gilberto_after_auth_join");
-      sessionStorage.removeItem("gilberto_join_code_prefill");
-      localStorage.setItem(
-        "gilberto_active_org:" + userId,
-        JSON.stringify({ id: orgId, name: org.company_display_name, company_legal_name: org.company_legal_name })
-      );
-    } catch (_) {
-      /* empty */
-    }
     window.location.replace("dashboard.html?setup=1");
   });
 

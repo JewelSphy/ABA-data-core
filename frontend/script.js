@@ -82,15 +82,20 @@ function showLogin() {
   }
 
   function queueJoinCompanyFromLogin(sourceCode) {
-    var code = String(sourceCode || "").trim().toUpperCase();
+    var code = String(sourceCode || "").trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     if (code && code.length < 4) {
       setAuthMessage("Join code looks too short. Usually it is 8 characters.", true);
       return false;
     }
     try {
       sessionStorage.setItem("gilberto_after_auth_join", "1");
-      if (code) sessionStorage.setItem("gilberto_join_code_prefill", code);
-      else sessionStorage.removeItem("gilberto_join_code_prefill");
+      if (code.length >= 4) {
+        sessionStorage.setItem("gilberto_join_code_prefill", code);
+        sessionStorage.setItem("gilberto_auto_join_code", code);
+      } else {
+        sessionStorage.removeItem("gilberto_join_code_prefill");
+        sessionStorage.removeItem("gilberto_auto_join_code");
+      }
     } catch (_) {
       /* empty */
     }
@@ -255,7 +260,28 @@ document.addEventListener("DOMContentLoaded", async function () {
   loadRememberedEmail();
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get("join") === "1" || params.get("invite") === "1") {
+  const inviteCodeFromUrl = (params.get("code") || params.get("join_code") || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+  if (inviteCodeFromUrl.length >= 4) {
+    queueJoinCompanyFromLogin(inviteCodeFromUrl);
+    const joinBanner = document.getElementById("authJoinBanner");
+    if (joinBanner) {
+      joinBanner.hidden = false;
+      joinBanner.innerHTML =
+        'You opened an <strong>invite link with a company code</strong> — sign in below (or create an account). We&apos;ll add you to <strong>that</strong> workspace and open its dashboard — not a new company.';
+    }
+    try {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("code");
+      clean.searchParams.delete("join_code");
+      if (clean.search !== window.location.search) {
+        window.history.replaceState({}, document.title, clean.pathname + clean.search + clean.hash);
+      }
+    } catch (_) {
+      /* empty */
+    }
+  } else if (params.get("join") === "1" || params.get("invite") === "1") {
     queueJoinCompanyFromLogin("");
     const joinBanner = document.getElementById("authJoinBanner");
     if (joinBanner) joinBanner.hidden = false;
@@ -294,6 +320,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (justLoggedOut) {
     try {
       sessionStorage.removeItem("gilberto_after_auth_join");
+      sessionStorage.removeItem("gilberto_auto_join_code");
+      sessionStorage.removeItem("gilberto_join_code_prefill");
     } catch (_) {
       /* empty */
     }
