@@ -6,57 +6,71 @@
   <title>Your workspace — Gilberto CRM</title>
   <link rel="stylesheet" href="style.css" />
   <style>
+    /* Calmer, more open layout than default card pages */
+    body.page-ws-setup {
+      padding: clamp(32px, 6vh, 72px) clamp(20px, 4vw, 40px);
+      align-items: center;
+    }
+    body.page-ws-setup::before,
+    body.page-ws-setup::after {
+      animation: none;
+      opacity: 0.25;
+    }
+    body.page-ws-setup .container {
+      max-width: 520px;
+    }
     /* Workspace setup – extends style.css card design */
     .ws-card { text-align: left; }
 
     .ws-card h2 {
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: #1a2e26;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
+      margin-top: 0;
       letter-spacing: -0.01em;
     }
 
     .ws-card p {
-      font-size: 0.875rem;
-      color: #4a6358;
-      line-height: 1.6;
-      margin-bottom: 14px;
+      font-size: 0.9rem;
+      color: #4d6359;
+      line-height: 1.65;
+      margin-bottom: 18px;
     }
 
     .ws-actions {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 4px;
+      gap: 12px;
+      margin-top: 6px;
     }
 
     /* Override the broad button[type="button"] rule for workspace buttons */
     .ws-btn-primary {
       width: 100%;
-      background: linear-gradient(135deg, #2d4a3e, #3d6350) !important;
+      background: linear-gradient(135deg, #2f4d41, #3a5c4c) !important;
       color: #fff !important;
       border: none !important;
-      border-radius: 10px !important;
-      padding: 13px 16px !important;
+      border-radius: 12px !important;
+      padding: 14px 18px !important;
       font-weight: 700 !important;
-      font-size: 0.93rem !important;
+      font-size: 0.95rem !important;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(45,74,62,0.25);
+      box-shadow: 0 8px 24px rgba(45, 74, 62, 0.18);
       transition: transform 0.15s, box-shadow 0.2s !important;
     }
     .ws-btn-primary:hover {
-      transform: translateY(-2px) !important;
-      box-shadow: 0 10px 28px rgba(45,74,62,0.32) !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 12px 28px rgba(45, 74, 62, 0.22) !important;
     }
 
     .ws-btn-ghost {
       width: 100%;
-      background: #f4f7f5 !important;
-      border: 1.5px solid #c8ddd0 !important;
+      background: #f6f9f7 !important;
+      border: 1px solid #c5d9cc !important;
       color: #2d4a3e !important;
-      border-radius: 10px !important;
-      padding: 12px 16px !important;
+      border-radius: 12px !important;
+      padding: 14px 18px !important;
       font-weight: 600 !important;
       font-size: 0.9rem !important;
       cursor: pointer;
@@ -71,10 +85,25 @@
       box-shadow: none !important;
     }
 
+    .page-ws-setup .card-header {
+      padding: 40px 40px 36px;
+    }
+    .page-ws-setup .card-body {
+      padding: 40px 40px 48px;
+    }
+    .page-ws-setup .card-header-tagline h1 {
+      font-size: clamp(1.65rem, 4vw, 2rem);
+      line-height: 1.2;
+    }
+    .page-ws-setup .card-header-tagline p {
+      line-height: 1.6;
+      max-width: 42ch;
+    }
+
     .ws-join {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #d4e4da;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid #dde8e0;
     }
 
     .ws-join label {
@@ -122,7 +151,7 @@
     #wsStatus:empty { display: none; }
   </style>
 </head>
-<body>
+<body class="page-ws-setup">
   <div class="container">
     <div class="card ws-card">
       <div class="card-header">
@@ -161,7 +190,7 @@
           <button type="button" class="ws-btn-ghost" id="wsJoin">Join with this code</button>
         </div>
 
-        <p style="margin-top:24px;font-size:0.8rem;color:#6b8c7a;">Already set up? <a href="#" onclick="logout();return false;" style="color:#2d4a3e;font-weight:600;">Sign out</a> and sign back in.</p>
+        <p style="margin-top:32px;font-size:0.82rem;line-height:1.55;color:#6d8579;">Already set up? <a href="#" onclick="logout();return false;" style="color:#2d4a3e;font-weight:600;">Sign out</a> and sign back in.</p>
       </div>
     </div>
   </div>
