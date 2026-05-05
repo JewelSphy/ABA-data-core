@@ -60,6 +60,7 @@ function showLogin() {
   }
   
   function showSignup() {
+    gilbertoClearJoinIntentUnlessFromInviteLink();
     document.getElementById("signupForm").classList.remove("hidden");
     document.getElementById("loginForm").classList.add("hidden");
 
@@ -79,6 +80,18 @@ function showLogin() {
     if (!btn) return;
     btn.disabled = loading;
     btn.textContent = loading ? "Please wait..." : label;
+  }
+
+  /** Clears invite/join session keys unless this tab queued join from an invite URL (?code= / ?join=1). */
+  function gilbertoClearJoinIntentUnlessFromInviteLink() {
+    try {
+      if (sessionStorage.getItem("gilberto_join_from_link") === "1") return;
+      sessionStorage.removeItem("gilberto_after_auth_join");
+      sessionStorage.removeItem("gilberto_auto_join_code");
+      sessionStorage.removeItem("gilberto_join_code_prefill");
+    } catch (_) {
+      /* empty */
+    }
   }
 
   function queueJoinCompanyFromLogin(sourceCode) {
@@ -177,6 +190,7 @@ function showLogin() {
   }
 
   async function signup() {
+    gilbertoClearJoinIntentUnlessFromInviteLink();
     const firstName = document.getElementById("signupFirstName")?.value?.trim();
     const lastName = document.getElementById("signupLastName")?.value?.trim();
     const fullName = `${firstName || ""} ${lastName || ""}`.trim();
@@ -265,6 +279,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     .toUpperCase();
   if (inviteCodeFromUrl.length >= 4) {
     queueJoinCompanyFromLogin(inviteCodeFromUrl);
+    try {
+      sessionStorage.setItem("gilberto_join_from_link", "1");
+    } catch (_) {
+      /* empty */
+    }
     const joinBanner = document.getElementById("authJoinBanner");
     if (joinBanner) {
       joinBanner.hidden = false;
@@ -283,6 +302,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   } else if (params.get("join") === "1" || params.get("invite") === "1") {
     queueJoinCompanyFromLogin("");
+    try {
+      sessionStorage.setItem("gilberto_join_from_link", "1");
+    } catch (_) {
+      /* empty */
+    }
     const joinBanner = document.getElementById("authJoinBanner");
     if (joinBanner) joinBanner.hidden = false;
     try {
@@ -322,6 +346,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       sessionStorage.removeItem("gilberto_after_auth_join");
       sessionStorage.removeItem("gilberto_auto_join_code");
       sessionStorage.removeItem("gilberto_join_code_prefill");
+      sessionStorage.removeItem("gilberto_join_from_link");
     } catch (_) {
       /* empty */
     }

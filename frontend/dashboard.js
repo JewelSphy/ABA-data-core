@@ -44,6 +44,7 @@ async function gilbertoCompleteOrganizationJoin(supabase, userId, orgId) {
     sessionStorage.removeItem("gilberto_after_auth_join");
     sessionStorage.removeItem("gilberto_join_code_prefill");
     sessionStorage.removeItem("gilberto_auto_join_code");
+    sessionStorage.removeItem("gilberto_join_from_link");
     sessionStorage.removeItem("gilberto_wants_create");
     localStorage.setItem(
       "gilberto_active_org:" + userId,
