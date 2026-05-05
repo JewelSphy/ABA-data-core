@@ -7,39 +7,40 @@
   <link rel="stylesheet" href="dashboard.css"/>
   <style>
     .page-clients .topbar {
-      background: linear-gradient(120deg, rgba(41, 121, 255, 0.08), rgba(46, 204, 113, 0.08));
-      border: 1px solid #dbe8ef;
+      background: linear-gradient(120deg, rgba(90, 105, 100, 0.06), rgba(120, 130, 125, 0.05));
+      border: 1px solid rgba(45, 55, 50, 0.1);
       border-radius: 14px;
       padding: 14px 16px;
       margin-bottom: 14px;
     }
     .page-clients .topbar h1 {
-      background: linear-gradient(90deg, #1d6fd8, #1f9e67);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: #1e2924;
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
     }
     .page-clients .table-wrapper {
-      border: 1px solid #dbe7e2;
+      border: 1px solid rgba(45, 55, 50, 0.1);
       border-radius: 14px;
-      box-shadow: 0 12px 26px rgba(22, 61, 48, 0.08);
-      background: linear-gradient(180deg, #ffffff, #fbfffd);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      background: linear-gradient(180deg, #fff, #fafaf8);
     }
     .page-clients .data-table thead th {
-      background: linear-gradient(90deg, #eef7ff, #effbf4);
-      color: #22493b;
-      border-bottom: 1px solid #d9e9df;
+      background: linear-gradient(180deg, #f1f3f2, #e8ebe9);
+      color: #3d5248;
+      border-bottom: 1px solid rgba(45, 55, 50, 0.1);
     }
     .page-clients .data-table tbody tr:hover {
-      background: linear-gradient(90deg, rgba(66, 133, 244, 0.08), rgba(46, 204, 113, 0.08));
+      background: rgba(0, 0, 0, 0.03);
     }
     .page-clients .add-btn {
-      background: linear-gradient(90deg, #2b73d2, #2ca66b);
+      background: linear-gradient(180deg, #4d635a, #3a4f47);
       border: none;
-      box-shadow: 0 10px 20px rgba(35, 93, 155, 0.2);
+      color: #f4f6f5;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .page-clients .add-btn:hover {
-      background: linear-gradient(90deg, #225da8, #248558);
+      filter: brightness(1.05);
       transform: translateY(-1px);
     }
     .page-clients .search-input {
@@ -47,11 +48,11 @@
       background: linear-gradient(180deg, #ffffff, #f8fcfa);
     }
     .page-clients .search-input:focus {
-      border-color: #6ea8ff;
-      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.16);
+      border-color: #8a9a90;
+      box-shadow: 0 0 0 3px rgba(92, 114, 105, 0.2);
     }
     .page-clients .badge-active {
-      background: linear-gradient(90deg, #23b36b, #2fd58e);
+      background: linear-gradient(90deg, #5c7269, #4d635a);
       color: #fff;
       border: none;
     }
@@ -72,10 +73,7 @@
       box-shadow: 0 12px 28px rgba(24, 56, 44, 0.08);
     }
     .client-pop .modal-header h3 {
-      background: linear-gradient(90deg, #1f7a5a, #2c74b4);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: #f4f6f5;
       font-weight: 800;
       letter-spacing: .01em;
     }
@@ -871,20 +869,20 @@ async function refreshClientDocumentsPanel (clientId) {
     }
     if (!rows.length) {
       box.innerHTML = '<span style="color:#6b8c7a;font-size:13px;">No linked documents yet.</span> '
-        + '<a href="documents.html?client_id=' + encodeURIComponent (clientId) + '" style="color:#1d6fd8;font-weight:600;">Upload on Documents</a>';
+        + '<a href="documents.html?client_id=' + encodeURIComponent (clientId) + '" style="color:#4d635a;font-weight:600;">Upload on Documents</a>';
       return;
     }
     var ul = '<ul style="margin:4px 0 0;padding-left:18px;font-size:13px;line-height:1.55;color:#2d4a3e;">';
     rows.forEach (function (d) {
       var fn = d.attachment_filename ? ' · ' + esc (String (d.attachment_filename)) : '';
       var href = 'documents.html?client_id=' + encodeURIComponent (clientId) + '&doc_id=' + encodeURIComponent (d.id);
-      ul += '<li><a href="' + href + '" style="color:#1d6fd8;font-weight:600;">' + esc (d.doc_name || 'Document') + '</a>'
+      ul += '<li><a href="' + href + '" style="color:#4d635a;font-weight:600;">' + esc (d.doc_name || 'Document') + '</a>'
         + ' <span style="color:#6b8c7a;">(' + esc (d.doc_type || '—') + ')' + fn + '</span></li>';
     });
     ul += '</ul>';
     box.innerHTML = ul
       + '<p style="margin:10px 0 0;font-size:12px;"><a href="documents.html?client_id=' + encodeURIComponent (clientId)
-      + '" style="color:#1d6fd8;">Open all documents for this client →</a></p>';
+      + '" style="color:#4d635a;">Open all documents for this client →</a></p>';
   } catch (e) {
     box.innerHTML = '<span style="color:#c0392b;font-size:13px;">Could not load documents.</span>';
   }

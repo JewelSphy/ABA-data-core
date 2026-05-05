@@ -8,16 +8,16 @@
   <style>
     .library-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
     .library-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin: 22px 0 10px; grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: #334155; }
-    .library-section-title::before { content: ""; width: 18px; height: 3px; background: linear-gradient(90deg, #f97316, #ec4899, #6366f1); }
-    .lib-card { border: 1px solid #d4e4da; padding: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 22px rgba(31,45,38,0.08); transition: transform 0.16s ease, box-shadow 0.16s ease; }
+    .library-section-title::before { content: ""; width: 18px; height: 3px; background: linear-gradient(90deg, #8b9a90, #7a8fa3, #9a8a88); }
+    .lib-card { border: 1px solid rgba(45,55,50,0.12); padding: 16px; position: relative; overflow: hidden; box-shadow: 0 10px 22px rgba(31,45,38,0.08); transition: transform 0.16s ease, box-shadow 0.16s ease; }
     .lib-card:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(31,45,38,0.12); }
-    .lib-card::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #22c55e, #06b6d4, #8b5cf6); }
-    .lib-card[data-cat="clinical"] { background: linear-gradient(170deg, #ffffff 0%, #ecfdf5 100%); }
-    .lib-card[data-cat="clinical"]::before { background: linear-gradient(90deg, #22c55e, #14b8a6); }
-    .lib-card[data-cat="training"] { background: linear-gradient(170deg, #ffffff 0%, #eff6ff 100%); }
-    .lib-card[data-cat="training"]::before { background: linear-gradient(90deg, #3b82f6, #6366f1); }
-    .lib-card[data-cat="compliance"] { background: linear-gradient(170deg, #ffffff 0%, #fff7ed 100%); }
-    .lib-card[data-cat="compliance"]::before { background: linear-gradient(90deg, #f97316, #f43f5e); }
+    .lib-card::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #7a9488, #8a9aaa, #a898b8); }
+    .lib-card[data-cat="clinical"] { background: linear-gradient(170deg, #ffffff 0%, #f4f6f5 100%); }
+    .lib-card[data-cat="clinical"]::before { background: linear-gradient(90deg, #7a9488, #6b8a7a); }
+    .lib-card[data-cat="training"] { background: linear-gradient(170deg, #ffffff 0%, #f3f5f7 100%); }
+    .lib-card[data-cat="training"]::before { background: linear-gradient(90deg, #8a9aaa, #8a8fa3); }
+    .lib-card[data-cat="compliance"] { background: linear-gradient(170deg, #ffffff 0%, #f6f4f2 100%); }
+    .lib-card[data-cat="compliance"]::before { background: linear-gradient(90deg, #c4a07a, #b898a0); }
     .lib-card-icon { font-size: 22px; margin-bottom: 8px; display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; background: white; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 4px 10px rgba(15,23,42,0.08); }
     .lib-card h4 { font-size: 13.5px; font-weight: 700; color: #1f2d26; margin-bottom: 4px; }
     .lib-card p { font-size: 12px; color: #475569; margin-bottom: 12px; line-height: 1.5; }
@@ -29,8 +29,8 @@
     .library-kpi { padding: 10px 12px; border: 1px solid #e2e8f0; background: white; }
     .library-kpi strong { display: block; font-size: 18px; color: #0f172a; margin-bottom: 2px; }
     .library-kpi span { font-size: 11px; color: #64748b; font-weight: 600; }
-    .top-actions .add-btn { background: linear-gradient(135deg, #f97316, #ec4899); }
-    .top-actions .add-btn:hover { background: linear-gradient(135deg, #ea580c, #db2777); }
+    .top-actions .add-btn { background: linear-gradient(180deg, #4d635a, #3a4f47); color: #f4f6f5; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+    .top-actions .add-btn:hover { filter: brightness(1.05); }
   </style>
 </head>
 <body class="page-library">
