@@ -203,7 +203,7 @@ body.auth-page::after {
 .auth-panel-inner > .auth-join-banner,
 .auth-panel-inner > .auth-feedback,
 .auth-panel-inner > .auth-form,
-.auth-panel-inner > .auth-invite-panel {
+.auth-panel-inner > .auth-workspace-note {
   margin: 0;
 }
 
@@ -506,6 +506,21 @@ body.auth-page::after {
   padding: 12px 14px;
   margin: 0;
   box-shadow: none;
+}
+
+.auth-workspace-note {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 12px;
+  line-height: 1.55;
+  color: #5f7669;
+  text-align: left;
+}
+
+.auth-workspace-note strong {
+  color: #2a4038;
+  font-weight: 700;
 }
 
 .auth-invite-panel {

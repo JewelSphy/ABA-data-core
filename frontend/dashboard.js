@@ -372,11 +372,11 @@ function applyUserIdentityPills() {
   document.querySelectorAll(".profile-chip-text small").forEach((el) => {
     el.textContent = name;
   });
-  document.querySelectorAll(".top-menu-item strong").forEach((el) => {
-    const t = (el.textContent || "").trim();
-    if (t.includes("Account") || t.startsWith("👤")) {
-      el.textContent = "👤 " + initial + " Account";
-    }
+  document.querySelectorAll(".profile-chip-text strong").forEach((el) => {
+    el.textContent = "Account";
+  });
+  document.querySelectorAll(".profile-menu-name").forEach((el) => {
+    el.textContent = name;
   });
 }
 
@@ -738,9 +738,9 @@ function gilbertoInjectSwitchCompanyMenuItem() {
     menu.dataset.gilbertoSwitchInjected = "1";
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "top-menu-item";
+    item.className = "top-menu-item profile-menu-action";
     item.setAttribute("role", "menuitem");
-    item.textContent = "🏢 Switch or join company";
+    item.textContent = "Switch workspace";
     item.title =
       "Pick another workspace or add this login to a company with an invite code";
     item.addEventListener("click", function () {

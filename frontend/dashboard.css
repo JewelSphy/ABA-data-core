@@ -1429,27 +1429,31 @@ body.auto-theme .data-table th {
 .top-actions .icon-btn,
 .top-actions .small-btn,
 .top-actions .user-pill {
-  border-width: 2px !important;
+  border-width: 1px !important;
   font-weight: 700 !important;
-  box-shadow: none !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset !important;
 }
 
 .top-actions .icon-btn {
-  background: linear-gradient(180deg, #f2f6f4 0%, #ffffff 100%) !important;
-  border-color: #6b8f85 !important;
-  color: var(--accent-deep) !important;
+  background: linear-gradient(180deg, #ebeae7 0%, #e0dfdc 100%) !important;
+  border-color: rgba(45, 48, 46, 0.22) !important;
+  color: #1e2220 !important;
+}
+
+.top-actions .icon-btn:hover {
+  background: linear-gradient(180deg, #e4e3e0 0%, #d8d7d4 100%) !important;
 }
 
 .top-actions .small-btn {
-  background: linear-gradient(180deg, #f2f6f4 0%, #ffffff 100%) !important;
-  border: 2px solid rgba(76, 107, 96, 0.48) !important;
-  color: #23443b !important;
+  background: linear-gradient(180deg, #ebeae7 0%, #e0dfdc 100%) !important;
+  border: 1px solid rgba(45, 48, 46, 0.22) !important;
+  color: #1e2220 !important;
 }
 
 .top-actions .user-pill {
-  background: linear-gradient(180deg, #ffffff 0%, #e1ece7 100%) !important;
-  border: 2px solid #62867b !important;
-  color: #1f3a33 !important;
+  background: linear-gradient(180deg, #f0efed 0%, #e4e3e0 100%) !important;
+  border: 1px solid rgba(45, 48, 46, 0.2) !important;
+  color: #1e2220 !important;
 }
 
 .menu-wrap {
@@ -1463,16 +1467,15 @@ body.auto-theme .data-table th {
   right: 0;
   top: calc(100% + 6px);
   min-width: 250px;
-  background: linear-gradient(165deg, #f5f8f7 0%, #ebf1ee 38%, #e2ebe7 100%);
-  border: 2px solid #6b8f85;
+  background: linear-gradient(180deg, #e8e7e4 0%, #dedcd8 100%);
+  border: 1px solid rgba(45, 48, 46, 0.22);
   box-shadow:
-    0 16px 34px rgba(17, 33, 28, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.5) inset,
-    0 0 0 rgba(16, 185, 129, 0);
+    0 18px 42px rgba(15, 18, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   display: none;
   z-index: 250;
   overflow: hidden;
-  border-radius: 14px !important;
+  border-radius: 12px !important;
 }
 
 .top-menu.open {
@@ -1482,14 +1485,14 @@ body.auto-theme .data-table th {
 .top-menu-item {
   font-size: 12px;
   font-weight: 600;
-  color: #1f3a33;
+  color: #1e2220;
   padding: 11px 14px;
-  border-bottom: 1px solid rgba(89, 112, 102, 0.28);
+  border-bottom: 1px solid rgba(45, 48, 46, 0.1);
   line-height: 1.4;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.35);
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
@@ -1498,38 +1501,30 @@ body.auto-theme .data-table th {
 }
 
 .top-menu-item strong {
-  color: #23443b;
+  color: #252a28;
 }
 
 .top-menu-item:nth-child(1) {
-  background: linear-gradient(90deg, #2e4f47 0%, #3a6158 55%, #4c7a70 100%);
-  color: #f3f7f5;
+  background: linear-gradient(180deg, #3a403d 0%, #2f3431 100%);
+  color: #ecebe9;
   font-weight: 800;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  border-bottom-color: rgba(255, 255, 255, 0.22);
+  text-shadow: none;
+  border-bottom-color: rgba(0, 0, 0, 0.2);
 }
 
 .top-menu-item:nth-child(1) strong {
-  color: #ffffff;
+  color: #f5f4f2;
 }
 
 .top-menu-item:not(:first-child):hover {
-  background: rgba(96, 122, 111, 0.18);
-  transform: translateX(2px);
-}
-
-.top-menu-item:not(:first-child)::before {
-  content: "•";
-  color: #4f766b;
-  font-size: 15px;
-  line-height: 1;
-  font-weight: 800;
+  background: rgba(45, 48, 46, 0.08);
+  transform: none;
 }
 
 .profile-chip {
-  border: 2px solid #6b8f85;
-  background: linear-gradient(135deg, #f3f7f5 0%, #ffffff 55%, #e4ece8 100%);
-  color: #23443b;
+  border: 1px solid rgba(45, 48, 46, 0.2);
+  background: linear-gradient(180deg, #f2f1ef 0%, #e6e5e2 100%);
+  color: #1e2220;
   padding: 4px 8px 4px 4px;
   display: inline-flex;
   align-items: center;
@@ -1540,7 +1535,7 @@ body.auto-theme .data-table th {
 
 .profile-action {
   padding: 5px 12px 5px 5px;
-  box-shadow: 0 8px 20px rgba(30, 54, 47, 0.22);
+  box-shadow: 0 6px 18px rgba(15, 18, 17, 0.12);
 }
 
 .profile-chip-text {
@@ -1554,13 +1549,13 @@ body.auto-theme .data-table th {
 .profile-chip-text strong {
   font-size: 12px;
   font-weight: 800;
-  color: #052e16;
+  color: #1a1f1d;
 }
 
 .profile-chip-text small {
   font-size: 10px;
   font-weight: 700;
-  color: #456e62;
+  color: #5c6360;
   opacity: 1;
 }
 
@@ -1568,22 +1563,13 @@ body.auto-theme .data-table th {
   min-width: 285px;
 }
 
-.profile-menu .top-menu-item:first-child {
-  background: linear-gradient(90deg, #047857 0%, #059669 50%, #14b8a6 100%);
-  color: #ecfdf5;
-  border-bottom-color: rgba(255, 255, 255, 0.25);
-}
-
-.profile-menu .top-menu-item:first-child strong {
-  color: #ffffff;
-}
-
 .profile-badge {
   width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #14b8a6 100%);
-  color: #ffffff;
+  background: linear-gradient(145deg, #4a524f, #353b39);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f2f1ef;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1654,23 +1640,28 @@ body.auto-theme .data-table th {
 }
 
 .top-actions .small-btn {
-  background: linear-gradient(180deg, #f2f6f4 0%, #ffffff 100%) !important;
-  border: 2px solid rgba(76, 107, 96, 0.48) !important;
-  color: #23443b;
+  background: linear-gradient(180deg, #ebeae7 0%, #e0dfdc 100%) !important;
+  border: 1px solid rgba(45, 48, 46, 0.22) !important;
+  color: #1e2220;
   font-weight: 700 !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.top-actions .small-btn:hover {
+  background: linear-gradient(180deg, #e4e3e0 0%, #d8d7d4 100%) !important;
 }
 
 .profile-chip {
-  background: linear-gradient(135deg, #f3f7f5 0%, #ffffff 60%, #e4ece8 100%) !important;
-  border: 2px solid #6b8f85 !important;
+  background: linear-gradient(180deg, #f2f1ef 0%, #e6e5e2 100%) !important;
+  border: 1px solid rgba(45, 48, 46, 0.2) !important;
 }
 
 .top-menu {
   min-width: 270px;
-  border-width: 2px;
+  border-width: 1px;
   box-shadow:
-    0 16px 34px rgba(17, 33, 28, 0.22),
-    0 0 0 rgba(16, 185, 129, 0);
+    0 18px 42px rgba(15, 18, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .top-menu-item {
@@ -1680,10 +1671,11 @@ body.auto-theme .data-table th {
 
 .top-menu-item:not(:first-child)::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #5c7f74, #769a8f);
+  background: #6a706d;
+  opacity: 0.55;
   box-shadow: none;
   display: inline-block;
   flex: 0 0 auto;
@@ -1691,7 +1683,7 @@ body.auto-theme .data-table th {
 
 .top-menu-item:not(:first-child):hover {
   transform: none;
-  background: rgba(96, 122, 111, 0.18);
+  background: rgba(45, 48, 46, 0.07);
 }
 
 /* visible emoji, but designed */
@@ -1940,4 +1932,128 @@ button:focus-visible,
   transform: translate(-50%, -50%);
   background: linear-gradient(180deg, #0284c7, #0369a1);
   clip-path: polygon(0 0, 100% 0, 65% 45%, 65% 100%, 35% 100%, 35% 45%);
+}
+
+/* ----- Profile dropdown (refined; matches stone shell, no loud green header) ----- */
+
+.top-menu.profile-menu {
+  min-width: 260px;
+  padding: 0;
+  border-radius: 12px !important;
+  border: 1px solid rgba(45, 48, 46, 0.22) !important;
+  background: linear-gradient(180deg, #e4e3e0 0%, #d9d8d5 100%) !important;
+  box-shadow:
+    0 20px 48px rgba(15, 18, 17, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  overflow: hidden;
+}
+
+.profile-menu > .profile-menu-header.top-menu-item,
+.profile-menu > .top-menu-item.profile-menu-header {
+  background: linear-gradient(180deg, #3a403d 0%, #2c302e 100%) !important;
+  color: #ecebe9 !important;
+  text-shadow: none !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25) !important;
+  cursor: default;
+  pointer-events: none;
+  padding: 14px 16px !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.profile-menu-header-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-menu-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(236, 235, 233, 0.55);
+}
+
+.profile-menu-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f7f6f4 !important;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.profile-menu > .profile-menu-header .profile-badge {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #5a6360, #3d4441);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  color: #f7f6f4;
+}
+
+.profile-menu .profile-menu-action {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid rgba(45, 48, 46, 0.1);
+  border-radius: 0 !important;
+  background: rgba(255, 255, 255, 0.28);
+  color: #1e2220;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 12px 16px !important;
+  margin: 0;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.profile-menu .profile-menu-action::before {
+  display: none !important;
+  content: none !important;
+}
+
+.profile-menu .profile-menu-action:hover {
+  background: rgba(45, 48, 46, 0.07) !important;
+  transform: none !important;
+}
+
+.profile-menu .profile-menu-action:last-child {
+  border-bottom: none;
+}
+
+.profile-menu .profile-menu-action--danger {
+  color: #9f1239;
+}
+
+.profile-menu .profile-menu-action--danger:hover {
+  background: #fdf2f4 !important;
+}
+
+.profile-chip.profile-action {
+  border: 1px solid rgba(45, 48, 46, 0.2);
+  background: linear-gradient(180deg, #f0efed, #e4e3e0);
+  box-shadow: 0 4px 16px rgba(15, 18, 17, 0.1);
+}
+
+.profile-chip.profile-action:hover {
+  border-color: rgba(45, 48, 46, 0.28);
+  background: linear-gradient(180deg, #e8e7e4, #dedcd8);
+}
+
+.profile-chip-text strong {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5c6360 !important;
 }

@@ -62,14 +62,24 @@
         <button class="small-btn" onclick="goToToday()"><span class="icon-chip icon-calendar" aria-hidden="true"></span>Today</button>
         <button class="add-btn" onclick="openModal('newSessionModal')"><span class="emoji-chip" aria-hidden="true">🗂️</span>New Session</button>
         <div class="menu-wrap">
-          <button class="profile-chip menu-caret" aria-label="Profile menu" onclick="toggleTopMenu(event,'profileMenuCalendar')">
+          <button class="profile-chip profile-action menu-caret" aria-label="Profile menu" onclick="toggleTopMenu(event,'profileMenuCalendar')">
             <span class="profile-badge">A</span>
+            <span class="profile-chip-text">
+              <strong>Account</strong>
+              <small>Current User</small>
+            </span>
           </button>
-          <div class="top-menu" id="profileMenuCalendar">
-            <div class="top-menu-item"><strong>👤 Arya Account</strong></div>
-            <div class="top-menu-item" onclick="goToPage('profile.html')">🪪 Open profile page</div>
-            <div class="top-menu-item">🗓️ Calendar default: Month view</div>
-            <div class="top-menu-item" onclick="logout()">🚪 Sign out</div>
+          <div class="top-menu profile-menu" id="profileMenuCalendar">
+            <div class="top-menu-item profile-menu-header">
+              <span class="profile-badge">A</span>
+              <div class="profile-menu-header-text">
+                <span class="profile-menu-kicker">Signed in</span>
+                <strong class="profile-menu-name">Current User</strong>
+              </div>
+            </div>
+            <button type="button" class="top-menu-item profile-menu-action" onclick="goToPage('profile.html')">Profile settings</button>
+            <button type="button" class="top-menu-item profile-menu-action" onclick="goToPage('workspace-setup.html?settings=1')">Workspace &amp; invite code</button>
+            <button type="button" class="top-menu-item profile-menu-action profile-menu-action--danger" onclick="logout()">Sign out</button>
           </div>
         </div>
       </div>

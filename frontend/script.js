@@ -253,17 +253,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   });
   loadRememberedEmail();
-  document.getElementById("authJoinCodeBtn")?.addEventListener("click", function () {
-    var code = (document.getElementById("authJoinCodeInput")?.value || "").trim();
-    if (!queueJoinCompanyFromLogin(code)) return;
-    var hint = document.getElementById("authJoinCodeHint");
-    if (hint) {
-      hint.textContent = code
-        ? "Code saved. Sign in now and we'll open the company-join screen with this code prefilled."
-        : "We'll open the company-join screen right after sign in.";
-    }
-    setAuthMessage("Invite-code flow enabled. Continue with sign in.", false);
-  });
 
   const params = new URLSearchParams(window.location.search);
   if (params.get("join") === "1" || params.get("invite") === "1") {
