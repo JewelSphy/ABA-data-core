@@ -481,6 +481,65 @@ function applyUserIdentityPills() {
   });
 }
 
+function gilbertoInjectOnlineUsersNav() {
+  const sidebar = document.querySelector(".sidebar");
+  if (
+    !sidebar ||
+    sidebar.querySelector('[data-gilberto-online-users="1"]') ||
+    Array.from(sidebar.querySelectorAll(".nav-item")).some(function (el) {
+      return /online-users\.html/.test(el.getAttribute("onclick") || "");
+    })
+  ) return;
+  const btn = document.createElement("button");
+  btn.className = "nav-item";
+  btn.dataset.gilbertoOnlineUsers = "1";
+  btn.textContent = "Online Users";
+  btn.onclick = function () { goToPage("online-users.html"); };
+  if (gilbertoCurrentPageFile() === "online-users.html") btn.classList.add("active");
+
+  const docsBtn = Array.from(sidebar.querySelectorAll(".nav-item")).find(function (el) {
+    return /documents\.html/.test(el.getAttribute("onclick") || "");
+  });
+  if (docsBtn && docsBtn.parentNode) {
+    docsBtn.parentNode.insertBefore(btn, docsBtn.nextSibling);
+  } else {
+    sidebar.appendChild(btn);
+  }
+}
+
+async function gilbertoWriteWorkspacePresence() {
+  if (!window.supabaseClient || !window.gilbertoCurrentOrg || !window.gilbertoCurrentOrg.id) return;
+  try {
+    const { data } = await window.supabaseClient.auth.getSession();
+    const user = data && data.session && data.session.user ? data.session.user : null;
+    if (!user || !user.id) return;
+    await window.supabaseClient.from("workspace_user_presence").upsert(
+      {
+        org_id: window.gilbertoCurrentOrg.id,
+        user_id: user.id,
+        email: user.email || "",
+        full_name: window.gilbertoCurrentUserName || user.user_metadata?.full_name || user.email || "Current User",
+        current_page: gilbertoCurrentPageFile() || "dashboard.html",
+        last_seen_at: new Date().toISOString(),
+      },
+      { onConflict: "org_id,user_id" }
+    );
+  } catch (_) {
+    /* Presence is best-effort; app data should not depend on it. */
+  }
+}
+
+function gilbertoStartWorkspacePresence() {
+  if (window.__gilbertoPresenceStarted) return;
+  window.__gilbertoPresenceStarted = true;
+  void gilbertoWriteWorkspacePresence();
+  window.__gilbertoPresenceTimer = window.setInterval(gilbertoWriteWorkspacePresence, 45000);
+  window.addEventListener("focus", function () { void gilbertoWriteWorkspacePresence(); });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) void gilbertoWriteWorkspacePresence();
+  });
+}
+
 // Sidebar collapse — injected on every page so we don't have to touch each html file
 document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener("gilberto-profile-updated", function () {
@@ -522,6 +581,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.querySelector(".sidebar");
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
+      gilbertoInjectOnlineUsersNav();
+      gilbertoStartWorkspacePresence();
       gilbertoInjectSwitchCompanyMenuItem();
       gilbertoInjectTopBarWorkspaceNavIfNeeded();
       maybeSetupToast();
@@ -548,6 +609,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     await applyWorkspaceWithOrg();
+    gilbertoInjectOnlineUsersNav();
+    gilbertoStartWorkspacePresence();
     gilbertoInjectSwitchCompanyMenuItem();
     gilbertoInjectTopBarWorkspaceNavIfNeeded();
     maybeSetupToast();
@@ -814,6 +877,9 @@ async function applyWorkspaceWithOrg() {
   }
   if (document.body.classList.contains('page-authorizations') && typeof loadAuthorizationsTable === 'function') {
     void loadAuthorizationsTable();
+  }
+  if (document.body.classList.contains('page-online-users') && typeof loadOnlineUsersPage === 'function') {
+    void loadOnlineUsersPage();
   }
 }
 

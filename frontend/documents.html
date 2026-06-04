@@ -734,7 +734,7 @@ function statusBadge(s) {
 function classifyDoc(d) {
   if (!d) return 'other';
   if (d.provider_id) return 'other';
-  if (d.client_id || d.requirement_key) return 'required';
+  if (d.client_id || d.requirement_key || /^client:/i.test(String(d.linked_name || ''))) return 'required';
   return 'other';
 }
 
@@ -863,21 +863,35 @@ async function loadLinkedOptions() {
   const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : null;
   if (!orgId || !window.supabaseClient) return;
   var seen = new Set();
-  const add = function (kind, name) {
+  const add = function (kind, name, id) {
     var n = String(name || '').trim();
     if (!n) return;
-    var value = kind + ': ' + n;
+    var label = kind + ': ' + n;
+    var value = kind.toLowerCase() === 'client' && id ? 'client:' + id : label;
     var key = value.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    sel.innerHTML += '<option value="' + esc(value) + '">' + esc(value) + '</option>';
+    sel.innerHTML += '<option value="' + esc(value) + '">' + esc(label) + '</option>';
   };
   try {
-    var cq = await window.supabaseClient.from('clients').select('first_name,last_name').eq('org_id', orgId).order('last_name');
-    if (!cq.error) (cq.data || []).forEach(function (x) { add('Client', ((x.first_name||'') + ' ' + (x.last_name||'')).trim()); });
+    var cq = await window.supabaseClient.from('clients').select('id,first_name,last_name').eq('org_id', orgId).order('last_name');
+    if (!cq.error) (cq.data || []).forEach(function (x) { add('Client', ((x.first_name||'') + ' ' + (x.last_name||'')).trim(), x.id); });
     var sq = await window.supabaseClient.from('staff').select('first_name,last_name').eq('org_id', orgId).order('last_name');
     if (!sq.error) (sq.data || []).forEach(function (x) { add('Staff', ((x.first_name||'') + ' ' + (x.last_name||'')).trim()); });
   } catch (_) {}
+}
+
+function selectedDocumentLink() {
+  var sel = document.getElementById('docLinkedInput');
+  if (!sel) return { linked_name: null, client_id: null, provider_id: null };
+  var value = sel.value || '';
+  var opt = sel.options && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+  var label = opt ? (opt.textContent || '').trim() : value;
+  if (!value) return { linked_name: null, client_id: null, provider_id: null };
+  if (value.indexOf('client:') === 0) {
+    return { linked_name: label || 'Client', client_id: value.slice(7), provider_id: null };
+  }
+  return { linked_name: label || value, client_id: null, provider_id: null };
 }
 
 async function loadDocuments() {
@@ -975,7 +989,7 @@ function openEditDoc(id) {
     sel.appendChild(o);
     sel.value = dt;
   }
-  document.getElementById('docLinkedInput').value = d.linked_name || '';
+  document.getElementById('docLinkedInput').value = d.client_id ? ('client:' + d.client_id) : (d.linked_name || '');
   document.getElementById('docUploadDateInput').value = d.upload_date ? String(d.upload_date).slice(0, 10) : '';
   document.getElementById('docExpiryDateInput').value = d.expiry_date ? String(d.expiry_date).slice(0, 10) : '';
   document.getElementById('docContentInput').value = d.content_text || '';
@@ -998,11 +1012,12 @@ async function saveDocument() {
       return;
     }
   }
+  var link = selectedDocumentLink();
   const payload = {
     org_id: orgId,
     doc_name: (document.getElementById('docNameInput').value || '').trim(),
     doc_type: document.getElementById('docTypeInput').value || null,
-    linked_name: document.getElementById('docLinkedInput').value || null,
+    linked_name: link.linked_name,
     upload_date: document.getElementById('docUploadDateInput').value || null,
     expiry_date: document.getElementById('docExpiryDateInput').value || null,
     content_text: (document.getElementById('docContentInput').value || '').trim() || null
@@ -1016,9 +1031,9 @@ async function saveDocument() {
   var hasExistingAtt = !!(prev && (prev.attachment_present === true || prev.attachment_present === 'true'));
   if (prev) {
     payload.id = editId;
-    payload.client_id = prev.client_id || null;
+    payload.client_id = link.client_id || prev.client_id || null;
     payload.requirement_key = prev.requirement_key || null;
-    payload.provider_id = prev.provider_id || null;
+    payload.provider_id = link.provider_id || prev.provider_id || null;
     let next = statusFor(payload.expiry_date);
     if (normStatus(prev.status) === 'missing') {
       const hasText = !!(payload.content_text && payload.content_text.trim().length > 0);
@@ -1028,9 +1043,9 @@ async function saveDocument() {
     }
     payload.status = next;
   } else {
-    payload.client_id = null;
+    payload.client_id = link.client_id;
     payload.requirement_key = null;
-    payload.provider_id = null;
+    payload.provider_id = link.provider_id;
     payload.status = statusFor(payload.expiry_date);
   }
   if (!payload.doc_name) { showToast('Document name is required'); return; }

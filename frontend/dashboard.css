@@ -2373,3 +2373,296 @@ button,
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
+/* =====================================================
+   phone layout polish
+   ===================================================== */
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    background: #f3f5f3;
+  }
+
+  .app-layout {
+    display: block !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 10px 9px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(13, 26, 22, 0.18);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-collapse-btn {
+    display: none !important;
+  }
+
+  body.sidebar-collapsed .sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px !important;
+  }
+
+  .sidebar-header {
+    flex: 0 0 auto;
+    margin: 0 8px 0 0 !important;
+    padding: 0 !important;
+  }
+
+  .sidebar-header h2,
+  .sidebar-header p,
+  .section-title,
+  body.sidebar-collapsed .section-title {
+    display: none !important;
+  }
+
+  .logo-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+  }
+
+  .nav-item,
+  body.sidebar-collapsed .nav-item,
+  .logout,
+  body.sidebar-collapsed .logout {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 8px 11px !important;
+    border-left: none !important;
+    border-bottom: 3px solid transparent !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-item.active {
+    border-bottom-color: rgba(255, 255, 255, 0.7) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+  }
+
+  .nav-item span {
+    display: none !important;
+  }
+
+  .logout {
+    padding-right: 14px !important;
+    border-top: none !important;
+    color: #f3d5d5 !important;
+  }
+
+  .main-area {
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 54px) !important;
+    padding: 14px 10px 28px !important;
+    overflow: visible !important;
+  }
+
+  .topbar,
+  .page-documents .topbar,
+  .page-clients .topbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 14px !important;
+    margin-bottom: 14px !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .topbar > div:first-child {
+    padding-left: 12px !important;
+  }
+
+  .topbar h1 {
+    font-size: 24px !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1.05 !important;
+  }
+
+  .topbar p {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .top-actions {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .top-actions .add-btn,
+  .top-actions .small-btn,
+  .top-actions .icon-btn,
+  .top-actions .user-pill,
+  .profile-chip {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .cards,
+  .urgency-grid,
+  .info-grid,
+  .form-row,
+  .control-grid,
+  .selection-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .cards {
+    gap: 10px !important;
+  }
+
+  .card,
+  .section-box,
+  .panel,
+  .calendar-panel,
+  .control-panel,
+  .table-wrapper {
+    border-radius: 14px !important;
+  }
+
+  .card,
+  .cards .card {
+    padding: 16px !important;
+  }
+
+  .table-wrapper,
+  .doc-table-panel {
+    width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 720px;
+    font-size: 12.5px !important;
+  }
+
+  .data-table th {
+    padding: 9px 10px !important;
+    font-size: 10px !important;
+  }
+
+  .data-table td {
+    padding: 9px 10px !important;
+  }
+
+  .table-toolbar,
+  .doc-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .doc-toolbar-groups,
+  .doc-chip-row,
+  .doc-row-actions {
+    gap: 7px !important;
+  }
+
+  .doc-filter-chip,
+  .doc-action-btn,
+  .tbl-btn {
+    min-height: 34px;
+    padding: 7px 10px !important;
+  }
+
+  .search-input,
+  .doc-toolbar-search {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .modal-overlay.open {
+    align-items: flex-end !important;
+  }
+
+  .modal-box,
+  .modal-box.wide {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 18px 18px 0 0 !important;
+  }
+
+  .modal-header {
+    border-radius: 18px 18px 0 0 !important;
+    padding: 15px 16px !important;
+  }
+
+  .modal-body {
+    padding: 16px !important;
+  }
+
+  .modal-footer {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important;
+    flex-wrap: wrap;
+  }
+
+  .modal-footer .small-btn,
+  .modal-footer .add-btn,
+  .modal-footer .tbl-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px !important; /* prevents iPhone zoom on focus */
+    min-height: 42px;
+  }
+
+  .calendar-grid {
+    display: block !important;
+  }
+
+  .day-name {
+    display: none !important;
+  }
+
+  .day-box {
+    min-height: 86px !important;
+    border-right: none !important;
+  }
+}
+

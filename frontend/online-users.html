@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Users - Gilberto CRM</title>
+  <link rel="stylesheet" href="dashboard.css"/>
+  <style>
+    .presence-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .presence-card {
+      background: #fff;
+      border: 1px solid #d8e6df;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(22, 61, 48, 0.06);
+    }
+    .presence-card span {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #6b8c7a;
+      margin-bottom: 6px;
+    }
+    .presence-card strong {
+      font-size: 26px;
+      color: #1f2d26;
+    }
+    .presence-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .presence-status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+    .presence-status.online {
+      background: #e8f5ee;
+      color: #16804f;
+    }
+    .presence-status.recent {
+      background: #fff7e6;
+      color: #9a5c00;
+    }
+    .presence-muted {
+      color: #6b8c7a;
+      font-size: 12px;
+    }
+    @media (max-width: 760px) {
+      .presence-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="page-online-users ui-colorful">
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-icon">G</div>
+      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
+    </div>
+    <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
+    <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
+    <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
+    <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <p class="section-title">People</p>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
+    <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers</button>
+    <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
+    <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
+    <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
+    <button class="nav-item active" onclick="goToPage('online-users.html')">Online Users</button>
+    <p class="section-title">Behavior Plans</p>
+    <button class="nav-item" onclick="goToPage('skills.html')">Skills</button>
+    <button class="nav-item" onclick="goToPage('behaviors.html')">Behaviors</button>
+    <button class="nav-item" onclick="goToPage('replacement-behaviors.html')">Replacement Behaviors</button>
+    <button class="nav-item" onclick="goToPage('interventions.html')">Interventions</button>
+    <button class="nav-item" onclick="goToPage('objectives.html')">Objectives</button>
+    <button class="nav-item" onclick="goToPage('definitions.html')">Definitions</button>
+    <button class="nav-item" onclick="goToPage('barriers.html')">Barriers</button>
+    <button class="nav-item" onclick="goToPage('procedures.html')">Procedures</button>
+    <p class="section-title">Reports</p>
+    <button class="nav-item" onclick="goToPage('assessments.html')">Assessments</button>
+    <button class="nav-item" onclick="goToPage('monthly-reports.html')">Monthly Reports</button>
+    <button class="nav-item" onclick="goToPage('custom-reports.html')">Custom Reports</button>
+    <button class="nav-item" onclick="goToPage('service-reports.html')">Service Reports</button>
+    <button class="nav-item" onclick="goToPage('supervision-logs.html')">Supervision Logs</button>
+    <p class="section-title">Data</p>
+    <button class="nav-item" onclick="goToPage('library.html')">Library</button>
+    <button class="nav-item" onclick="goToPage('graph-hub.html')">Graph Hub</button>
+    <button class="nav-item" onclick="goToPage('data-collection-hub.html')">Data Collection Hub</button>
+    <button class="nav-item" onclick="goToPage('stos-ltos.html')">STOs / LTOs</button>
+    <button class="nav-item" onclick="goToPage('behavioral-analytics.html')">Behavioral Analytics</button>
+    <button class="nav-item logout" onclick="logout()">Log Out</button>
+  </aside>
+
+  <main class="main-area">
+    <header class="topbar">
+      <div>
+        <h1>Online Users</h1>
+        <p>People currently active in this workspace.</p>
+      </div>
+      <div class="top-actions">
+        <button class="small-btn" type="button" onclick="loadOnlineUsersPage()">Refresh</button>
+        <div class="user-pill">—</div>
+      </div>
+    </header>
+
+    <section class="presence-summary">
+      <div class="presence-card"><span>Online now</span><strong id="presenceOnlineCount">—</strong></div>
+      <div class="presence-card"><span>Recently active</span><strong id="presenceRecentCount">—</strong></div>
+      <div class="presence-card"><span>Workspace</span><strong id="presenceWorkspaceName" style="font-size:18px;">—</strong></div>
+    </section>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <h3>Workspace activity</h3>
+        <div class="table-search">
+          <input class="search-input" id="presenceSearch" type="search" placeholder="Search email or name..." oninput="renderOnlineUsersTable()"/>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Current Page</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody id="presenceBody">
+          <tr><td colspan="5" style="text-align:center;padding:32px;color:#9eb3a8;">Loading online users...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabaseConfig.js?v=20260608"></script>
+<script src="supabaseClient.js?v=20260608"></script>
+<script src="dashboard.js?v=20260608"></script>
+<script>
+var _presenceRows = [];
+
+function escPresence(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function pageLabel(page) {
+  var p = String(page || '').replace('.html', '').replace(/-/g, ' ');
+  return p ? p.replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : 'Gilberto CRM';
+}
+
+function minutesSince(iso) {
+  var t = new Date(iso || 0).getTime();
+  if (!t) return 9999;
+  return Math.max(0, Math.round((Date.now() - t) / 60000));
+}
+
+function statusForPresence(row) {
+  var mins = minutesSince(row.last_seen_at);
+  if (mins <= 2) return { cls: 'online', label: 'Online' };
+  return { cls: 'recent', label: 'Recently active' };
+}
+
+function lastSeenLabel(iso) {
+  var mins = minutesSince(iso);
+  if (mins <= 0) return 'Just now';
+  if (mins === 1) return '1 minute ago';
+  return mins + ' minutes ago';
+}
+
+function renderOnlineUsersTable() {
+  var body = document.getElementById('presenceBody');
+  var q = (document.getElementById('presenceSearch')?.value || '').toLowerCase().trim();
+  var rows = q
+    ? _presenceRows.filter(function (r) {
+        return String((r.full_name || '') + ' ' + (r.email || '')).toLowerCase().includes(q);
+      })
+    : _presenceRows;
+
+  var online = _presenceRows.filter(function (r) { return minutesSince(r.last_seen_at) <= 2; }).length;
+  var recent = _presenceRows.length - online;
+  document.getElementById('presenceOnlineCount').textContent = online;
+  document.getElementById('presenceRecentCount').textContent = recent;
+  document.getElementById('presenceWorkspaceName').textContent =
+    (window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.name) || 'Current workspace';
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#9eb3a8;">No active users found for this workspace.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(function (r) {
+    var st = statusForPresence(r);
+    return '<tr>'
+      + '<td><span class="presence-status ' + st.cls + '">' + st.label + '</span></td>'
+      + '<td>' + escPresence(r.full_name || 'User') + '</td>'
+      + '<td>' + escPresence(r.email || '—') + '</td>'
+      + '<td>' + escPresence(pageLabel(r.current_page)) + '</td>'
+      + '<td><span class="presence-muted">' + escPresence(lastSeenLabel(r.last_seen_at)) + '</span></td>'
+      + '</tr>';
+  }).join('');
+}
+
+async function loadOnlineUsersPage() {
+  var body = document.getElementById('presenceBody');
+  if (typeof gilbertoWriteWorkspacePresence === 'function') await gilbertoWriteWorkspacePresence();
+  if (typeof loadGilbertoOrganization === 'function') {
+    try { await loadGilbertoOrganization(); } catch (_) {}
+  }
+  var org = window.gilbertoCurrentOrg;
+  if (!org || !org.id) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#9eb3a8;">Workspace not loaded. Please sign in again.</td></tr>';
+    return;
+  }
+  try {
+    var since = new Date(Date.now() - 10 * 60000).toISOString();
+    var q = await window.supabaseClient
+      .from('workspace_user_presence')
+      .select('email,full_name,current_page,last_seen_at')
+      .eq('org_id', org.id)
+      .gte('last_seen_at', since)
+      .order('last_seen_at', { ascending: false });
+    if (q.error) throw q.error;
+    _presenceRows = q.data || [];
+    renderOnlineUsersTable();
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#c0392b;">Could not load online users. Please sign out and sign back in.</td></tr>';
+  }
+}
+
+window.loadOnlineUsersPage = loadOnlineUsersPage;
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(loadOnlineUsersPage, 250);
+  setInterval(loadOnlineUsersPage, 60000);
+});
+</script>
+</body>
+</html>
