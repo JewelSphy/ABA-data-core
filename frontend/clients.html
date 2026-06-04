@@ -560,7 +560,7 @@ function gilbertoFormatDbError (err) {
   var parts = [err.message || String(err)];
   if (err.code) parts.push('(' + err.code + ')');
   if (/row-level security|permission denied|42501/i.test(parts.join(' '))) {
-    parts.push('Run security/supabase-clients-staff-fix.sql and supabase-clients-rls-onboarding.sql in Supabase.');
+    parts.push('Please contact your administrator to restore access.');
   }
   return parts.join(' ');
 }
@@ -687,7 +687,7 @@ async function runClientsAccessDiagnostic (org) {
     parts.push('Org: ' + org.id.slice(0, 8) + '…');
     var mem = await window.supabaseClient.from('organization_members').select('role')
       .eq('organization_id', org.id).eq('user_id', uid).maybeSingle();
-    parts.push(mem.data ? 'Member: yes (' + (mem.data.role || 'member') + ')' : 'Member: <strong>no</strong> — run supabase-ensure-org-membership.sql');
+    parts.push(mem.data ? 'Access: confirmed.' : '<strong>Access issue</strong> — please contact your administrator.');
     var ob = await window.supabaseClient.from('user_onboarding').select('organization_id')
       .eq('user_id', uid).maybeSingle();
     if (ob.error) parts.push('Onboarding row: error (' + ob.error.message + ')');
@@ -711,9 +711,9 @@ async function updateClientsPageStatus () {
     try { org = await ensureGilbertoOrgReady (); } catch (_) {}
   }
   var lines = [];
-  lines.push ('<strong>Build ' + CLIENTS_PAGE_BUILD + '</strong> — saves go to Supabase (not Render/Java).');
+  lines.push ('Connected and ready.');
   if (!window.supabaseClient) {
-    lines.push ('<span style="color:#a64040;">Supabase not connected. Check supabaseConfig.js.</span>');
+    lines.push ('<span style="color:#a64040;">Not connected. Please sign out and sign back in.</span>');
   } else if (typeof supabaseInsertClientRow !== 'function') {
     lines.push ('<span style="color:#a64040;">Old cached page — close tab, reopen clients.html, or use Incognito.</span>');
   } else {
@@ -828,7 +828,7 @@ function _formatSupabaseErr (err) {
   if (err.code) parts.push ('(' + err.code + ')');
   if (err.hint) parts.push (err.hint);
   if (/jwt|api key|invalid/i.test (parts.join (' '))) {
-    parts.push ('Update SUPABASE_URL and SUPABASE_ANON_KEY in supabaseConfig.js from your Supabase project Settings → API.');
+    parts.push ('Authentication failed. Please sign out and sign back in.');
   }
   return parts.join (' ');
 }
@@ -888,7 +888,7 @@ async function loadClientsTable () {
   var org = await ensureClientOrgReady ();
   if (!org || !org.id) {
     var msg = !window.supabaseClient
-      ? 'Supabase is not configured. Check <strong>frontend/supabaseConfig.js</strong> (URL + anon key).'
+      ? 'Not connected. Please sign in.'
       : 'Workspace not loaded. <a href="company-picker.html" style="color:#4d635a;font-weight:600;">Pick a company</a> or finish onboarding, then refresh.';
     document.getElementById ('clientBody').innerHTML =
       '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">' + msg + '</td></tr>';
@@ -1175,7 +1175,7 @@ async function createClient () {
   } catch (err) {
     var msg = typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (err) : (err && err.message ? err.message : 'unknown error');
     if (/abort/i.test (msg)) {
-      msg = 'Still using old cached code. Close tab, reopen Clients, or use Incognito. (Java API is disabled.)';
+      msg = 'Cached page detected. Please close this tab, then reopen it, or try an Incognito/Private window.';
     }
     window._clientsLastSaveError = msg;
     void updateClientsPageStatus ();

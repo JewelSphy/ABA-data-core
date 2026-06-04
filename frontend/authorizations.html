@@ -324,7 +324,7 @@ async function loadAuthorizationsTable() {
       .order('end_date', { ascending: true });
     if (q.error) {
       if (/insurance_authorizations|relation|schema/i.test(q.error.message || '')) {
-        throw new Error('Run security/supabase-authorizations.sql in your Supabase SQL Editor first.');
+        throw new Error('Authorizations are not set up yet. Please contact your administrator.');
       }
       throw q.error;
     }
