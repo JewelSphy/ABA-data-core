@@ -202,11 +202,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabaseConfig.js"></script>
-<script src="supabaseClient.js"></script>
-<script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js"></script>
+<script src="supabaseConfig.js?v=20260606"></script>
+<script src="supabaseClient.js?v=20260606"></script>
+<script src="jvmSupabaseBridge.js?v=20260606"></script>
+<script src="dashboard.js?v=20260606"></script>
 <script>
+window.JAVA_SUPABASE_BRIDGE = '';
+window.GILBERTO_FORCE_SUPABASE_ONLY = true;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var _staffData      = [];
@@ -230,18 +232,30 @@ function esc (s) {
   return String (s).replace (/&/g, '&amp;').replace (/</g, '&lt;').replace (/>/g, '&gt;').replace (/"/g, '&quot;');
 }
 
+async function ensureStaffOrg () {
+  if (typeof ensureGilbertoOrgReady === 'function') return ensureGilbertoOrgReady ();
+  return window.gilbertoCurrentOrg || null;
+}
+
 // ── Load + render ─────────────────────────────────────────────────────────────
 async function loadStaffTable () {
-  var org = window.gilbertoCurrentOrg;
+  if (typeof gilbertoEnsureSupabaseDataMode === 'function') await gilbertoEnsureSupabaseDataMode ();
+  var org = await ensureStaffOrg ();
   if (!org || !org.id) {
     document.getElementById ('staffBody').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:32px;color:#9eb3a8;">No staff yet. Click <strong>+ Add Staff</strong> to get started.</td></tr>';
+      '<tr><td colspan="6" style="text-align:center;padding:32px;color:#9eb3a8;">Workspace not loaded. <a href="company-picker.html">Pick a company</a>, then add staff here.</td></tr>';
+    return;
+  }
+  if (!window.supabaseClient) {
+    document.getElementById ('staffBody').innerHTML =
+      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#c0392b;">Supabase not configured.</td></tr>';
     return;
   }
 
   try {
     var rows;
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+    var bridgeMode = typeof gilbertoUseJavaBridge === 'function' && gilbertoUseJavaBridge ();
+    if (bridgeMode) {
       var res = await jvmFetchStaff (org.id);
       if (!res.ok) throw new Error (typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse (res) : ('HTTP ' + res.status));
       rows = await res.json ();
@@ -258,8 +272,9 @@ async function loadStaffTable () {
     renderStaffTable (rows);
   } catch (e) {
     console.warn ('loadStaffTable error:', e);
+    var msg = typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (e) : (e.message || String (e));
     document.getElementById ('staffBody').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#c0392b;">Failed to load staff: ' + esc (e.message) + '</td></tr>';
+      '<tr><td colspan="6" style="text-align:center;padding:24px;color:#c0392b;">Failed to load staff: ' + esc (msg) + '</td></tr>';
   }
 }
 
@@ -308,8 +323,20 @@ function openAddStaff () {
 }
 
 async function createStaff () {
-  var org = window.gilbertoCurrentOrg;
-  if (!org || !org.id) { staffToast ('Organization not loaded.'); return; }
+  window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+  if (!window.supabaseClient) { staffToast ('Supabase not connected.'); return; }
+  var sess = await window.supabaseClient.auth.getSession ();
+  if (!sess.data || !sess.data.session) {
+    staffToast ('Please sign in again');
+    window.location.href = 'index.html';
+    return;
+  }
+  var org = await ensureStaffOrg ();
+  if (!org || !org.id) {
+    staffToast ('No company workspace — finish setup first');
+    window.location.href = 'workspace-setup.html?stay=1';
+    return;
+  }
 
   var row = buildStaffInsertRow ({
     first_name: (document.getElementById ('addStaffFirstName').value || '').trim (),
@@ -326,18 +353,19 @@ async function createStaff () {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
   try {
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+    var bridgeMode = typeof gilbertoUseJavaBridge === 'function' && gilbertoUseJavaBridge ();
+    if (bridgeMode) {
       var res = await staffJvmCreate (row);
       if (!res.ok) { staffToast ('Save failed: ' + await readJvmErrorResponse (res)); return; }
     } else {
       var r = await window.supabaseClient.from ('staff').insert (row);
-      if (r.error) { staffToast ('Save failed: ' + r.error.message); return; }
+      if (r.error) throw r.error;
     }
     closeModal ('addStaffModal');
     staffToast ('Staff member added');
     await loadStaffTable ();
   } catch (err) {
-    staffToast ('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
+    staffToast ('Save failed: ' + (typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (err) : (err && err.message ? err.message : 'unknown error')));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Staff'; }
   }
@@ -363,6 +391,8 @@ function openEditStaff (staffId) {
 
 async function updateStaff () {
   if (!_editingStaffId) return;
+  if (typeof gilbertoEnsureSupabaseDataMode === 'function') await gilbertoEnsureSupabaseDataMode ();
+  if (!window.supabaseClient) { staffToast ('Supabase not connected.'); return; }
 
   var patch = {
     first_name: (document.getElementById ('editStaffFirstName').value || '').trim (),
@@ -379,18 +409,19 @@ async function updateStaff () {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
   try {
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
+    var bridgeMode = typeof gilbertoUseJavaBridge === 'function' && gilbertoUseJavaBridge ();
+    if (bridgeMode) {
       var res = await staffJvmPatch (_editingStaffId, patch);
       if (!res.ok) { staffToast ('Update failed: ' + await readJvmErrorResponse (res)); return; }
     } else {
       var r = await window.supabaseClient.from ('staff').update (patch).eq ('id', _editingStaffId);
-      if (r.error) { staffToast ('Update failed: ' + r.error.message); return; }
+      if (r.error) throw r.error;
     }
     closeModal ('editStaffModal');
     staffToast ('Staff member updated');
     await loadStaffTable ();
   } catch (err) {
-    staffToast ('Update failed: ' + (err && err.message ? err.message : 'unknown error'));
+    staffToast ('Update failed: ' + (typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (err) : (err && err.message ? err.message : 'unknown error')));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
   }

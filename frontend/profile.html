@@ -38,7 +38,7 @@
       <div class="top-actions">
         <div class="user-pill" id="topbarUserPill">—</div>
         <button class="small-btn" onclick="goToPage('dashboard.html')">Back to Dashboard</button>
-        <button class="add-btn" onclick="saveProfile()">Save Changes</button>
+        <button class="add-btn" id="profileSaveBtn" onclick="saveProfile()">Save Changes</button>
       </div>
     </header>
 
@@ -124,9 +124,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabaseConfig.js"></script>
+<script src="supabaseConfig.js?v=20260604"></script>
 <script src="supabaseClient.js"></script>
-<script src="jvmSupabaseBridge.js"></script>
+<script src="jvmSupabaseBridge.js?v=20260604"></script>
 <script src="dashboard.js"></script>
 <script>
 function profileToast(msg, bad) {
@@ -166,30 +166,40 @@ function applyProfileToForm(p) {
 }
 
 async function loadProfile() {
+  if (typeof gilbertoEnsureSupabaseDataMode === 'function') await gilbertoEnsureSupabaseDataMode();
   await (window.resolveCurrentUserIdentity ? window.resolveCurrentUserIdentity() : Promise.resolve());
   await (window.loadGilbertoOrganization ? window.loadGilbertoOrganization() : Promise.resolve());
+
+  const uid = window.gilbertoCurrentUserId || '';
+  const meta = (await window.supabaseClient?.auth.getUser())?.data?.user?.user_metadata || {};
   const localFallback = {
     full_name: localStorage.getItem('gilberto_profile_name') || window.gilbertoCurrentUserName || '',
     email: localStorage.getItem('gilberto_profile_email') || window.gilbertoCurrentUserEmail || '',
-    role_title: localStorage.getItem('gilberto_profile_role') || '',
-    phone: localStorage.getItem('gilberto_profile_phone') || '',
-    bio: localStorage.getItem('gilberto_profile_bio') || ''
+    role_title: localStorage.getItem('gilberto_profile_role') || meta.role_title || '',
+    phone: localStorage.getItem('gilberto_profile_phone') || meta.phone || '',
+    bio: localStorage.getItem('gilberto_profile_bio') || meta.bio || ''
   };
   applyProfileToForm(localFallback);
 
-  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) return;
-  const orgId = window.gilbertoCurrentOrg?.id || null;
-  const userKey = currentProfileUserKey();
-  if (!orgId || !userKey) return;
+  if (!window.supabaseClient || !uid) return;
   try {
-    const res = await profileJvmFetch(orgId, userKey);
-    if (!res.ok) return;
-    const rows = await res.json();
-    if (Array.isArray(rows) && rows.length) applyProfileToForm(rows[0] || {});
+    const cloud = await gilbertoLoadAuthProfile(window.supabaseClient, uid);
+    if (cloud) {
+      applyProfileToForm({
+        full_name: cloud.full_name || localFallback.full_name,
+        email: cloud.email || localFallback.email,
+        role_title: meta.role_title || localFallback.role_title,
+        phone: meta.phone || localFallback.phone,
+        bio: meta.bio || localFallback.bio
+      });
+    }
   } catch (_) {}
 }
 
 async function saveProfile() {
+  const btn = document.getElementById('profileSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
   const fullName = (document.getElementById('profileFullName').value || '').trim();
   const roleTitle = (document.getElementById('profileRoleTitle').value || '').trim();
   const email = (document.getElementById('profileEmail').value || '').trim();
@@ -197,41 +207,46 @@ async function saveProfile() {
   const bio = (document.getElementById('profileBio').value || '').trim();
   const avatarInitial = profileInitialFromName(fullName);
 
-  localStorage.setItem('gilberto_profile_name', fullName);
-  localStorage.setItem('gilberto_profile_email', email);
-  localStorage.setItem('gilberto_profile_role', roleTitle);
-  localStorage.setItem('gilberto_profile_phone', phone);
-  localStorage.setItem('gilberto_profile_bio', bio);
-  window.gilbertoCurrentUserName = fullName || window.gilbertoCurrentUserName || 'Current User';
-  window.gilbertoCurrentUserInitial = avatarInitial;
-  window.dispatchEvent(new Event('gilberto-profile-updated'));
-  syncAvatarPreview();
-
-  if (!(typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled())) {
-    profileToast('Profile saved locally');
-    return;
-  }
-  const orgId = window.gilbertoCurrentOrg?.id || null;
-  const userKey = currentProfileUserKey();
-  if (!orgId || !userKey) {
-    profileToast('Profile saved locally (no org context yet)');
-    return;
-  }
   try {
-    const res = await profileJvmUpsert({
-      org_id: orgId,
-      user_key: userKey,
+    if (typeof gilbertoEnsureSupabaseDataMode === 'function') await gilbertoEnsureSupabaseDataMode();
+
+    localStorage.setItem('gilberto_profile_name', fullName);
+    localStorage.setItem('gilberto_profile_email', email);
+    localStorage.setItem('gilberto_profile_role', roleTitle);
+    localStorage.setItem('gilberto_profile_phone', phone);
+    localStorage.setItem('gilberto_profile_bio', bio);
+
+    const uid = window.gilbertoCurrentUserId || '';
+    if (!window.supabaseClient || !uid) {
+      window.gilbertoCurrentUserName = fullName || 'Current User';
+      window.gilbertoCurrentUserInitial = avatarInitial;
+      window.dispatchEvent(new Event('gilberto-profile-updated'));
+      syncAvatarPreview();
+      profileToast('Saved on this device (sign in to sync to cloud)');
+      return;
+    }
+
+    await gilbertoSaveAuthProfile(window.supabaseClient, uid, {
       full_name: fullName,
+      email: email || window.gilbertoCurrentUserEmail,
       role_title: roleTitle,
-      email: email,
       phone: phone,
-      bio: bio,
-      avatar_initial: avatarInitial
+      bio: bio
     });
-    if (!res.ok) throw new Error('save failed');
-    profileToast('Profile saved to backend');
-  } catch (_) {
-    profileToast('Saved locally, backend save failed', true);
+
+    window.gilbertoCurrentUserName = fullName || window.gilbertoCurrentUserEmail || 'Current User';
+    window.gilbertoCurrentUserEmail = email || window.gilbertoCurrentUserEmail;
+    window.gilbertoCurrentUserInitial = avatarInitial;
+    window.dispatchEvent(new Event('gilberto-profile-updated'));
+    syncAvatarPreview();
+    profileToast('Profile saved');
+  } catch (err) {
+    profileToast(
+      'Save failed: ' + (typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError(err) : (err?.message || 'unknown')),
+      true
+    );
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
   }
 }
 

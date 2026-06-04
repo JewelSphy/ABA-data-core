@@ -12,11 +12,19 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
   http://127.0.0.1:5500/index.html  and  http://localhost:5500/index.html
   (or add a wildcard for local ports if your dashboard allows it)
 */
-window.AUTH_REDIRECT_URL = "http://127.0.0.1:5503/index.html";
+// Match the port you use to open the app (Live Server, etc.)
+window.AUTH_REDIRECT_URL = (function () {
+  if (typeof location === "undefined" || !location.origin || location.origin === "null") {
+    return "http://127.0.0.1:5503/index.html";
+  }
+  var dir = location.pathname.replace(/[^/]*$/, "");
+  return location.origin + dir + "index.html";
+})();
 
 /*
-  Java backend bridge — Calendar.java runs on this port.
-  Set to empty string "" to disable and fall back to direct Supabase JS client.
+  Java/MySQL API bridge. Leave "" to use Supabase directly (no Render, no local Java).
+  When you run ./backend/run-backend.sh, set: window.JAVA_SUPABASE_BRIDGE = "http://127.0.0.1:8788";
 */
-window.JAVA_SUPABASE_BRIDGE = "https://aba-data-core.onrender.com";
-window.JAVA_API_KEY = "gilberto-demo-key-2026-very-long";
+window.JAVA_SUPABASE_BRIDGE = "";
+window.JAVA_API_KEY = "";
+window.GILBERTO_FORCE_SUPABASE_ONLY = true;

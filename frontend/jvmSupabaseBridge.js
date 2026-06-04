@@ -1,13 +1,44 @@
 // =============================================================================
 // jvmSupabaseBridge.js
-// Browser → Java bridge (Calendar.java on :8788) → Supabase PostgREST
-// ALL Supabase operations route through here when the bridge is running.
+// Browser → Java bridge (optional) → Supabase / MySQL
 // Load AFTER supabaseClient.js.
 // =============================================================================
+
+// Strip deactivated Render URLs (cached supabaseConfig.js may still point here).
+(function gilbertoSanitizeBridgeConfig () {
+  var b = String (window.JAVA_SUPABASE_BRIDGE || "").trim ();
+  if (/onrender\.com/i.test (b)) {
+    console.warn ("[gilberto] Render bridge removed — using Supabase.");
+    window.JAVA_SUPABASE_BRIDGE = "";
+  }
+}) ();
+
+/** If JAVA_SUPABASE_BRIDGE is set but /health fails, fall back to Supabase for this page load. */
+async function gilbertoNormalizeJavaBridge () {
+  window.JAVA_SUPABASE_BRIDGE = "";
+  if (window.GILBERTO_FORCE_SUPABASE_ONLY) return;
+  var b = String (window.JAVA_SUPABASE_BRIDGE || "").trim ();
+  if (!b) return;
+  try {
+    var base = b.replace (/\/$/, "");
+    var ctrl = typeof AbortController !== "undefined" ? new AbortController () : null;
+    var timer = ctrl ? setTimeout (function () { ctrl.abort (); }, 2500) : null;
+    var req = { method: "GET", mode: "cors", credentials: "omit" };
+    if (ctrl) req.signal = ctrl.signal;
+    var res = await fetch (base + "/health", req);
+    if (timer) clearTimeout (timer);
+    if (!res.ok) throw new Error ("health " + res.status);
+  } catch (e) {
+    console.warn ("[gilberto] Java bridge unreachable, using Supabase:", b, e);
+    window.JAVA_SUPABASE_BRIDGE = "";
+  }
+}
+window.gilbertoNormalizeJavaBridge = gilbertoNormalizeJavaBridge;
 
 // ── Bridge availability ───────────────────────────────────────────────────────
 
 function jvmSupabaseRelayEnabled () {
+  if (window.GILBERTO_FORCE_SUPABASE_ONLY) return false;
   return (
     typeof window.JAVA_SUPABASE_BRIDGE === "string" &&
     window.JAVA_SUPABASE_BRIDGE.trim ().length > 0
@@ -33,8 +64,14 @@ async function jvmHeaders () {
 // ── Core fetch ────────────────────────────────────────────────────────────────
 
 async function jvmFetch (relPath, init0) {
+  if (window.GILBERTO_FORCE_SUPABASE_ONLY) {
+    throw new Error ("Java API is off — data saves use Supabase only. Hard-refresh (Cmd+Shift+R).");
+  }
   init0 = init0 || {};
-  var base = window.JAVA_SUPABASE_BRIDGE.replace (/\/$/, "");
+  var base = String (window.JAVA_SUPABASE_BRIDGE || "").replace (/\/$/, "");
+  if (!base) {
+    throw new Error ("Java API URL not configured. Use Supabase (see supabaseConfig.js).");
+  }
   var method = (init0.method || "GET").toUpperCase();
   var timeoutMs = Number(window.JAVA_API_TIMEOUT_MS || 15000);
 
@@ -74,10 +111,17 @@ async function jvmFetch (relPath, init0) {
       }
       return res;
     } catch (e) {
-      var isAbort = !!(e && (e.name === "AbortError"));
+      var msg = e && e.message ? String (e.message) : "";
+      var isAbort = !!(e && (e.name === "AbortError" || /abort/i.test (msg)));
       if (attempt === 0 && method === "GET" && isAbort) {
         await sleep (700);
         continue;
+      }
+      if (isAbort) {
+        throw new Error (
+          "Backend request timed out after " + timeoutMs + "ms. Start the Java API (./backend/run-backend.sh) at " + base
+          + ", or set window.JAVA_SUPABASE_BRIDGE = \"\" in supabaseConfig.js to use Supabase only."
+        );
       }
       throw e;
     }
@@ -469,3 +513,210 @@ async function readJvmErrorResponse (pr) {
     return pr.status + " " + pr.statusText;
   }
 }
+
+// ── Supabase-only data helpers (saves never wait on Render/Java) ──────────────
+(function gilbertoSupabaseDataHelpers () {
+  if (window.GILBERTO_FORCE_SUPABASE_ONLY == null) {
+    window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+  }
+
+  function emptyFk (v) {
+    return v === "" || v === undefined ? null : v;
+  }
+
+  window.gilbertoEnsureSupabaseDataMode = async function () {
+    window.JAVA_SUPABASE_BRIDGE = "";
+    window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+    /* Never probe Java /health — that caused "signal is aborted" errors. */
+  };
+
+  window.gilbertoUseJavaBridge = function () {
+    if (window.GILBERTO_FORCE_SUPABASE_ONLY) return false;
+    return jvmSupabaseRelayEnabled ();
+  };
+
+  window.clientPayloadForSupabase = function (payload) {
+    var row = {};
+    var keys = [
+      "org_id", "first_name", "last_name", "date_of_birth", "diagnosis",
+      "assigned_rbt_id", "assigned_bcba_id", "insurance_provider",
+      "email", "phone", "auth_status", "notes", "status"
+    ];
+    keys.forEach (function (k) {
+      if (payload[k] !== undefined) row[k] = payload[k];
+    });
+    row.assigned_rbt_id = emptyFk (row.assigned_rbt_id);
+    row.assigned_bcba_id = emptyFk (row.assigned_bcba_id);
+    if (row.date_of_birth) row.dob = row.date_of_birth;
+    return row;
+  };
+
+  function isSchemaColumnErr (err) {
+    var m = String ((err && err.message) || "");
+    return /column|schema|date_of_birth|Could not find/i.test (m);
+  }
+
+  window.gilbertoSupabaseInsertClient = async function (supabase, row) {
+    var base = clientPayloadForSupabase (row);
+    var tries = [base];
+    var slim = Object.assign ({}, base);
+    delete slim.date_of_birth;
+    if (slim.dob) tries.push (slim);
+    tries.push ({
+      org_id: base.org_id,
+      first_name: base.first_name,
+      last_name: base.last_name,
+      status: base.status || "active",
+    });
+
+    var lastErr = null;
+    for (var i = 0; i < tries.length; i++) {
+      var res = await supabase.from ("clients").insert (tries[i]).select ("id").single ();
+      if (!res.error) return res;
+      lastErr = res.error;
+      if (!isSchemaColumnErr (res.error)) break;
+    }
+    throw lastErr || new Error ("Could not save client");
+  };
+
+  window.gilbertoSupabaseUpdateClient = async function (supabase, clientId, patch) {
+    var base = clientPayloadForSupabase (patch);
+    var tries = [base];
+    var slim = Object.assign ({}, base);
+    delete slim.date_of_birth;
+    if (slim.dob) tries.push (slim);
+
+    var lastErr = null;
+    for (var i = 0; i < tries.length; i++) {
+      var res = await supabase.from ("clients").update (tries[i]).eq ("id", clientId);
+      if (!res.error) return res;
+      lastErr = res.error;
+      if (!isSchemaColumnErr (res.error)) break;
+    }
+    throw lastErr || new Error ("Could not update client");
+  };
+
+  window.gilbertoFormatDbError = function (err) {
+    if (!err) return "Unknown error";
+    var parts = [err.message || String (err)];
+    if (err.code) parts.push ("(" + err.code + ")");
+    if (err.details) parts.push (err.details);
+    if (err.hint) parts.push (err.hint);
+    if (/row-level security|permission denied|42501/i.test (parts.join (" "))) {
+      parts.push ("Run security/supabase-clients-staff-fix.sql in Supabase and confirm you joined a workspace.");
+    }
+    return parts.join (" ");
+  };
+
+  window.gilbertoLoadAuthProfile = async function (supabase, userId) {
+    if (!supabase || !userId) return null;
+    try {
+      var res = await supabase.from ("profiles").select ("id,email,full_name").eq ("id", userId).maybeSingle ();
+      if (!res.error && res.data) return res.data;
+    } catch (_) {}
+    return null;
+  };
+
+  window.repairOrgMembershipIfNeeded = async function (orgId) {
+    if (!window.supabaseClient || !orgId) return;
+    try {
+      var sess = await window.supabaseClient.auth.getSession ();
+      var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : "";
+      if (!uid) return;
+      var mem = await window.supabaseClient.from ("organization_members")
+        .select ("organization_id")
+        .eq ("organization_id", orgId)
+        .eq ("user_id", uid)
+        .maybeSingle ();
+      if (!mem.error && mem.data) return;
+      var orgRow = await window.supabaseClient.from ("organizations")
+        .select ("id,created_by")
+        .eq ("id", orgId)
+        .maybeSingle ();
+      if (!orgRow.error && orgRow.data && orgRow.data.created_by === uid) {
+        await window.supabaseClient.from ("organization_members").insert ({
+          organization_id: orgId,
+          user_id: uid,
+          role: "owner",
+        });
+      }
+    } catch (_) {}
+  };
+
+  window.ensureGilbertoOrgReady = async function () {
+    if (!window.supabaseClient) return null;
+    if (typeof loadGilbertoOrganization === "function") {
+      try { await loadGilbertoOrganization (); } catch (_) {}
+    }
+    var org = window.gilbertoCurrentOrg;
+    if (org && org.id) {
+      await window.repairOrgMembershipIfNeeded (org.id);
+      return org;
+    }
+    try {
+      var sess = await window.supabaseClient.auth.getSession ();
+      var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : "";
+      if (!uid) return null;
+      var ob = await window.supabaseClient.from ("user_onboarding")
+        .select ("organization_id, company_display_name")
+        .eq ("user_id", uid)
+        .maybeSingle ();
+      if (!ob.error && ob.data && ob.data.organization_id) {
+        org = {
+          id: ob.data.organization_id,
+          name: ob.data.company_display_name || "My Organization",
+          joinCode: null,
+          role: "owner",
+        };
+        window.gilbertoCurrentOrg = org;
+        try { localStorage.setItem ("gilberto_active_org:" + uid, JSON.stringify (org)); } catch (_) {}
+        await window.repairOrgMembershipIfNeeded (org.id);
+        return org;
+      }
+      if (typeof window.gilbertoFetchOrgMembershipsForUser === "function") {
+        var mems = await window.gilbertoFetchOrgMembershipsForUser (window.supabaseClient, uid);
+        if (Array.isArray (mems) && mems.length > 1) {
+          window.location.href = "company-picker.html";
+          return null;
+        }
+        if (mems.length === 1 && mems[0].organization_id) {
+          var o = mems[0].organizations || {};
+          org = {
+            id: mems[0].organization_id,
+            name: o.company_display_name || "My Organization",
+            joinCode: null,
+            role: mems[0].role || "member",
+          };
+          window.gilbertoCurrentOrg = org;
+          try { localStorage.setItem ("gilberto_active_org:" + uid, JSON.stringify (org)); } catch (_) {}
+          return org;
+        }
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  window.gilbertoSaveAuthProfile = async function (supabase, userId, fields) {
+    if (!supabase || !userId) throw new Error ("Not signed in");
+    var fullName = (fields.full_name || "").trim ();
+    var email = (fields.email || "").trim ();
+    var row = {
+      id: userId,
+      full_name: fullName || null,
+      email: email || null,
+      updated_at: new Date ().toISOString (),
+    };
+    var up = await supabase.from ("profiles").upsert (row, { onConflict: "id" });
+    if (up.error) throw up.error;
+    var authUp = await supabase.auth.updateUser ({
+      data: {
+        full_name: fullName,
+        role_title: fields.role_title || "",
+        phone: fields.phone || "",
+        bio: fields.bio || "",
+      },
+    });
+    if (authUp.error) throw authUp.error;
+    return { fullName: fullName, email: email };
+  };
+}) ();

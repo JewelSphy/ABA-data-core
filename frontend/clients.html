@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <title>Clients - Gilberto CRM</title>
   <link rel="stylesheet" href="dashboard.css"/>
   <style>
@@ -187,7 +188,7 @@
     <header class="topbar">
       <div>
         <h1>Clients</h1>
-        <p>Manage client profiles and assigned staff</p>
+        <p>Manage client profiles and assigned staff. <span style="font-size:11px;color:#6b8c7a;">(Supabase · build 20260607)</span></p>
       </div>
       <div class="top-actions">
         <button class="add-btn" onclick="openAddClient()">+ Add Client</button>
@@ -357,7 +358,6 @@
     <div class="modal-body">
       <p style="font-size:14px;color:#2d4a3e;line-height:1.5;"><strong id="intakePromptClientName">—</strong> — a HIPAA-aligned healthcare intake checklist was created automatically (Consent, ROI, HIPAA, insurance, emergencies, policies, …).</p>
       <p style="font-size:13px;color:#597568;margin-top:10px;line-height:1.45;">Documents are listed <strong>in priority order</strong> on the Documents page. Upload or paste details for each item—click any row or use <strong>Upload now</strong>.</p>
-      <div class="notice notice-info" style="margin-top:12px;font-size:12px;line-height:1.45;">With the <strong>Java API</strong> enabled, placeholders sync to MySQL immediately; uploads and edits on the Documents page are stored in your SQL database (not a separate cloud documents table).</div>
     </div>
     <div class="modal-footer">
       <button type="button" class="small-btn" onclick="closeModal('intakeDocPromptModal')">Later</button>
@@ -521,11 +521,119 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabaseConfig.js"></script>
-<script src="supabaseClient.js"></script>
-<script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js"></script>
+<script src="supabaseConfig.js?v=20260607"></script>
+<script src="supabaseClient.js?v=20260607"></script>
+<script src="dashboard.js?v=20260607"></script>
 <script>
+/* Clients page — Supabase only (no Java/Render bridge). Build 20260607 */
+window.JAVA_SUPABASE_BRIDGE = '';
+window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+
+function buildClientInsertRow (payload, orgId) {
+  var r = {
+    first_name: payload.first_name || null,
+    last_name: payload.last_name || null,
+    date_of_birth: payload.date_of_birth || null,
+    diagnosis: payload.diagnosis || null,
+    insurance_provider: payload.insurance_provider || null,
+    email: payload.email || null,
+    phone: payload.phone || null,
+    auth_status: payload.auth_status || 'active',
+    notes: payload.notes || null,
+    status: payload.status || 'active'
+  };
+  if (orgId) r.org_id = orgId;
+  if (payload.assigned_rbt_id) r.assigned_rbt_id = payload.assigned_rbt_id || null;
+  if (payload.assigned_bcba_id) r.assigned_bcba_id = payload.assigned_bcba_id || null;
+  if (r.date_of_birth) r.dob = r.date_of_birth;
+  return r;
+}
+
+function gilbertoFormatDbError (err) {
+  if (!err) return 'Unknown error';
+  var parts = [err.message || String(err)];
+  if (err.code) parts.push('(' + err.code + ')');
+  if (/row-level security|permission denied|42501/i.test(parts.join(' '))) {
+    parts.push('Run security/supabase-clients-staff-fix.sql and supabase-clients-rls-onboarding.sql in Supabase.');
+  }
+  return parts.join(' ');
+}
+
+async function supabaseInsertClientRow (supabase, row) {
+  var tries = [row];
+  var slim = Object.assign({}, row);
+  delete slim.date_of_birth;
+  if (slim.dob) tries.push(slim);
+  tries.push({ org_id: row.org_id, first_name: row.first_name, last_name: row.last_name, status: row.status || 'active' });
+  var lastErr = null;
+  for (var i = 0; i < tries.length; i++) {
+    var res = await supabase.from('clients').insert(tries[i]).select('id').single();
+    if (!res.error) return res;
+    lastErr = res.error;
+    if (!/column|schema|date_of_birth/i.test(res.error.message || '')) break;
+  }
+  throw lastErr || new Error('Could not save client');
+}
+
+async function supabaseUpdateClientRow (supabase, clientId, patch) {
+  var row = buildClientInsertRow(patch, null);
+  delete row.org_id;
+  var tries = [row];
+  var slim = Object.assign({}, row);
+  delete slim.date_of_birth;
+  if (slim.dob) tries.push(slim);
+  var lastErr = null;
+  for (var i = 0; i < tries.length; i++) {
+    var res = await supabase.from('clients').update(tries[i]).eq('id', clientId);
+    if (!res.error) return res;
+    lastErr = res.error;
+    if (!/column|schema|date_of_birth/i.test(res.error.message || '')) break;
+  }
+  throw lastErr || new Error('Could not update client');
+}
+
+async function repairOrgMembershipIfNeeded (orgId) {
+  if (!window.supabaseClient || !orgId) return;
+  try {
+    var sess = await window.supabaseClient.auth.getSession();
+    var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : '';
+    if (!uid) return;
+    var mem = await window.supabaseClient.from('organization_members').select('organization_id')
+      .eq('organization_id', orgId).eq('user_id', uid).maybeSingle();
+    if (!mem.error && mem.data) return;
+    var orgRow = await window.supabaseClient.from('organizations').select('id,created_by').eq('id', orgId).maybeSingle();
+    if (!orgRow.error && orgRow.data && orgRow.data.created_by === uid) {
+      await window.supabaseClient.from('organization_members').insert({ organization_id: orgId, user_id: uid, role: 'owner' });
+    }
+  } catch (_) {}
+}
+
+async function ensureGilbertoOrgReady () {
+  if (!window.supabaseClient) return null;
+  if (typeof loadGilbertoOrganization === 'function') {
+    try { await loadGilbertoOrganization(); } catch (_) {}
+  }
+  var org = window.gilbertoCurrentOrg;
+  if (org && org.id) {
+    await repairOrgMembershipIfNeeded(org.id);
+    return org;
+  }
+  try {
+    var sess = await window.supabaseClient.auth.getSession();
+    var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : '';
+    if (!uid) return null;
+    var ob = await window.supabaseClient.from('user_onboarding').select('organization_id, company_display_name')
+      .eq('user_id', uid).maybeSingle();
+    if (!ob.error && ob.data && ob.data.organization_id) {
+      org = { id: ob.data.organization_id, name: ob.data.company_display_name || 'My Organization', role: 'owner' };
+      window.gilbertoCurrentOrg = org;
+      try { localStorage.setItem('gilberto_active_org:' + uid, JSON.stringify(org)); } catch (_) {}
+      await repairOrgMembershipIfNeeded(org.id);
+      return org;
+    }
+  } catch (_) {}
+  return null;
+}
 
 // ── State ─────────────────────────────────────────────────────────────────────
 var _clientsData     = [];   // full list cached after load
@@ -586,184 +694,115 @@ function authBadge (val) {
   return '<span class="badge ' + cls + '">' + lbl + '</span>';
 }
 
-async function ensureClientOrgReady() {
-  var org = window.gilbertoCurrentOrg;
-  if (org && org.id) return org;
+async function ensureClientOrgReady () {
+  if (typeof ensureGilbertoOrgReady === 'function') {
+    var org = await ensureGilbertoOrgReady ();
+    if (org && org.id) return org;
+  }
+  if (!window.supabaseClient) return null;
   if (typeof loadGilbertoOrganization === 'function') {
-    try { await loadGilbertoOrganization(); } catch (_) {}
-    org = window.gilbertoCurrentOrg;
-    if (org && org.id) return org;
+    try { await loadGilbertoOrganization (); } catch (_) {}
   }
-  // small retry window for just-after-login race
-  for (var i = 0; i < 5; i++) {
-    await new Promise(function (r) { setTimeout(r, 180); });
-    org = window.gilbertoCurrentOrg;
-    if (org && org.id) return org;
-    if (typeof loadGilbertoOrganization === 'function') {
-      try { await loadGilbertoOrganization(); } catch (_) {}
-      org = window.gilbertoCurrentOrg;
-      if (org && org.id) return org;
+  return window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg : null;
+}
+
+function _clientLoadBridgeFailed (e) {
+  var msg = e && e.message ? String (e.message) : '';
+  return !!(e && (e.name === 'AbortError' || /abort|timed out|failed to fetch|network/i.test (msg)));
+}
+
+function _normalizeClientRow (c) {
+  if (!c) return c;
+  if (c.dob && !c.date_of_birth) c.date_of_birth = c.dob;
+  return c;
+}
+
+function _formatSupabaseErr (err) {
+  if (!err) return 'Unknown error';
+  var parts = [err.message || String (err)];
+  if (err.code) parts.push ('(' + err.code + ')');
+  if (err.hint) parts.push (err.hint);
+  if (/jwt|api key|invalid/i.test (parts.join (' '))) {
+    parts.push ('Update SUPABASE_URL and SUPABASE_ANON_KEY in supabaseConfig.js from your Supabase project Settings → API.');
+  }
+  return parts.join (' ');
+}
+
+async function _loadClientsViaSupabase (org) {
+  _staffById = {};
+  _caregiverByClientId = {};
+  try {
+    var sq = await window.supabaseClient.from ('staff')
+      .select ('id,first_name,last_name,status')
+      .eq ('org_id', org.id);
+    if (!sq.error) {
+      (sq.data || []).forEach (function (s) {
+        var n = ((s.first_name || '') + ' ' + (s.last_name || '')).trim ();
+        if (s.id) _staffById[s.id] = n || '—';
+      });
     }
+  } catch (_) { /* non-fatal */ }
+  try {
+    var cgq = await window.supabaseClient.from ('caregivers')
+      .select ('id,client_id,first_name,last_name,relationship,email,phone,status')
+      .eq ('org_id', org.id)
+      .order ('created_at', { ascending: true });
+    if (!cgq.error) {
+      (cgq.data || []).forEach (function (cg) {
+        if (!cg || !cg.client_id) return;
+        if (_caregiverByClientId[cg.client_id]) return;
+        _caregiverByClientId[cg.client_id] = cg;
+      });
+    }
+  } catch (_) { /* caregivers table may not exist yet */ }
+
+  var selects = [
+    'id,first_name,last_name,date_of_birth,diagnosis,assigned_rbt_id,assigned_bcba_id,insurance_provider,email,phone,auth_status,notes,status,rbt:staff!assigned_rbt_id(id,first_name,last_name),bcba:staff!assigned_bcba_id(id,first_name,last_name)',
+    'id,first_name,last_name,date_of_birth,diagnosis,assigned_rbt_id,assigned_bcba_id,insurance_provider,email,phone,auth_status,notes,status',
+    'id,first_name,last_name,dob,diagnosis,assigned_rbt_id,assigned_bcba_id,insurance_provider,email,phone,auth_status,notes,status',
+    'id,first_name,last_name,status,org_id'
+  ];
+  var lastErr = null;
+  for (var i = 0; i < selects.length; i++) {
+    var q = await window.supabaseClient
+      .from ('clients')
+      .select (selects[i])
+      .eq ('org_id', org.id)
+      .order ('last_name', { ascending: true });
+    if (!q.error) {
+      return (q.data || []).map (_normalizeClientRow);
+    }
+    lastErr = q.error;
+    if (q.error && /jwt|invalid api key/i.test (String (q.error.message || ''))) break;
   }
-  org = window.gilbertoCurrentOrg;
-  if ((!org || !org.id) && window.supabaseClient) {
-    try {
-      var sid = '';
-      try {
-        var sess = await window.supabaseClient.auth.getSession();
-        if (sess.data && sess.data.session && sess.data.session.user) {
-          sid = sess.data.session.user.id;
-        }
-      } catch (_) {}
-      if (sid && typeof window.gilbertoFetchOrgMembershipsForUser === 'function') {
-        var mems = await window.gilbertoFetchOrgMembershipsForUser(window.supabaseClient, sid);
-        if (Array.isArray(mems) && mems.length > 1) {
-          window.location.href = 'company-picker.html';
-          return null;
-        }
-      }
-    } catch (_) {}
-    try {
-      var pq = await window.supabaseClient
-        .from('clients')
-        .select('org_id')
-        .not('org_id', 'is', null)
-        .limit(1);
-      if (!pq.error && pq.data && pq.data[0] && pq.data[0].org_id) {
-        org = {
-          id: pq.data[0].org_id,
-          name: 'My Organization',
-          joinCode: null,
-          role: 'member'
-        };
-        window.gilbertoCurrentOrg = org;
-        if (typeof window.resolveCurrentUserIdentity === 'function') {
-          try {
-            var u2 = await window.resolveCurrentUserIdentity();
-            if (u2 && u2.id) localStorage.setItem('gilberto_active_org:' + u2.id, JSON.stringify(org));
-          } catch (_) {}
-        }
-        return org;
-      }
-    } catch (_) {}
-    try {
-      var stq = await window.supabaseClient
-        .from('staff')
-        .select('org_id')
-        .not('org_id', 'is', null)
-        .limit(1);
-      if (!stq.error && stq.data && stq.data[0] && stq.data[0].org_id) {
-        org = {
-          id: stq.data[0].org_id,
-          name: 'My Organization',
-          joinCode: null,
-          role: 'member'
-        };
-        window.gilbertoCurrentOrg = org;
-        if (typeof window.resolveCurrentUserIdentity === 'function') {
-          try {
-            var u3 = await window.resolveCurrentUserIdentity();
-            if (u3 && u3.id) localStorage.setItem('gilberto_active_org:' + u3.id, JSON.stringify(org));
-          } catch (_) {}
-        }
-        return org;
-      }
-    } catch (_) {}
-  }
-  // Last-resort bridge inference for org-scoped Java mode.
-  if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled() && typeof jvmFetchClients === 'function') {
-    try {
-      var res = await jvmFetchClients(null, null);
-      if (res && res.ok) {
-        var rows = await res.json();
-        var first = Array.isArray(rows) && rows.length ? rows[0] : null;
-        if (first && first.org_id) {
-          org = { id: first.org_id, name: 'My Organization' };
-          window.gilbertoCurrentOrg = org;
-          if (typeof window.resolveCurrentUserIdentity === 'function') {
-            try {
-              var u = await window.resolveCurrentUserIdentity();
-              if (u && u.id) localStorage.setItem('gilberto_active_org:' + u.id, JSON.stringify(org));
-            } catch (_) {}
-          }
-          return org;
-        }
-      }
-    } catch (_) {}
-  }
-  return null;
+  throw lastErr || new Error ('Could not load clients from Supabase');
 }
 
 // ── Load + render table ───────────────────────────────────────────────────────
 async function loadClientsTable () {
   var org = await ensureClientOrgReady ();
-  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
   if (!org || !org.id) {
-    if (!bridgeMode) {
+    var msg = !window.supabaseClient
+      ? 'Supabase is not configured. Check <strong>frontend/supabaseConfig.js</strong> (URL + anon key).'
+      : 'Workspace not loaded. <a href="company-picker.html" style="color:#4d635a;font-weight:600;">Pick a company</a> or finish onboarding, then refresh.';
     document.getElementById ('clientBody').innerHTML =
-      '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">No clients yet. Click <strong>+ Add Client</strong> to get started.</td></tr>';
+      '<tr><td colspan="7" style="text-align:center;padding:32px;color:#9eb3a8;">' + msg + '</td></tr>';
     return;
-    }
   }
 
   try {
-    var rows;
-    var staffRows = [];
-    if (bridgeMode) {
-      var sres = await jvmFetchStaff (org && org.id ? org.id : null, null);
-      if (sres.ok) staffRows = await sres.json ();
-      var cgres = await jvmFetchCaregivers (org && org.id ? org.id : null, null);
-      var cgRows = cgres.ok ? await cgres.json () : [];
-      _caregiverByClientId = {};
-      (cgRows || []).forEach(function (cg) {
-        if (!cg || !cg.client_id) return;
-        if (_caregiverByClientId[cg.client_id]) return;
-        _caregiverByClientId[cg.client_id] = cg;
-      });
-    } else if (window.supabaseClient) {
-      var sq = await window.supabaseClient.from ('staff')
-        .select ('id,first_name,last_name,status')
-        .eq ('org_id', org.id);
-      if (!sq.error) staffRows = sq.data || [];
-      var cgq = await window.supabaseClient.from ('caregivers')
-        .select ('id,client_id,first_name,last_name,relationship,email,phone,status')
-        .eq ('org_id', org.id)
-        .order ('created_at', { ascending: true });
-      _caregiverByClientId = {};
-      if (!cgq.error) {
-        (cgq.data || []).forEach(function (cg) {
-          if (!cg || !cg.client_id) return;
-          if (_caregiverByClientId[cg.client_id]) return;
-          _caregiverByClientId[cg.client_id] = cg;
-        });
-      }
-    }
-    _staffById = (staffRows || []).reduce(function (acc, s) {
-      var n = ((s.first_name || '') + ' ' + (s.last_name || '')).trim();
-      if (s.id) acc[s.id] = n || '—';
-      return acc;
-    }, {});
-
-    if (bridgeMode) {
-      var res = await jvmFetchClients (org && org.id ? org.id : null);
-      if (!res.ok) throw new Error (typeof readJvmErrorResponse === 'function' ? await readJvmErrorResponse (res) : ('HTTP ' + res.status));
-      rows = await res.json ();
-    } else {
-      var q = await window.supabaseClient
-        .from ('clients')
-        .select ('id,first_name,last_name,date_of_birth,diagnosis,assigned_rbt_id,assigned_bcba_id,insurance_provider,email,phone,auth_status,notes,status,rbt:staff!assigned_rbt_id(id,first_name,last_name),bcba:staff!assigned_bcba_id(id,first_name,last_name)')
-        .eq ('org_id', org.id)
-        .order ('last_name', { ascending: true });
-      if (q.error) throw q.error;
-      rows = q.data || [];
+    var rows = [];
+    if (window.supabaseClient && org && org.id) {
+      rows = await _loadClientsViaSupabase (org);
     }
     _clientsData = rows;
     renderClientsTable (rows);
     if (org && org.id) loadClientStats (org.id);
   } catch (e) {
     console.warn ('loadClientsTable error:', e);
+    var errText = _formatSupabaseErr (e);
     document.getElementById ('clientBody').innerHTML =
-      '<tr><td colspan="7" style="text-align:center;padding:24px;color:#c0392b;">Failed to load clients: ' + esc (e.message) + '</td></tr>';
+      '<tr><td colspan="7" style="text-align:center;padding:24px;color:#c0392b;">Failed to load clients: ' + esc (errText) + '</td></tr>';
   }
 }
 
@@ -807,8 +846,17 @@ function renderClientsTable (rows) {
 async function loadClientStats (orgId) {
   try {
     var stats;
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      stats = await jvmLoadClientStats (orgId);
+    if (window.supabaseClient && orgId) {
+      var q = await window.supabaseClient.from ('clients').select ('status').eq ('org_id', orgId);
+      if (q.error) throw q.error;
+      stats = { active: 0, inactive: 0, discharged: 0, total: 0 };
+      (q.data || []).forEach (function (c) {
+        var s = String (c.status || 'active').toLowerCase ();
+        stats.total++;
+        if (s === 'inactive') stats.inactive++;
+        else if (s === 'discharged') stats.discharged++;
+        else stats.active++;
+      });
     } else {
       stats = { active: 0, inactive: 0, discharged: 0, total: 0 };
     }
@@ -839,21 +887,12 @@ async function refreshClientDocumentsPanel (clientId) {
   try {
     var org = await ensureClientOrgReady ();
     var orgId = org && org.id;
-    var bridgeMode = typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ();
     var rows = [];
     if (!orgId) {
       box.innerHTML = '<span style="color:#9eb3a8;font-size:13px;">Organization not loaded.</span>';
       return;
     }
-    if (bridgeMode && typeof documentJvmFetch === 'function') {
-      var res = await documentJvmFetch (orgId, null);
-      if (res.ok) {
-        var all = await res.json ();
-        rows = (all || []).filter (function (d) {
-          return String (d.client_id || '') === String (clientId);
-        });
-      }
-    } else if (window.supabaseClient) {
+    if (window.supabaseClient) {
       var q = await window.supabaseClient
         .from ('documents')
         .select ('id, doc_name, doc_type, status, upload_date, attachment_filename')
@@ -939,9 +978,21 @@ function openAddClient () {
 }
 
 async function createClient () {
+  window.JAVA_SUPABASE_BRIDGE = '';
+  window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+  if (!window.supabaseClient) { clientToast ('Supabase not connected — check supabaseConfig.js'); return; }
+  var sess = await window.supabaseClient.auth.getSession ();
+  if (!sess.data || !sess.data.session) {
+    clientToast ('Please sign in again');
+    window.location.href = 'index.html';
+    return;
+  }
   var org = await ensureClientOrgReady ();
-  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
-  if ((!org || !org.id) && !bridgeMode) { clientToast ('Organization not loaded — please reload.'); return; }
+  if (!org || !org.id) {
+    clientToast ('No company workspace — finish setup first');
+    window.location.href = 'workspace-setup.html?stay=1';
+    return;
+  }
 
   var row = buildClientInsertRow ({
     first_name:         (document.getElementById ('addFirstName').value  || '').trim (),
@@ -967,17 +1018,8 @@ async function createClient () {
 
   try {
     var createdClientId = null;
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      var res = await clientJvmCreate (row);
-      if (!res.ok) { clientToast ('Save failed: ' + await readJvmErrorResponse (res)); return; }
-      var created = await res.json();
-      if (Array.isArray(created) && created.length) createdClientId = created[0].id || null;
-      else if (created && typeof created === 'object') createdClientId = created.id || null;
-    } else {
-      var r = await window.supabaseClient.from ('clients').insert (row).select ('id').single ();
-      if (r.error) { clientToast ('Save failed: ' + r.error.message); return; }
-      createdClientId = r.data && r.data.id ? r.data.id : null;
-    }
+    var ins = await supabaseInsertClientRow (window.supabaseClient, row);
+    createdClientId = ins.data && ins.data.id ? ins.data.id : null;
 
     // Defensive fallback: if API did not return id, fetch newest matching client in org.
     if (!createdClientId && window.supabaseClient && org && org.id) {
@@ -995,27 +1037,22 @@ async function createClient () {
 
     var cgName = (document.getElementById ('addCgName').value || '').trim ();
     if (cgName && createdClientId) {
-      var n = cgName.split (/\s+/);
-      var cgPayload = {
-        org_id: org && org.id ? org.id : null,
-        client_id: createdClientId,
-        first_name: n[0] || 'Caregiver',
-        last_name: n.slice(1).join(' ') || 'Contact',
-        relationship: document.getElementById('addCgRelationship').value || null,
-        phone: (document.getElementById('addCgPhone').value || '').trim() || null,
-        email: (document.getElementById('addCgEmail').value || '').trim() || null,
-        status: 'active'
-      };
-      if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-        var cgRes = await jvmFetch('/api/caregivers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cgPayload)
-        });
-        if (!cgRes.ok) clientToast ('Client saved, but caregiver did not save.');
-      } else if (window.supabaseClient) {
+      try {
+        var n = cgName.split (/\s+/);
+        var cgPayload = {
+          org_id: org.id,
+          client_id: createdClientId,
+          first_name: n[0] || 'Caregiver',
+          last_name: n.slice(1).join(' ') || 'Contact',
+          relationship: document.getElementById('addCgRelationship').value || null,
+          phone: (document.getElementById('addCgPhone').value || '').trim() || null,
+          email: (document.getElementById('addCgEmail').value || '').trim() || null,
+          status: 'active'
+        };
         var cgInsert = await window.supabaseClient.from('caregivers').insert(cgPayload);
         if (cgInsert.error) clientToast ('Client saved, but caregiver did not save.');
+      } catch (_) {
+        clientToast ('Client saved, but caregiver did not save.');
       }
     } else if (cgName && !createdClientId) {
       clientToast ('Client saved, but caregiver could not be linked. Open client and retry caregiver add.');
@@ -1027,7 +1064,12 @@ async function createClient () {
       showIntakeDocumentPrompt (createdClientId, (row.first_name + ' ' + row.last_name).trim ());
     }
   } catch (err) {
-    clientToast ('Save failed: ' + (err && err.message ? err.message : 'unknown error'));
+    var msg = typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (err) : (err && err.message ? err.message : 'unknown error');
+    if (/abort/i.test (msg)) {
+      msg = 'Still using old cached code. Close tab, reopen Clients, or use Incognito. (Java API is disabled.)';
+    }
+    clientToast ('Save failed: ' + msg);
+    console.error ('createClient:', err);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Client'; }
   }
@@ -1036,14 +1078,10 @@ async function createClient () {
 async function deleteClient (clientId) {
   if (!clientId) return;
   if (!confirm('Delete this client?')) return;
+  if (!window.supabaseClient) { clientToast ('Supabase not connected'); return; }
   try {
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      var res = await clientJvmDelete (clientId);
-      if (!res.ok) { clientToast ('Delete failed: ' + await readJvmErrorResponse (res)); return; }
-    } else if (window.supabaseClient) {
-      var r = await window.supabaseClient.from ('clients').delete ().eq ('id', clientId);
-      if (r.error) { clientToast ('Delete failed: ' + r.error.message); return; }
-    }
+    var r = await window.supabaseClient.from ('clients').delete ().eq ('id', clientId);
+    if (r.error) throw r.error;
     clientToast ('Client deleted');
     await loadClientsTable ();
   } catch (err) {
@@ -1083,6 +1121,8 @@ function openEditClient (clientId) {
 
 async function updateClient () {
   if (!_editingClientId) return;
+  window.JAVA_SUPABASE_BRIDGE = '';
+  if (!window.supabaseClient) { clientToast ('Supabase not connected'); return; }
 
   var patch = {
     first_name:         (document.getElementById ('editFirstName').value || '').trim (),
@@ -1110,57 +1150,29 @@ async function updateClient () {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
   try {
-    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ()) {
-      var res = await clientJvmPatch (_editingClientId, patch);
-      if (!res.ok) { clientToast ('Update failed: ' + await readJvmErrorResponse (res)); return; }
-      if (existingCg && existingCg.id) {
-        await caregiverJvmDelete (existingCg.id);
-      }
-      if (cgName) {
-        var n = cgName.split (/\s+/);
-        var cgPayload = {
-          org_id: org && org.id ? org.id : null,
-          client_id: _editingClientId,
-          first_name: n[0] || 'Caregiver',
-          last_name: n.slice(1).join(' ') || 'Contact',
-          relationship: document.getElementById('editCgRelationship').value || null,
-          phone: (document.getElementById('editCgPhone').value || '').trim() || null,
-          email: (document.getElementById('editCgEmail').value || '').trim() || null,
-          status: 'active'
-        };
-        var cgRes = await jvmFetch('/api/caregivers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cgPayload)
-        });
-        if (!cgRes.ok) clientToast ('Client updated, but caregiver save failed.');
-      }
-    } else {
-      var r = await window.supabaseClient.from ('clients').update (patch).eq ('id', _editingClientId);
-      if (r.error) { clientToast ('Update failed: ' + r.error.message); return; }
-      if (existingCg && existingCg.id) {
-        await window.supabaseClient.from('caregivers').delete().eq('id', existingCg.id);
-      }
-      if (cgName) {
-        var nn = cgName.split (/\s+/);
-        var cgi = await window.supabaseClient.from('caregivers').insert({
-          org_id: org && org.id ? org.id : null,
-          client_id: _editingClientId,
-          first_name: nn[0] || 'Caregiver',
-          last_name: nn.slice(1).join(' ') || 'Contact',
-          relationship: document.getElementById('editCgRelationship').value || null,
-          phone: (document.getElementById('editCgPhone').value || '').trim() || null,
-          email: (document.getElementById('editCgEmail').value || '').trim() || null,
-          status: 'active'
-        });
-        if (cgi.error) clientToast ('Client updated, but caregiver save failed.');
-      }
+    await supabaseUpdateClientRow (window.supabaseClient, _editingClientId, patch);
+    if (existingCg && existingCg.id) {
+      await window.supabaseClient.from('caregivers').delete().eq('id', existingCg.id);
+    }
+    if (cgName) {
+      var nn = cgName.split (/\s+/);
+      var cgi = await window.supabaseClient.from('caregivers').insert({
+        org_id: org && org.id ? org.id : null,
+        client_id: _editingClientId,
+        first_name: nn[0] || 'Caregiver',
+        last_name: nn.slice(1).join(' ') || 'Contact',
+        relationship: document.getElementById('editCgRelationship').value || null,
+        phone: (document.getElementById('editCgPhone').value || '').trim() || null,
+        email: (document.getElementById('editCgEmail').value || '').trim() || null,
+        status: 'active'
+      });
+      if (cgi.error) clientToast ('Client updated, but caregiver save failed.');
     }
     closeModal ('editClientModal');
     clientToast ('Client updated');
     await loadClientsTable ();
   } catch (err) {
-    clientToast ('Update failed: ' + (err && err.message ? err.message : 'unknown error'));
+    clientToast ('Update failed: ' + (typeof gilbertoFormatDbError === 'function' ? gilbertoFormatDbError (err) : (err && err.message ? err.message : 'unknown error')));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
   }
@@ -1169,19 +1181,13 @@ async function updateClient () {
 // ── Staff dropdowns ───────────────────────────────────────────────────────────
 async function loadStaffDropdowns (rbtElId, bcbaElId, selectedRbt, selectedBcba) {
   var org = await ensureClientOrgReady ();
-  var bridgeMode = (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled ());
   var staffRows = [];
   try {
-    if ((org && org.id) || bridgeMode) {
-      if (bridgeMode) {
-        var res = await jvmFetchStaff (org && org.id ? org.id : null, 'active');
-        if (res.ok) staffRows = await res.json ();
-      } else if (window.supabaseClient) {
-        var q = await window.supabaseClient.from ('staff')
-          .select ('id,first_name,last_name,role')
-          .eq ('org_id', org.id).eq ('status', 'active').order ('last_name');
-        staffRows = q.data || [];
-      }
+    if (org && org.id && window.supabaseClient) {
+      var q = await window.supabaseClient.from ('staff')
+        .select ('id,first_name,last_name,role')
+        .eq ('org_id', org.id).eq ('status', 'active').order ('last_name');
+      if (!q.error) staffRows = q.data || [];
     }
   } catch (e) { /* non-fatal */ }
 

@@ -434,7 +434,16 @@ async function resolveCurrentUserIdentity() {
     const email = user?.email || "";
     const metaName = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
     const localName = localStorage.getItem("gilberto_profile_name") || "";
-    const fullName = (localName || metaName || email || fallback.fullName).trim();
+    let cloudName = "";
+    if (userId && typeof window.gilbertoLoadAuthProfile === "function") {
+      try {
+        const prof = await window.gilbertoLoadAuthProfile(window.supabaseClient, userId);
+        cloudName = (prof && prof.full_name) ? String(prof.full_name).trim() : "";
+      } catch (_) {
+        /* empty */
+      }
+    }
+    const fullName = (cloudName || localName || metaName || email || fallback.fullName).trim();
     const initial = (fullName.charAt(0) || fallback.initial).toUpperCase();
     window.gilbertoCurrentUserId = userId;
     window.gilbertoCurrentUserEmail = email;
@@ -483,6 +492,19 @@ document.addEventListener('DOMContentLoaded', function () {
     enhanceInteractivity();
 
     const bootPage = gilbertoCurrentPageFile();
+    const supabaseOnlyPage =
+      document.body.classList.contains("page-clients") ||
+      document.body.classList.contains("page-staff") ||
+      document.body.classList.contains("page-authorizations");
+    if (supabaseOnlyPage) {
+      window.JAVA_SUPABASE_BRIDGE = "";
+      window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+    } else if (typeof gilbertoEnsureSupabaseDataMode === "function") {
+      await gilbertoEnsureSupabaseDataMode();
+    } else if (typeof gilbertoNormalizeJavaBridge === "function") {
+      await gilbertoNormalizeJavaBridge();
+    }
+
     if (bootPage === "company-picker.html") {
       await enforceAuthGuard();
       await resolveCurrentUserIdentity();
@@ -789,6 +811,9 @@ async function applyWorkspaceWithOrg() {
   }
   if (document.body.classList.contains('page-staff') && typeof loadStaffTable === 'function') {
     void loadStaffTable();
+  }
+  if (document.body.classList.contains('page-authorizations') && typeof loadAuthorizationsTable === 'function') {
+    void loadAuthorizationsTable();
   }
 }
 

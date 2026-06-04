@@ -5,6 +5,10 @@
     window.SUPABASE_ANON_KEY
 */
 (function initSupabaseClient() {
+  // Always use Supabase for data (Render/local Java bridge disabled).
+  window.JAVA_SUPABASE_BRIDGE = "";
+  window.GILBERTO_FORCE_SUPABASE_ONLY = true;
+
   const supabaseUrl = window.SUPABASE_URL;
   const supabaseAnonKey = window.SUPABASE_ANON_KEY;
 
