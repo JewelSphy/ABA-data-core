@@ -2108,3 +2108,268 @@ button:focus-visible,
   text-transform: uppercase;
   color: #5c6360 !important;
 }
+
+/* =====================================================
+   smooth platform pass — restores radii + fluid motion
+   ===================================================== */
+
+/* Load Inter if not already present */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-hover: 0 12px 32px rgba(0,0,0,0.12), 0 3px 10px rgba(0,0,0,0.06);
+  --transition-fast: 0.18s var(--ease-out);
+  --transition-med: 0.24s var(--ease-out);
+}
+
+/* Re-apply smooth radii (overrides the flat 2px pass) */
+.card,
+.cards .card,
+.section-box,
+.table-wrapper,
+.calendar-panel,
+.panel { border-radius: var(--radius-md) !important; }
+
+.urgency-col { border-radius: var(--radius-md) !important; }
+.selection-card { border-radius: var(--radius-md) !important; }
+.control-panel { border-radius: var(--radius-md) !important; }
+.signature-box { border-radius: var(--radius-sm) !important; }
+.service-pill { border-radius: var(--radius-pill) !important; }
+
+.badge { border-radius: var(--radius-pill) !important; padding: 3px 10px !important; }
+
+.small-btn,
+.icon-btn { border-radius: var(--radius-sm) !important; }
+
+.add-btn { border-radius: var(--radius-sm) !important; }
+
+.user-pill { border-radius: var(--radius-pill) !important; }
+
+.tbl-btn { border-radius: 6px !important; }
+
+.sticker { border-radius: 8px !important; }
+
+/* form fields — smooth radius + focus ring */
+.form-group input,
+.form-group select,
+.form-group textarea,
+.search-input,
+.control-group select { border-radius: var(--radius-sm) !important; }
+
+.segmented { border-radius: var(--radius-sm) !important; }
+.segmented .small-btn { border-radius: 6px !important; }
+.control-group { border-radius: var(--radius-sm) !important; }
+
+/* main canvas — softer, warmer background */
+.main-area {
+  background:
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(92, 114, 105, 0.07), transparent 55%),
+    linear-gradient(175deg, #f0f2f0 0%, #f5f6f4 40%, #eeefec 100%) !important;
+}
+
+/* ── Cards — depth layers ──────────────────────────────────────── */
+.cards .card {
+  box-shadow: var(--shadow-md) !important;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast) !important;
+}
+.cards .card:hover {
+  box-shadow: var(--shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ── Section boxes & panels ─────────────────────────────────────── */
+.section-box,
+.table-wrapper,
+.panel,
+.calendar-panel,
+.control-panel {
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow var(--transition-fast) !important;
+}
+
+/* ── Table rows — smooth background fade, no jump ──────────────── */
+.data-table tbody tr {
+  transition: background-color var(--transition-fast) !important;
+  transform: none !important;
+}
+.data-table tbody tr:hover {
+  background-color: rgba(61, 92, 80, 0.05) !important;
+  transform: none !important;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+button,
+.small-btn,
+.add-btn,
+.icon-btn,
+.tbl-btn,
+.user-pill,
+.profile-chip {
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast) !important;
+}
+
+.add-btn {
+  box-shadow: var(--shadow-md) !important;
+}
+.add-btn:hover {
+  box-shadow: var(--shadow-hover) !important;
+  transform: translateY(-1px) !important;
+  filter: brightness(1.04) !important;
+}
+.add-btn:active { transform: translateY(0) !important; box-shadow: var(--shadow-sm) !important; }
+
+.tbl-btn:hover { transform: translateY(-1px) !important; box-shadow: var(--shadow-sm) !important; }
+.tbl-btn:active { transform: translateY(0) !important; }
+
+.small-btn:hover,
+.icon-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+.small-btn:active,
+.icon-btn:active { transform: translateY(0) !important; }
+
+/* ── Form inputs — smooth focus ring ──────────────────────────── */
+.form-group input,
+.form-group select,
+.form-group textarea,
+.search-input {
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast) !important;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #5c7a6d !important;
+  box-shadow: 0 0 0 3px rgba(92, 122, 109, 0.15), 0 1px 4px rgba(0,0,0,0.06) !important;
+  background-color: #fdfffe !important;
+  outline: none !important;
+}
+.search-input:focus {
+  border-color: #5c7a6d !important;
+  box-shadow: 0 0 0 3px rgba(92, 122, 109, 0.12) !important;
+}
+
+/* ── Modals — smoother overlay + scale-in ──────────────────────── */
+.modal-overlay {
+  transition: opacity 0.22s var(--ease-in-out);
+}
+.modal-box {
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.18),
+    0 8px 24px rgba(0,0,0,0.1),
+    inset 0 0 0 1px rgba(255,255,255,0.06) !important;
+}
+
+/* ── Sidebar nav — smooth highlight pill ──────────────────────── */
+.nav-item {
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-left-color var(--transition-fast) !important;
+  border-radius: 10px !important;
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-left-color: #8fada0 !important;
+}
+.nav-item.active {
+  background: rgba(255,255,255,0.13) !important;
+  border-left-color: #b3cec2 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08) !important;
+}
+
+/* ── Selection cards ───────────────────────────────────────────── */
+.selection-card {
+  box-shadow: var(--shadow-md) !important;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast) !important;
+}
+.selection-card:hover {
+  box-shadow: var(--shadow-hover) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ── Urgency urgency items — softer hover ──────────────────────── */
+.urgency-col .urgency-item:hover {
+  background: rgba(61,82,72,0.04) !important;
+}
+
+/* ── Workspace + invite banners ─────────────────────────────────── */
+.workspace-banner,
+.invite-team-panel {
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* ── Top menu dropdown ─────────────────────────────────────────── */
+.top-menu,
+.top-menu.profile-menu {
+  animation: menuSlideIn 0.18s var(--ease-out) both !important;
+  box-shadow:
+    0 20px 50px rgba(15,18,17,0.2),
+    0 6px 18px rgba(0,0,0,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.4) !important;
+}
+@keyframes menuSlideIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* ── focus-visible ring ─────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid rgba(92, 122, 109, 0.55) !important;
+  outline-offset: 2px !important;
+}
+
+/* ── Page transition fade-in ───────────────────────────────────── */
+.main-area {
+  animation: pageFadeIn 0.28s var(--ease-out) both;
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Topbar: cleaner separator ─────────────────────────────────── */
+.topbar {
+  border-bottom: 1px solid rgba(45, 55, 50, 0.09) !important;
+  padding-bottom: 18px !important;
+  margin-bottom: 24px !important;
+}
+
+/* ── Scrollbar refinement ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+.sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
+
+/* ── Table toolbar: cleaner ─────────────────────────────────────── */
+.table-toolbar {
+  border-bottom: 1px solid rgba(45,55,50,0.07) !important;
+  background: transparent !important;
+}
+
+/* ── Stats strip (small stat boxes on clients/staff) ──────────── */
+[id^="clientStat"],
+[id^="statCard"] {
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
