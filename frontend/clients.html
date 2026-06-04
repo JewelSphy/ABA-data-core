@@ -188,7 +188,7 @@
     <header class="topbar">
       <div>
         <h1>Clients</h1>
-        <p>Manage client profiles and assigned staff. <span style="font-size:11px;color:#6b8c7a;">(Supabase · build 20260607)</span></p>
+        <p>Manage client profiles and assigned staff. <span style="font-size:11px;color:#6b8c7a;">(Supabase · build 20260608)</span></p>
       </div>
       <div class="top-actions">
         <button class="add-btn" onclick="openAddClient()">+ Add Client</button>
@@ -525,11 +525,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabaseConfig.js?v=20260607"></script>
-<script src="supabaseClient.js?v=20260607"></script>
-<script src="dashboard.js?v=20260607"></script>
+<script src="supabaseConfig.js?v=20260608"></script>
+<script src="supabaseClient.js?v=20260608"></script>
+<script src="dashboard.js?v=20260608"></script>
 <script>
-/* Clients page — Supabase only (no Java/Render bridge). Build 20260607 */
+/* Clients page — Supabase only (no Java/Render bridge). Build 20260608 */
 window.JAVA_SUPABASE_BRIDGE = '';
 window.GILBERTO_FORCE_SUPABASE_ONLY = true;
 
@@ -547,8 +547,10 @@ function buildClientInsertRow (payload, orgId) {
     status: payload.status || 'active'
   };
   if (orgId) r.org_id = orgId;
-  if (payload.assigned_rbt_id) r.assigned_rbt_id = payload.assigned_rbt_id || null;
-  if (payload.assigned_bcba_id) r.assigned_bcba_id = payload.assigned_bcba_id || null;
+  var rbt = payload.assigned_rbt_id;
+  var bcba = payload.assigned_bcba_id;
+  if (rbt && /^[0-9a-f-]{36}$/i.test(String(rbt))) r.assigned_rbt_id = rbt;
+  if (bcba && /^[0-9a-f-]{36}$/i.test(String(bcba))) r.assigned_bcba_id = bcba;
   if (r.date_of_birth) r.dob = r.date_of_birth;
   return r;
 }
@@ -571,10 +573,17 @@ async function supabaseInsertClientRow (supabase, row) {
   tries.push({ org_id: row.org_id, first_name: row.first_name, last_name: row.last_name, status: row.status || 'active' });
   var lastErr = null;
   for (var i = 0; i < tries.length; i++) {
-    var res = await supabase.from('clients').insert(tries[i]).select('id').single();
-    if (!res.error) return res;
-    lastErr = res.error;
-    if (!/column|schema|date_of_birth/i.test(res.error.message || '')) break;
+    var payload = tries[i];
+    var res = await supabase.from('clients').insert(payload).select('id').single();
+    if (!res.error && res.data && res.data.id) return res;
+    if (res.error) {
+      lastErr = res.error;
+      var plain = await supabase.from('clients').insert(payload);
+      if (!plain.error) return { data: { id: null }, error: null };
+      if (/column|schema|date_of_birth|assigned_/i.test(lastErr.message || '')) continue;
+      lastErr = plain.error || lastErr;
+      break;
+    }
   }
   throw lastErr || new Error('Could not save client');
 }
@@ -596,8 +605,20 @@ async function supabaseUpdateClientRow (supabase, clientId, patch) {
   throw lastErr || new Error('Could not update client');
 }
 
+async function callEnsureMyOrgMembershipRpc () {
+  if (!window.supabaseClient) return null;
+  try {
+    var rpc = await window.supabaseClient.rpc('ensure_my_org_membership');
+    if (!rpc.error && rpc.data) return rpc.data;
+  } catch (_) {}
+  return null;
+}
+
 async function repairOrgMembershipIfNeeded (orgId) {
-  if (!window.supabaseClient || !orgId) return;
+  if (!window.supabaseClient) return;
+  var repaired = await callEnsureMyOrgMembershipRpc();
+  if (repaired) orgId = repaired;
+  if (!orgId) return;
   try {
     var sess = await window.supabaseClient.auth.getSession();
     var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : '';
@@ -614,6 +635,7 @@ async function repairOrgMembershipIfNeeded (orgId) {
 
 async function ensureGilbertoOrgReady () {
   if (!window.supabaseClient) return null;
+  var rpcOrgId = await callEnsureMyOrgMembershipRpc();
   if (typeof loadGilbertoOrganization === 'function') {
     try { await loadGilbertoOrganization(); } catch (_) {}
   }
@@ -626,6 +648,19 @@ async function ensureGilbertoOrgReady () {
     var sess = await window.supabaseClient.auth.getSession();
     var uid = sess.data && sess.data.session && sess.data.session.user ? sess.data.session.user.id : '';
     if (!uid) return null;
+    if (rpcOrgId) {
+      var oq = await window.supabaseClient.from('organizations').select('id,company_display_name')
+        .eq('id', rpcOrgId).maybeSingle();
+      org = {
+        id: rpcOrgId,
+        name: (oq.data && oq.data.company_display_name) || 'My Organization',
+        role: 'owner'
+      };
+      window.gilbertoCurrentOrg = org;
+      try { localStorage.setItem('gilberto_active_org:' + uid, JSON.stringify(org)); } catch (_) {}
+      await repairOrgMembershipIfNeeded(org.id);
+      return org;
+    }
     var ob = await window.supabaseClient.from('user_onboarding').select('organization_id, company_display_name')
       .eq('user_id', uid).maybeSingle();
     if (!ob.error && ob.data && ob.data.organization_id) {
@@ -639,7 +674,33 @@ async function ensureGilbertoOrgReady () {
   return null;
 }
 
-var CLIENTS_PAGE_BUILD = '20260607';
+var CLIENTS_PAGE_BUILD = '20260608';
+window._clientsLastDiag = '';
+
+async function runClientsAccessDiagnostic (org) {
+  if (!window.supabaseClient) return 'Not signed in to Supabase.';
+  var sess = await window.supabaseClient.auth.getSession();
+  if (!sess.data || !sess.data.session) return 'No auth session — log in again.';
+  var uid = sess.data.session.user.id;
+  var parts = [];
+  if (org && org.id) {
+    parts.push('Org: ' + org.id.slice(0, 8) + '…');
+    var mem = await window.supabaseClient.from('organization_members').select('role')
+      .eq('organization_id', org.id).eq('user_id', uid).maybeSingle();
+    parts.push(mem.data ? 'Member: yes (' + (mem.data.role || 'member') + ')' : 'Member: <strong>no</strong> — run supabase-ensure-org-membership.sql');
+    var ob = await window.supabaseClient.from('user_onboarding').select('organization_id')
+      .eq('user_id', uid).maybeSingle();
+    if (ob.error) parts.push('Onboarding row: error (' + ob.error.message + ')');
+    else if (!ob.data) parts.push('Onboarding row: missing');
+    else parts.push(ob.data.organization_id ? 'Onboarding org: linked' : 'Onboarding org: <strong>empty</strong>');
+    var probe = await window.supabaseClient.from('clients').select('id', { count: 'exact', head: true }).eq('org_id', org.id);
+    if (probe.error) parts.push('Read clients: ' + probe.error.message);
+    else parts.push('Read clients: OK');
+  } else {
+    parts.push('No workspace org — finish <a href="workspace-setup.html?stay=1">setup</a> or run ensure-org SQL.');
+  }
+  return parts.join(' · ');
+}
 
 async function updateClientsPageStatus () {
   var el = document.getElementById ('clientsSyncBanner');
@@ -663,7 +724,17 @@ async function updateClientsPageStatus () {
   } else {
     lines.push ('No workspace — <a href="workspace-setup.html?stay=1" style="color:#2d5a47;font-weight:700;">finish setup</a> first.');
   }
-  el.innerHTML = lines.join (' ');
+  try {
+    var diag = await runClientsAccessDiagnostic(org);
+    window._clientsLastDiag = diag;
+    lines.push (diag);
+  } catch (e) {
+    lines.push ('Diagnostic: ' + (e && e.message ? e.message : 'failed'));
+  }
+  if (window._clientsLastSaveError) {
+    lines.push ('<span style="color:#a64040;">Last save: ' + esc(window._clientsLastSaveError) + '</span>');
+  }
+  el.innerHTML = lines.join ('<br>');
   el.style.background = (ok && org && org.id) ? '#e8f5ee' : '#fff0f0';
   el.style.borderColor = (ok && org && org.id) ? '#b8dcc8' : '#e8b4b4';
   el.style.color = (ok && org && org.id) ? '#1a3d2e' : '#5c2020';
@@ -1106,6 +1177,8 @@ async function createClient () {
     if (/abort/i.test (msg)) {
       msg = 'Still using old cached code. Close tab, reopen Clients, or use Incognito. (Java API is disabled.)';
     }
+    window._clientsLastSaveError = msg;
+    void updateClientsPageStatus ();
     clientToast ('Save failed: ' + msg);
     console.error ('createClient:', err);
   } finally {
