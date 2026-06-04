@@ -196,6 +196,10 @@
       </div>
     </header>
 
+    <div id="clientsSyncBanner" role="status" style="margin-bottom:14px;padding:12px 16px;border-radius:10px;font-size:13px;line-height:1.5;background:#fff8e6;border:1px solid #e6c200;color:#4a3d00;">
+      Checking connection…
+    </div>
+
     <!-- Client stats strip -->
     <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
       <div style="background:#fff;border:1px solid #e2ece7;border-radius:10px;padding:14px 22px;min-width:110px;">
@@ -635,6 +639,36 @@ async function ensureGilbertoOrgReady () {
   return null;
 }
 
+var CLIENTS_PAGE_BUILD = '20260607';
+
+async function updateClientsPageStatus () {
+  var el = document.getElementById ('clientsSyncBanner');
+  if (!el) return;
+  var ok = typeof supabaseInsertClientRow === 'function' && !!window.supabaseClient;
+  var org = window.gilbertoCurrentOrg;
+  if (!org || !org.id) {
+    try { org = await ensureGilbertoOrgReady (); } catch (_) {}
+  }
+  var lines = [];
+  lines.push ('<strong>Build ' + CLIENTS_PAGE_BUILD + '</strong> — saves go to Supabase (not Render/Java).');
+  if (!window.supabaseClient) {
+    lines.push ('<span style="color:#a64040;">Supabase not connected. Check supabaseConfig.js.</span>');
+  } else if (typeof supabaseInsertClientRow !== 'function') {
+    lines.push ('<span style="color:#a64040;">Old cached page — close tab, reopen clients.html, or use Incognito.</span>');
+  } else {
+    lines.push ('Save system: ready.');
+  }
+  if (org && org.id) {
+    lines.push ('Workspace: <strong>' + (org.name || 'Company') + '</strong>.');
+  } else {
+    lines.push ('No workspace — <a href="workspace-setup.html?stay=1" style="color:#2d5a47;font-weight:700;">finish setup</a> first.');
+  }
+  el.innerHTML = lines.join (' ');
+  el.style.background = (ok && org && org.id) ? '#e8f5ee' : '#fff0f0';
+  el.style.borderColor = (ok && org && org.id) ? '#b8dcc8' : '#e8b4b4';
+  el.style.color = (ok && org && org.id) ? '#1a3d2e' : '#5c2020';
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 var _clientsData     = [];   // full list cached after load
 var _editingClientId = null; // set when edit modal is open
@@ -797,7 +831,8 @@ async function loadClientsTable () {
     }
     _clientsData = rows;
     renderClientsTable (rows);
-    if (org && org.id) loadClientStats (org.id);
+    if (org && org.id) await loadClientStats (org.id);
+    void updateClientsPageStatus ();
   } catch (e) {
     console.warn ('loadClientsTable error:', e);
     var errText = _formatSupabaseErr (e);
@@ -865,7 +900,10 @@ async function loadClientStats (orgId) {
     s ('clientStatInactive',   stats.inactive   || 0);
     s ('clientStatDischarged', stats.discharged || 0);
     s ('clientStatTotal',      stats.total      || 0);
-  } catch (e) { /* non-fatal */ }
+  } catch (e) {
+    var z = function (id) { var el = document.getElementById (id); if (el) el.textContent = '0'; };
+    z ('clientStatActive'); z ('clientStatInactive'); z ('clientStatDischarged'); z ('clientStatTotal');
+  }
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -1211,6 +1249,8 @@ async function loadStaffDropdowns (rbtElId, bcbaElId, selectedRbt, selectedBcba)
 
 // ── Boot: loadClientsTable is called by applyWorkspaceWithOrg in dashboard.js ─
 window.loadClientsTable = loadClientsTable;
+window.updateClientsPageStatus = updateClientsPageStatus;
+void updateClientsPageStatus ();
 
 </script>
 </body>

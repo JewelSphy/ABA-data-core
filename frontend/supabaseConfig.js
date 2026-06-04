@@ -15,7 +15,7 @@ window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXB
 // Match the port you use to open the app (Live Server, etc.)
 window.AUTH_REDIRECT_URL = (function () {
   if (typeof location === "undefined" || !location.origin || location.origin === "null") {
-    return "http://127.0.0.1:5503/index.html";
+    return "http://127.0.0.1:5504/index.html";
   }
   var dir = location.pathname.replace(/[^/]*$/, "");
   return location.origin + dir + "index.html";

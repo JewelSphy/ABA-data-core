@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Folder check - Gilberto CRM</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
+    .ok { background: #e8f5ee; border: 1px solid #b8dcc8; padding: 16px; border-radius: 10px; color: #1a3d2e; }
+    .bad { background: #fff0f0; border: 1px solid #e8b4b4; padding: 16px; border-radius: 10px; color: #5c2020; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Am I on the right folder?</h1>
+  <p id="out">Checking…</p>
+  <p><a href="clients.html">Go to Clients</a> · <a href="index.html">Sign in</a></p>
+  <script>
+    var build = '20260607';
+    var hasBanner = false;
+    fetch('clients.html', { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        hasBanner = html.indexOf('clientsSyncBanner') !== -1 && html.indexOf('20260607') !== -1;
+        var out = document.getElementById('out');
+        if (hasBanner) {
+          out.className = 'ok';
+          out.innerHTML = '<strong>Yes — this Live Server folder has the fixed app.</strong><br><br>'
+            + 'URL: <code>' + location.href + '</code><br>'
+            + 'Origin: <code>' + location.origin + '</code><br><br>'
+            + 'Open <a href="clients.html">clients.html</a>. You should see a green/yellow status bar under the title with <strong>Build 20260607</strong>.';
+        } else {
+          out.className = 'bad';
+          out.innerHTML = '<strong>No — this is an OLD copy of the app.</strong><br><br>'
+            + 'Live Server is not serving <code>Gilberto CRM 3/frontend</code> with our fixes.<br><br>'
+            + 'In Cursor: open folder <code>Downloads/Gilberto CRM 3</code>, right-click <code>frontend/clients.html</code> → <strong>Open with Live Server</strong>.<br>'
+            + 'This project uses port <strong>5504</strong> (see .vscode/settings.json).';
+        }
+      })
+      .catch(function (e) {
+        document.getElementById('out').className = 'bad';
+        document.getElementById('out').textContent = 'Could not read clients.html: ' + e.message;
+      });
+  </script>
+</body>
+</html>

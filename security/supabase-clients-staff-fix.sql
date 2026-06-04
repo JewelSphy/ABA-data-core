@@ -296,6 +296,11 @@ create policy "sessions_delete_org"
 -- Add extended columns to clients (diagnosis, staff FKs, etc.)
 -- ============================================================
 
+alter table public.clients add column if not exists date_of_birth      date;
+alter table public.clients add column if not exists dob                  date;
+update public.clients set date_of_birth = dob where date_of_birth is null and dob is not null;
+update public.clients set dob = date_of_birth where dob is null and date_of_birth is not null;
+
 alter table public.clients add column if not exists diagnosis          text;
 alter table public.clients add column if not exists assigned_rbt_id    uuid references public.staff (id) on delete set null;
 alter table public.clients add column if not exists assigned_bcba_id   uuid references public.staff (id) on delete set null;
