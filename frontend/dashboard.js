@@ -589,24 +589,34 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    const btn = document.createElement("button");
-    btn.className = "sidebar-collapse-btn";
-    btn.title = "Toggle sidebar";
-    document.body.appendChild(btn);
-
+    const mobileShell = window.matchMedia && window.matchMedia("(max-width: 980px)").matches;
+    let btn = null;
     function applyState(collapsed) {
+      if (mobileShell) {
+        document.body.classList.remove("sidebar-collapsed");
+        return;
+      }
       document.body.classList.toggle("sidebar-collapsed", collapsed);
-      btn.innerHTML = collapsed ? "&#8250;" : "&#8249;";
-      btn.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+      if (btn) {
+        btn.innerHTML = collapsed ? "&#8250;" : "&#8249;";
+        btn.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+      }
     }
 
-    applyState(localStorage.getItem("gilberto_sidebar") === "collapsed");
-
-    btn.addEventListener("click", function () {
-      const collapsed = !document.body.classList.contains("sidebar-collapsed");
-      applyState(collapsed);
-      localStorage.setItem("gilberto_sidebar", collapsed ? "collapsed" : "expanded");
-    });
+    if (!mobileShell) {
+      btn = document.createElement("button");
+      btn.className = "sidebar-collapse-btn";
+      btn.title = "Toggle sidebar";
+      document.body.appendChild(btn);
+      applyState(localStorage.getItem("gilberto_sidebar") === "collapsed");
+      btn.addEventListener("click", function () {
+        const collapsed = !document.body.classList.contains("sidebar-collapsed");
+        applyState(collapsed);
+        localStorage.setItem("gilberto_sidebar", collapsed ? "collapsed" : "expanded");
+      });
+    } else {
+      document.body.classList.remove("sidebar-collapsed");
+    }
 
     await applyWorkspaceWithOrg();
     gilbertoInjectOnlineUsersNav();
