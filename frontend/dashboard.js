@@ -1498,6 +1498,58 @@ function syncDashboardSummaryFromStats() {
   set("dashboardUpcomingCount", upcoming);
 }
 
+async function loadDashboardCareActivity(orgId) {
+  const bars = document.getElementById("dashboardCareActivityBars");
+  const empty = document.getElementById("dashboardCareActivityEmpty");
+  if (!bars || !window.supabaseClient || !orgId) return;
+  const barNodes = Array.from(bars.querySelectorAll("span"));
+  try {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    const startIso = start.toISOString().slice(0, 10);
+    const endIso = end.toISOString().slice(0, 10);
+    const days = Array.from({ length: 7 }, function (_, index) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + index);
+      return d.toISOString().slice(0, 10);
+    });
+    const counts = days.reduce(function (acc, day) {
+      acc[day] = 0;
+      return acc;
+    }, {});
+    const { data, error } = await window.supabaseClient
+      .from("sessions")
+      .select("session_date")
+      .eq("org_id", orgId)
+      .gte("session_date", startIso)
+      .lte("session_date", endIso);
+    if (error) throw error;
+    (data || []).forEach(function (row) {
+      if (row && counts[row.session_date] != null) counts[row.session_date] += 1;
+    });
+    const values = days.map(function (day) { return counts[day] || 0; });
+    const max = Math.max.apply(null, values);
+    barNodes.forEach(function (node, index) {
+      const value = values[index] || 0;
+      const height = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 0;
+      node.style.setProperty("--h", height + "%");
+      node.title = dashboardDateLabel(days[index]) + ": " + value + " session" + (value === 1 ? "" : "s");
+    });
+    if (empty) {
+      empty.style.display = max > 0 ? "none" : "";
+      empty.textContent = max > 0 ? "" : "No session activity recorded for the last 7 days.";
+    }
+  } catch (error) {
+    console.warn("loadDashboardCareActivity error:", error);
+    barNodes.forEach(function (node) { node.style.setProperty("--h", "0%"); });
+    if (empty) {
+      empty.style.display = "";
+      empty.textContent = "Could not load care activity.";
+    }
+  }
+}
+
 function initDashboardSearch() {
   const input = document.getElementById("dashboardSearchInput");
   if (!input || input.dataset.ready === "1") return;
@@ -1590,6 +1642,7 @@ async function loadDashboardExperience() {
   const org = window.gilbertoCurrentOrg;
   if (!org?.id) return;
   await Promise.all([
+    loadDashboardCareActivity(org.id),
     loadDashboardAppointments(org.id),
     loadDashboardTeam(org.id),
   ]);

@@ -72,10 +72,8 @@
         <div class="menu-wrap">
           <button class="small-btn menu-caret" onclick="toggleTopMenu(event,'notifMenuDashboard')">Notifications</button>
           <div class="top-menu" id="notifMenuDashboard">
-            <div class="top-menu-item"><strong>🚨 4 new alerts</strong></div>
-            <div class="top-menu-item">⚠️ 2 pending revisions need review</div>
-            <div class="top-menu-item">📌 1 supervision log still pending</div>
-            <div class="top-menu-item">✍️ 1 caregiver signature missing</div>
+            <div class="top-menu-item"><strong>No live notification feed connected</strong></div>
+            <div class="top-menu-item">Alerts will appear here only after real notification records are available.</div>
           </div>
         </div>
         <div class="menu-wrap">
@@ -172,22 +170,23 @@
             <div class="dashboard-panel-head">
               <div>
                 <h3>Care Activity</h3>
-                <p>New services compared with continuing care.</p>
+                <p>Recorded sessions from real workspace data.</p>
               </div>
-              <button class="small-btn" type="button" onclick="goToPage('behavioral-analytics.html')">Month</button>
+              <button class="small-btn" type="button" onclick="goToPage('sessions.html')">Sessions</button>
             </div>
-            <div class="dashboard-bars" aria-label="Care activity chart">
-              <span style="--h:72%"></span>
-              <span style="--h:38%"></span>
-              <span style="--h:62%"></span>
-              <span style="--h:46%"></span>
-              <span style="--h:54%"></span>
-              <span style="--h:58%"></span>
-              <span style="--h:66%"></span>
+            <div class="dashboard-bars" id="dashboardCareActivityBars" aria-label="Care activity chart">
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
+              <span style="--h:0%"></span>
             </div>
+            <div id="dashboardCareActivityEmpty" style="padding:10px 0 0;font-size:12px;color:#6b8c7a;">No session activity recorded for the last 7 days.</div>
             <div class="dashboard-chart-legend">
-              <span><i></i> New sessions</span>
-              <span><i class="muted"></i> Continuing care</span>
+              <span><i></i> Sessions by day</span>
+              <span><i class="muted"></i> Real records only</span>
             </div>
           </article>
 
