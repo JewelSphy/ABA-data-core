@@ -2680,3 +2680,313 @@ button,
   }
 }
 
+/* =====================================================
+   Professional app polish pass
+   Shared across dashboard, people, reports, and data pages.
+   ===================================================== */
+:root {
+  --pro-bg: #f5f3ee;
+  --pro-surface: rgba(255, 255, 255, 0.84);
+  --pro-border: rgba(28, 47, 39, 0.1);
+  --pro-border-strong: rgba(28, 47, 39, 0.18);
+  --pro-text: #16231d;
+  --pro-muted: #66766e;
+  --pro-radius-lg: 22px;
+  --pro-radius-md: 16px;
+  --pro-shadow-sm: 0 8px 22px rgba(20, 32, 27, 0.07);
+  --pro-shadow-md: 0 16px 44px rgba(20, 32, 27, 0.1);
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(125, 146, 127, 0.2), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(71, 103, 91, 0.18), transparent 32%),
+    linear-gradient(135deg, #f8f6f1 0%, #f2f0eb 42%, #ebe9e2 100%) !important;
+  color: var(--pro-text) !important;
+}
+
+.main-area {
+  position: relative;
+  padding: 32px 36px !important;
+}
+
+.main-area::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 260px;
+  height: 210px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
+  z-index: -1;
+}
+
+.sidebar {
+  background:
+    radial-gradient(circle at 35% -10%, rgba(163, 189, 178, 0.2), transparent 30%),
+    linear-gradient(180deg, #0d1916 0%, #132520 46%, #20372f 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 18px 0 60px rgba(12, 22, 18, 0.28) !important;
+}
+
+.sidebar-header {
+  padding: 10px 8px 18px !important;
+  margin-bottom: 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logo-icon {
+  background: linear-gradient(145deg, #eef5f0, #9fb8ac) !important;
+  color: #17261f !important;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+
+.section-title {
+  color: rgba(220, 230, 224, 0.66) !important;
+  margin-top: 24px !important;
+}
+
+.nav-item {
+  position: relative;
+  min-height: 40px;
+  border-left: 0 !important;
+  border-radius: 13px !important;
+  padding: 10px 12px !important;
+  color: rgba(241, 246, 243, 0.8) !important;
+}
+
+.nav-item::before {
+  content: "";
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.11) !important;
+  color: #ffffff !important;
+  transform: translateX(2px);
+}
+
+.nav-item:hover::before,
+.nav-item.active::before {
+  background: #d9eadf;
+  box-shadow: 0 0 18px rgba(217, 234, 223, 0.44);
+}
+
+.topbar,
+.ui-colorful .topbar {
+  align-items: stretch !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(250, 249, 245, 0.78)) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: var(--pro-radius-lg) !important;
+  box-shadow: var(--pro-shadow-sm) !important;
+  padding: 18px 20px !important;
+  margin-bottom: 22px !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.topbar > div:first-child {
+  border-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.topbar h1 {
+  color: var(--pro-text) !important;
+  letter-spacing: -0.04em !important;
+}
+
+.topbar p {
+  color: var(--pro-muted) !important;
+  letter-spacing: 0.04em !important;
+}
+
+.top-actions {
+  align-self: center;
+}
+
+.cards {
+  gap: 18px !important;
+}
+
+.card,
+.panel,
+.calendar-panel,
+.section-box,
+.table-wrapper,
+.ui-colorful .table-wrapper,
+.urgency-col,
+.selection-card,
+.graph-card,
+.lib-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(252, 251, 247, 0.9)) !important;
+  border: 1px solid var(--pro-border) !important;
+  border-radius: var(--pro-radius-md) !important;
+  box-shadow: var(--pro-shadow-sm) !important;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 22px !important;
+  border-left: 0 !important;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: auto -28px -44px auto;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(71, 103, 91, 0.13), transparent 68%);
+}
+
+.card h2 {
+  color: var(--pro-text) !important;
+  font-size: clamp(28px, 3vw, 38px) !important;
+}
+
+.card p,
+.card span {
+  color: var(--pro-muted) !important;
+}
+
+.interactive-surface,
+.card,
+.table-wrapper,
+.section-box,
+.panel,
+.selection-card,
+.graph-card,
+.lib-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease !important;
+}
+
+.interactive-surface:hover,
+.card:hover,
+.table-wrapper:hover,
+.section-box:hover,
+.panel:hover,
+.selection-card:hover,
+.graph-card:hover,
+.lib-card:hover {
+  border-color: var(--pro-border-strong) !important;
+  box-shadow: var(--pro-shadow-md) !important;
+  transform: translateY(-2px);
+}
+
+.data-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.data-table th,
+.ui-colorful .data-table thead th {
+  background: rgba(245, 247, 244, 0.92) !important;
+  color: #506158 !important;
+}
+
+.data-table td {
+  border-bottom-color: rgba(28, 47, 39, 0.07) !important;
+}
+
+.data-table tbody tr:hover td,
+.ui-colorful .data-table tbody tr:hover {
+  background: rgba(237, 243, 239, 0.82) !important;
+}
+
+.add-btn,
+.small-btn,
+.icon-btn,
+.tbl-btn,
+.client-quick-btn {
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+}
+
+.add-btn,
+.small-btn,
+.icon-btn {
+  background: linear-gradient(135deg, #4d685e, #314b42) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.tbl-btn {
+  background: #ffffff !important;
+  border-color: rgba(71, 103, 91, 0.22) !important;
+  color: #29483d !important;
+}
+
+.search-input,
+.form-group input,
+.form-group select,
+.form-group textarea {
+  border-radius: 12px !important;
+  border-color: rgba(71, 103, 91, 0.18) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.modal-overlay {
+  background: rgba(17, 27, 23, 0.46) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-box {
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #1b3029, #47675b) !important;
+}
+
+.workspace-banner,
+.notice,
+.invite-team-panel {
+  border-radius: var(--pro-radius-md) !important;
+  border: 1px solid var(--pro-border) !important;
+}
+
+.has-ripple {
+  isolation: isolate;
+}
+
+body.is-navigating .main-area {
+  opacity: 0.72;
+  transform: translateY(2px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+@media (max-width: 980px) {
+  .main-area {
+    padding: 18px 14px !important;
+  }
+
+  .main-area::before {
+    left: 0;
+  }
+
+  .topbar,
+  .ui-colorful .topbar {
+    border-radius: 18px !important;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    transform: translateY(-1px);
+  }
+}
+

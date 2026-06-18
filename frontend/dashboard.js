@@ -399,6 +399,7 @@ function goToPage(page) {
   const target = String(page || "").trim();
   if (!target) return;
 
+  document.body.classList.add("is-navigating");
   window.location.assign(new URL(target, window.location.href).href);
 }
 
@@ -1655,12 +1656,12 @@ document.addEventListener('click', function () {
 
 function enhanceInteractivity() {
   const rippleTargets = document.querySelectorAll(
-    '.small-btn, .add-btn, .icon-btn, .tbl-btn, .nav-item, .profile-chip, .user-pill'
+    '.small-btn, .add-btn, .icon-btn, .tbl-btn, .nav-item, .profile-chip, .user-pill, .client-quick-btn, .doc-action-btn, .doc-filter-chip'
   );
   rippleTargets.forEach((el) => el.classList.add('has-ripple'));
 
   const hoverTargets = document.querySelectorAll(
-    '.cards .card, .section-box, .table-wrapper, .selection-card, .graph-card, .lib-card'
+    '.cards .card, .section-box, .table-wrapper, .selection-card, .graph-card, .lib-card, .panel, .calendar-panel, .urgency-col'
   );
   hoverTargets.forEach((el) => el.classList.add('interactive-surface'));
 
