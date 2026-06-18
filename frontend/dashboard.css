@@ -2992,10 +2992,10 @@ body.is-navigating .main-area {
 
 .dashboard-hero h2 {
   color: #111b17;
-  font-size: clamp(2.1rem, 4.4vw, 4.9rem);
-  letter-spacing: -0.07em;
-  line-height: 0.96;
-  max-width: 640px;
+  font-size: clamp(1.7rem, 2.8vw, 3.2rem);
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  max-width: 520px;
 }
 
 .dashboard-hero p:not(.dashboard-kicker) {
