@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gilberto Dashboard</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260618b" />
+  <link rel="stylesheet" href="dashboard.css?v=20260618c" />
 </head>
 <body class="page-dashboard">
 
@@ -125,84 +125,201 @@
       style="display:none"
     ></div>
 
-    <!-- STAT CARDS -->
-    <section class="cards">
-      <div class="card">
-        <p><span class="sticker emoji-book book-blue" aria-hidden="true"></span> Active Clients</p>
-        <h2 id="statActiveClients">—</h2>
-        <span>Children receiving services</span>
+    <section class="dashboard-hero">
+      <div>
+        <p class="dashboard-kicker">Clinic command center</p>
+        <h2>Welcome back, <span class="dashboard-user-name">Current User</span>.</h2>
+        <p>Review today&apos;s schedule, client activity, staff readiness, and items that need attention.</p>
       </div>
-      <div class="card">
-        <p><span class="sticker emoji-book book-green" aria-hidden="true"></span> Sessions Today</p>
-        <h2 id="statSessionsToday">—</h2>
-        <span>Behavior treatment sessions</span>
-      </div>
-      <div class="card">
-        <p><span class="sticker emoji-book book-pink" aria-hidden="true"></span> Pending Revisions</p>
-        <h2 id="statPendingRevisions">—</h2>
-        <span>Notes needing review</span>
-      </div>
-      <div class="card">
-        <p><span class="sticker emoji-book book-yellow" aria-hidden="true"></span> Sessions This Week</p>
-        <h2 id="statSessionsWeek">—</h2>
-        <span>Scheduled this week</span>
+      <div class="dashboard-search" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input id="dashboardSearchInput" type="search" placeholder="Search clients, sessions, documents..." />
       </div>
     </section>
 
-    <!-- URGENCY TIERS -->
-    <div class="urgency-header">
-      <h2>Action Required</h2>
-      <p>
-        <strong>Expired</strong> required paperwork (red column) →
-        <strong>High</strong> = missing initial uploads for active clients →
-        <strong>Medium</strong> = renewing within 45 days →
-        <strong>Low</strong> = session notes pending review.
-      </p>
+    <div class="dashboard-command-grid">
+      <section class="dashboard-main-stack">
+        <!-- STAT CARDS -->
+        <section class="cards dashboard-kpis">
+          <button class="card dashboard-kpi" type="button" onclick="goToPage('clients.html')">
+            <p><span class="sticker emoji-book book-blue" aria-hidden="true"></span> Active Clients</p>
+            <h2 id="statActiveClients">—</h2>
+            <span>Children receiving services</span>
+            <small>Open clients →</small>
+          </button>
+          <button class="card dashboard-kpi" type="button" onclick="goToPage('sessions.html')">
+            <p><span class="sticker emoji-book book-green" aria-hidden="true"></span> Sessions Today</p>
+            <h2 id="statSessionsToday">—</h2>
+            <span>Behavior treatment sessions</span>
+            <small>View schedule →</small>
+          </button>
+          <button class="card dashboard-kpi" type="button" onclick="goToPage('revisions.html')">
+            <p><span class="sticker emoji-book book-pink" aria-hidden="true"></span> Pending Revisions</p>
+            <h2 id="statPendingRevisions">—</h2>
+            <span>Notes needing review</span>
+            <small>Review notes →</small>
+          </button>
+          <button class="card dashboard-kpi" type="button" onclick="goToPage('calendar.html')">
+            <p><span class="sticker emoji-book book-yellow" aria-hidden="true"></span> Sessions This Week</p>
+            <h2 id="statSessionsWeek">—</h2>
+            <span>Scheduled this week</span>
+            <small>Open calendar →</small>
+          </button>
+        </section>
+
+        <section class="dashboard-insights-grid">
+          <article class="dashboard-panel dashboard-survey-card">
+            <div class="dashboard-panel-head">
+              <div>
+                <h3>Care Activity</h3>
+                <p>New services compared with continuing care.</p>
+              </div>
+              <button class="small-btn" type="button" onclick="goToPage('behavioral-analytics.html')">Month</button>
+            </div>
+            <div class="dashboard-bars" aria-label="Care activity chart">
+              <span style="--h:72%"></span>
+              <span style="--h:38%"></span>
+              <span style="--h:62%"></span>
+              <span style="--h:46%"></span>
+              <span style="--h:54%"></span>
+              <span style="--h:58%"></span>
+              <span style="--h:66%"></span>
+            </div>
+            <div class="dashboard-chart-legend">
+              <span><i></i> New sessions</span>
+              <span><i class="muted"></i> Continuing care</span>
+            </div>
+          </article>
+
+          <article class="dashboard-panel dashboard-gauge-card">
+            <div class="dashboard-panel-head">
+              <div>
+                <h3>Total Appointments</h3>
+                <p>Weekly progress from scheduled services.</p>
+              </div>
+              <button class="icon-btn" type="button" onclick="goToPage('sessions.html')">•••</button>
+            </div>
+            <div class="dashboard-gauge" aria-label="Total appointments gauge">
+              <div class="dashboard-gauge-ring">
+                <strong id="dashboardTotalAppointments">—</strong>
+                <span>scheduled</span>
+              </div>
+            </div>
+            <div class="dashboard-gauge-meta">
+              <span>Completed <strong id="dashboardCompletedCount">—</strong></span>
+              <span>Upcoming <strong id="dashboardUpcomingCount">—</strong></span>
+            </div>
+          </article>
+        </section>
+
+        <section class="dashboard-panel dashboard-appointments-card">
+          <div class="dashboard-panel-head">
+            <div>
+              <h3>Appointments</h3>
+              <p>Next scheduled sessions and assigned staff.</p>
+            </div>
+            <button class="small-btn" type="button" onclick="goToPage('sessions.html')">View all</button>
+          </div>
+          <div class="table-wrapper dashboard-preview-table">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Assigned Staff</th>
+                  <th>Date</th>
+                  <th>Service</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardAppointmentsBody">
+                <tr><td colspan="5" style="text-align:center;padding:18px;color:#6b8c7a;">Loading appointments...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- URGENCY TIERS -->
+        <div class="urgency-header">
+          <h2>Action Required</h2>
+          <p>
+            <strong>Expired</strong> required paperwork (red column) →
+            <strong>High</strong> = missing initial uploads for active clients →
+            <strong>Medium</strong> = renewing within 45 days →
+            <strong>Low</strong> = session notes pending review.
+          </p>
+        </div>
+
+        <section class="urgency-grid">
+          <div class="urgency-col expired">
+            <div class="urgency-title">
+              <span class="urgency-dot"></span>
+              Expired
+              <span class="urgency-count" id="urgencyCountExpired">0</span>
+            </div>
+            <div class="urgency-empty" id="urgencyEmptyExpired" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No expired items</div>
+          </div>
+
+          <div class="urgency-col high">
+            <div class="urgency-title">
+              <span class="urgency-dot"></span>
+              Missing uploads
+              <span class="urgency-count" id="urgencyCountHigh">0</span>
+            </div>
+            <div class="urgency-empty" id="urgencyEmptyHigh" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No missing slots</div>
+          </div>
+
+          <div class="urgency-col medium">
+            <div class="urgency-title">
+              <span class="urgency-dot"></span>
+              Expiring soon
+              <span class="urgency-count" id="urgencyCountMedium">0</span>
+            </div>
+            <div class="urgency-empty" id="urgencyEmptyMedium" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">Nothing due soon</div>
+          </div>
+
+          <div class="urgency-col low">
+            <div class="urgency-title">
+              <span class="urgency-dot"></span>
+              Revisions pending
+              <span class="urgency-count" id="urgencyCountLow">0</span>
+            </div>
+            <div class="urgency-empty" id="urgencyEmptyLow" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No notes waiting</div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="dashboard-side-stack">
+        <section class="dashboard-panel dashboard-status-card">
+          <div class="dashboard-panel-head">
+            <div>
+              <h3>Team Status</h3>
+              <p>Staff availability and quick routing.</p>
+            </div>
+            <button class="small-btn" type="button" onclick="goToPage('staff.html')">View more</button>
+          </div>
+          <div class="dashboard-featured-staff">
+            <div class="dashboard-avatar-large">BC</div>
+            <div>
+              <strong id="dashboardFeaturedStaff">Clinical Team</strong>
+              <span>Care coordination ready</span>
+            </div>
+          </div>
+          <div class="dashboard-team-list" id="dashboardTeamList">
+            <button type="button" onclick="goToPage('staff.html')"><span>Staff</span><small>Open staff directory</small><b>Available</b></button>
+            <button type="button" onclick="goToPage('providers.html')"><span>Providers</span><small>Review provider list</small><b>Available</b></button>
+            <button type="button" onclick="goToPage('caregivers.html')"><span>Caregivers</span><small>Family contacts</small><b>Active</b></button>
+          </div>
+        </section>
+
+        <section class="dashboard-panel dashboard-quick-actions">
+          <h3>Quick Actions</h3>
+          <button type="button" onclick="goToPage('clients.html')">Add or review clients</button>
+          <button type="button" onclick="goToPage('calendar.html')">Schedule a session</button>
+          <button type="button" onclick="goToPage('documents.html')">Check documents</button>
+          <button type="button" onclick="goToPage('data-collection-hub.html')">Open data collection</button>
+        </section>
+      </aside>
     </div>
-
-    <section class="urgency-grid">
-
-      <!-- EXPIRED -->
-      <div class="urgency-col expired">
-        <div class="urgency-title">
-          <span class="urgency-dot"></span>
-          Expired
-          <span class="urgency-count" id="urgencyCountExpired">0</span>
-        </div>
-        <div class="urgency-empty" id="urgencyEmptyExpired" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No expired items</div>
-      </div>
-
-      <!-- MISSING UPLOADS (initial required files for active clients) -->
-      <div class="urgency-col high">
-        <div class="urgency-title">
-          <span class="urgency-dot"></span>
-          Missing uploads
-          <span class="urgency-count" id="urgencyCountHigh">0</span>
-        </div>
-        <div class="urgency-empty" id="urgencyEmptyHigh" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No missing slots</div>
-      </div>
-
-      <!-- EXPIRING SOON (45 days) -->
-      <div class="urgency-col medium">
-        <div class="urgency-title">
-          <span class="urgency-dot"></span>
-          Expiring soon
-          <span class="urgency-count" id="urgencyCountMedium">0</span>
-        </div>
-        <div class="urgency-empty" id="urgencyEmptyMedium" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">Nothing due soon</div>
-      </div>
-
-      <!-- SESSION NOTE REVIEW -->
-      <div class="urgency-col low">
-        <div class="urgency-title">
-          <span class="urgency-dot"></span>
-          Revisions pending
-          <span class="urgency-count" id="urgencyCountLow">0</span>
-        </div>
-        <div class="urgency-empty" id="urgencyEmptyLow" style="padding:14px 12px;font-size:0.8rem;color:#9eb3a8;">No notes waiting</div>
-      </div>
-
-    </section>
 
   </main>
 </div>
@@ -211,6 +328,6 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260618b"></script>
+<script src="dashboard.js?v=20260618c"></script>
 </body>
 </html>

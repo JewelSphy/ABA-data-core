@@ -901,6 +901,7 @@ async function applyWorkspaceWithOrg() {
   }
   // Fire page-specific data loaders after org is resolved
   void loadDashboardStats();
+  void loadDashboardExperience();
   void loadSessionsTable();
   // Re-render calendar now that org is available (first render fires before org loads)
   if (document.body.classList.contains('page-calendar') && typeof render === 'function') {
@@ -1391,6 +1392,7 @@ async function loadDashboardStats() {
       set("statPendingRevisions", clamp(stats.pending_revisions));
       set("statSessionsWeek",     clamp(stats.sessions_week));
       applyActionRequiredDashboard(stats);
+      syncDashboardSummaryFromStats();
       return;
     } catch (e) {
       console.warn("loadDashboardStats bridge error, falling back:", e);
@@ -1410,12 +1412,148 @@ async function loadDashboardStats() {
     set("statSessionsToday",    sessionsToday.count);
     set("statPendingRevisions", pendingNotes.count);
     set("statSessionsWeek",     sessionsWeek.count);
+    syncDashboardSummaryFromStats();
   } catch (e) {
     console.warn("loadDashboardStats fallback error:", e);
   }
 }
 
 window.loadDashboardStats = loadDashboardStats;
+
+function dashboardEscape(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function dashboardDateLabel(value) {
+  if (!value) return "—";
+  const date = new Date(String(value).includes("T") ? value : value + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function dashboardFullName(row) {
+  if (!row) return "";
+  return [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
+}
+
+function syncDashboardSummaryFromStats() {
+  if (!document.body.classList.contains("page-dashboard")) return;
+  const week = clampStat(document.getElementById("statSessionsWeek")?.textContent);
+  const today = clampStat(document.getElementById("statSessionsToday")?.textContent);
+  const upcoming = Math.max(week - today, 0);
+  const set = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
+  set("dashboardTotalAppointments", week);
+  set("dashboardCompletedCount", today);
+  set("dashboardUpcomingCount", upcoming);
+}
+
+function initDashboardSearch() {
+  const input = document.getElementById("dashboardSearchInput");
+  if (!input || input.dataset.ready === "1") return;
+  input.dataset.ready = "1";
+  input.addEventListener("keydown", function (event) {
+    if (event.key !== "Enter") return;
+    const q = input.value.trim().toLowerCase();
+    if (!q) return;
+    event.preventDefault();
+    if (q.includes("client") || q.includes("patient")) goToPage("clients.html");
+    else if (q.includes("staff") || q.includes("doctor") || q.includes("provider")) goToPage("staff.html");
+    else if (q.includes("document") || q.includes("file")) goToPage("documents.html");
+    else if (q.includes("note") || q.includes("revision")) goToPage("revisions.html");
+    else if (q.includes("calendar") || q.includes("appointment") || q.includes("session")) goToPage("sessions.html");
+    else goToPage("data-collection-hub.html");
+  });
+}
+
+async function loadDashboardAppointments(orgId) {
+  const tbody = document.getElementById("dashboardAppointmentsBody");
+  if (!tbody || !window.supabaseClient || !orgId) return;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await window.supabaseClient
+      .from("sessions")
+      .select("id,service_type,session_date,status,clients(first_name,last_name),staff(first_name,last_name)")
+      .eq("org_id", orgId)
+      .gte("session_date", today)
+      .order("session_date", { ascending: true })
+      .limit(5);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#6b8c7a;">No upcoming appointments yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(function (session) {
+      const client = dashboardFullName(session.clients) || "Unassigned client";
+      const staff = dashboardFullName(session.staff) || "Unassigned staff";
+      const service = formatServiceLabel(session.service_type || "session");
+      return `<tr>
+        <td>${dashboardEscape(client)}</td>
+        <td>${dashboardEscape(staff)}</td>
+        <td>${dashboardEscape(dashboardDateLabel(session.session_date))}</td>
+        <td><span class="badge badge-pending">${dashboardEscape(service)}</span></td>
+        <td><button class="tbl-btn" type="button" onclick="goToPage('behavior-treatment-session.html?session_id=${encodeURIComponent(session.id)}')">Open</button></td>
+      </tr>`;
+    }).join("");
+  } catch (error) {
+    console.warn("loadDashboardAppointments error:", error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:#b04f4f;">Could not load appointments.</td></tr>';
+  }
+}
+
+async function loadDashboardTeam(orgId) {
+  const list = document.getElementById("dashboardTeamList");
+  if (!list || !window.supabaseClient || !orgId) return;
+  try {
+    const { data, error } = await window.supabaseClient
+      .from("staff")
+      .select("first_name,last_name,role,status")
+      .eq("org_id", orgId)
+      .order("last_name", { ascending: true })
+      .limit(4);
+    if (error) throw error;
+    if (!data || data.length === 0) return;
+    const featured = document.getElementById("dashboardFeaturedStaff");
+    if (featured) featured.textContent = dashboardFullName(data[0]) || "Clinical Team";
+    list.innerHTML = data.map(function (person) {
+      const name = dashboardFullName(person) || "Team member";
+      const role = person.role ? String(person.role).replace(/_/g, " ") : "Care team";
+      const status = person.status || "available";
+      return `<button type="button" onclick="goToPage('staff.html')">
+        <span>${dashboardEscape(name)}</span>
+        <small>${dashboardEscape(role)}</small>
+        <b>${dashboardEscape(status)}</b>
+      </button>`;
+    }).join("");
+  } catch (error) {
+    console.warn("loadDashboardTeam error:", error);
+  }
+}
+
+async function loadDashboardExperience() {
+  if (!document.body.classList.contains("page-dashboard")) return;
+  initDashboardSearch();
+  document.querySelectorAll(".dashboard-user-name").forEach(function (el) {
+    el.textContent = window.gilbertoCurrentUserName || "there";
+  });
+  syncDashboardSummaryFromStats();
+  const org = window.gilbertoCurrentOrg;
+  if (!org?.id) return;
+  await Promise.all([
+    loadDashboardAppointments(org.id),
+    loadDashboardTeam(org.id),
+  ]);
+  syncDashboardSummaryFromStats();
+}
+
+window.loadDashboardExperience = loadDashboardExperience;
 
 /* ============================================================
    CALENDAR EVENTS — routes through Java bridge when available,
@@ -1656,12 +1794,12 @@ document.addEventListener('click', function () {
 
 function enhanceInteractivity() {
   const rippleTargets = document.querySelectorAll(
-    '.small-btn, .add-btn, .icon-btn, .tbl-btn, .nav-item, .profile-chip, .user-pill, .client-quick-btn, .doc-action-btn, .doc-filter-chip'
+    '.small-btn, .add-btn, .icon-btn, .tbl-btn, .nav-item, .profile-chip, .user-pill, .client-quick-btn, .doc-action-btn, .doc-filter-chip, .dashboard-kpi, .dashboard-team-list button, .dashboard-quick-actions button'
   );
   rippleTargets.forEach((el) => el.classList.add('has-ripple'));
 
   const hoverTargets = document.querySelectorAll(
-    '.cards .card, .section-box, .table-wrapper, .selection-card, .graph-card, .lib-card, .panel, .calendar-panel, .urgency-col'
+    '.cards .card, .section-box, .table-wrapper, .selection-card, .graph-card, .lib-card, .panel, .calendar-panel, .urgency-col, .dashboard-panel'
   );
   hoverTargets.forEach((el) => el.classList.add('interactive-surface'));
 
