@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Behavior Treatment Session - Gilberto ABA Care CRM</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260609" />
+  <link rel="stylesheet" href="dashboard.css?v=20260618b" />
   <style>
     .behavior-table {
       width: 100%;
@@ -737,7 +737,7 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js"></script>
+<script src="dashboard.js?v=20260618b"></script>
 <script>
   let currentSignedInName = "Current User";
   let currentSessionData = null;
@@ -1073,7 +1073,6 @@
     box.textContent = signatureText(name, date);
   }
   async function loadExistingSessionNote() {
-    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
     const sessionId = new URLSearchParams(window.location.search).get("session_id");
     if (!sessionId || typeof sessionNoteJvmFetchBySessionId !== "function") return;
     try {
@@ -1101,10 +1100,6 @@
   }
   async function submitNote() {
     closeModal('submitConfirmModal');
-    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) {
-      showToast('Java backend mode is required to submit note');
-      return;
-    }
     const sessionId = new URLSearchParams(window.location.search).get("session_id");
     if (!sessionId) {
       showToast('Open this note from Sessions page first');
@@ -1130,7 +1125,7 @@
       supervisor_signed_at: supervisorSignedAtIso,
       submitted_by: currentSignedInName,
       submitted_at: new Date().toISOString(),
-      status: "submitted"
+      status: "pending_review"
     };
     try {
       const res = await sessionNoteJvmUpsert(payload);

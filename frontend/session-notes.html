@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Session Notes - Gilberto ABA Care CRM</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260609" />
+  <link rel="stylesheet" href="dashboard.css?v=20260618b" />
 </head>
 <body>
 <div class="app-layout">
@@ -133,7 +133,7 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js"></script>
+<script src="dashboard.js?v=20260618b"></script>
 <script>
   function openModal(id) { document.getElementById(id).classList.add('open'); }
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -197,7 +197,7 @@
         supervisor_signed_at: note.supervisor_signed_at || null,
         submitted_by: note.submitted_by || window.gilbertoCurrentUserName || 'Session Author',
         submitted_at: note.submitted_at || new Date().toISOString(),
-        status: 'submitted'
+        status: 'pending_review'
       };
       const up = await sessionNoteJvmUpsert(payload);
       if (!up.ok) {
@@ -231,13 +231,12 @@
     return String(v ?? '').replace(/'/g, "\\'");
   }
   async function loadSessionNotesTable() {
-    if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) return;
     const orgId = window.gilbertoCurrentOrg?.id || null;
     const tbody = document.getElementById('notesBody');
     try {
-      let path = '/api/session-notes';
-      if (orgId) path += '?org_id=eq.' + encodeURIComponent(orgId);
-      const res = await jvmFetch(path, { method: 'GET' });
+      const res = typeof gilbertoSupabaseFetchSessionNotes === 'function'
+        ? await gilbertoSupabaseFetchSessionNotes({ orgId })
+        : await jvmFetch('/api/session-notes' + (orgId ? '?org_id=eq.' + encodeURIComponent(orgId) : ''), { method: 'GET' });
       if (!res.ok) throw new Error('load failed');
       const rows = await res.json();
       if (!Array.isArray(rows) || rows.length === 0) {

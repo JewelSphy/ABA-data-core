@@ -275,10 +275,16 @@ function sessionJvmDelete (sessionId) {
 
 // ── Session note helpers ──────────────────────────────────────────────────────
 function sessionNoteJvmFetchBySessionId (sessionId) {
+  if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) {
+    return window.gilbertoSupabaseFetchSessionNotes ({ sessionId: sessionId });
+  }
   return jvmFetch ("/api/session-notes?session_id=eq." + encodeURIComponent (sessionId), { method: "GET" });
 }
 
 function sessionNoteJvmUpsert (rowObj) {
+  if (!(typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled())) {
+    return window.gilbertoSupabaseUpsertSessionNote (rowObj);
+  }
   return jvmFetch ("/api/session-notes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -533,6 +539,126 @@ async function readJvmErrorResponse (pr) {
   window.gilbertoUseJavaBridge = function () {
     if (window.GILBERTO_FORCE_SUPABASE_ONLY) return false;
     return jvmSupabaseRelayEnabled ();
+  };
+
+  function responseLike (ok, payload, message) {
+    return {
+      ok: ok,
+      status: ok ? 200 : 500,
+      statusText: ok ? "OK" : "Supabase error",
+      json: async function () { return payload; },
+      text: async function () { return message || JSON.stringify (payload || {}); },
+    };
+  }
+
+  function normalizeSessionNoteStatus (status) {
+    var s = String (status || "draft").trim ().toLowerCase ().replace (/-/g, "_");
+    if (s === "submitted" || s === "pending" || s === "caregiver_signed") return "pending_review";
+    if (s === "approved" || s === "rejected" || s === "draft" || s === "pending_review") return s;
+    return "pending_review";
+  }
+
+  function mapSupabaseSessionNote (row) {
+    row = row || {};
+    var session = row.sessions || row.session || null;
+    var client = row.clients || row.client || (session && (session.clients || session.client)) || null;
+    return Object.assign ({}, row, {
+      progress_note: row.progress_note || row.note_text || "",
+      note_text: row.note_text || row.progress_note || "",
+      submitted_by: row.submitted_by || row.rbt_signed_by || row.created_by || "",
+      submitted_at: row.submitted_at || row.created_at || row.updated_at || "",
+      session_date: row.session_date || (session && session.session_date) || "",
+      service_type: row.service_type || (session && session.service_type) || "",
+      client: client || null,
+    });
+  }
+
+  async function selectSessionNotesWithFallback (supabase, orgId, sessionId) {
+    var query = supabase
+      .from ("session_notes")
+      .select ("*, clients(first_name,last_name), sessions(session_date,service_type,clients(first_name,last_name),staff(first_name,last_name))");
+    if (orgId) query = query.eq ("org_id", orgId);
+    if (sessionId) query = query.eq ("session_id", sessionId);
+    query = query.order ("updated_at", { ascending: false });
+    var res = await query;
+    if (!res.error) return res;
+
+    query = supabase.from ("session_notes").select ("*");
+    if (orgId) query = query.eq ("org_id", orgId);
+    if (sessionId) query = query.eq ("session_id", sessionId);
+    return query.order ("updated_at", { ascending: false });
+  }
+
+  window.gilbertoSupabaseFetchSessionNotes = async function (opts) {
+    opts = opts || {};
+    if (!window.supabaseClient) return responseLike (false, [], "Supabase is not initialized.");
+    try {
+      var org = opts.orgId ? { id: opts.orgId } : await window.ensureGilbertoOrgReady ();
+      var orgId = org && org.id ? org.id : "";
+      var res = await selectSessionNotesWithFallback (window.supabaseClient, orgId, opts.sessionId || "");
+      if (res.error) return responseLike (false, [], window.gilbertoFormatDbError (res.error));
+      return responseLike (true, (res.data || []).map (mapSupabaseSessionNote));
+    } catch (e) {
+      return responseLike (false, [], e && e.message ? e.message : String (e));
+    }
+  };
+
+  window.gilbertoSupabaseUpsertSessionNote = async function (payload) {
+    if (!window.supabaseClient) return responseLike (false, null, "Supabase is not initialized.");
+    payload = payload || {};
+    try {
+      var org = payload.org_id ? { id: payload.org_id } : await window.ensureGilbertoOrgReady ();
+      var orgId = org && org.id ? org.id : null;
+      var sessionId = payload.session_id || null;
+      if (!orgId) return responseLike (false, null, "Choose or join a workspace before saving notes.");
+
+      var existing = null;
+      if (sessionId) {
+        var found = await window.supabaseClient
+          .from ("session_notes")
+          .select ("id")
+          .eq ("org_id", orgId)
+          .eq ("session_id", sessionId)
+          .maybeSingle ();
+        if (!found.error && found.data) existing = found.data;
+      }
+
+      var noteText = payload.progress_note || payload.note_text || null;
+      var compact = {
+        org_id: orgId,
+        session_id: sessionId,
+        status: normalizeSessionNoteStatus (payload.status),
+        note_text: noteText,
+        updated_at: new Date ().toISOString (),
+      };
+
+      var modern = Object.assign ({}, compact, {
+        progress_note: noteText,
+        similarity_percent: payload.similarity_percent == null ? null : payload.similarity_percent,
+        supervision_required: !!payload.supervision_required,
+        rbt_signed_by: payload.rbt_signed_by || null,
+        rbt_signed_at: payload.rbt_signed_at || null,
+        supervisor_signed_by: payload.supervisor_signed_by || null,
+        supervisor_signed_at: payload.supervisor_signed_at || null,
+        submitted_by: payload.submitted_by || null,
+        submitted_at: payload.submitted_at || new Date ().toISOString (),
+      });
+
+      var attempts = [modern, compact];
+      var lastErr = null;
+      for (var i = 0; i < attempts.length; i++) {
+        var q = existing
+          ? window.supabaseClient.from ("session_notes").update (attempts[i]).eq ("id", existing.id)
+          : window.supabaseClient.from ("session_notes").insert (attempts[i]);
+        var res = await q.select ("id").maybeSingle ();
+        if (!res.error) return responseLike (true, res.data || {});
+        lastErr = res.error;
+        if (!isSchemaColumnErr (res.error)) break;
+      }
+      return responseLike (false, null, window.gilbertoFormatDbError (lastErr));
+    } catch (e) {
+      return responseLike (false, null, e && e.message ? e.message : String (e));
+    }
   };
 
   window.clientPayloadForSupabase = function (payload) {

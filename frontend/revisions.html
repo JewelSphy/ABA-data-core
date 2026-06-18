@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Revisions - Gilberto ABA Care CRM</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260609" />
+  <link rel="stylesheet" href="dashboard.css?v=20260618b" />
   <style>
     .review-board-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
     .review-stat-row { display:flex; gap:10px; flex-wrap:wrap; }
@@ -193,7 +193,7 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js"></script>
+<script src="dashboard.js?v=20260618b"></script>
 <script>
   let revisionRows = [];
   let activeRevision = null;
@@ -326,8 +326,9 @@
     try {
       if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
       const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
-      const path = '/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : '');
-      const res = await jvmFetch(path, { method: 'GET' });
+      const res = typeof gilbertoSupabaseFetchSessionNotes === 'function'
+        ? await gilbertoSupabaseFetchSessionNotes({ orgId: orgId })
+        : await jvmFetch('/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : ''), { method: 'GET' });
       if (!res.ok) throw new Error(await readJvmErrorResponse(res));
       const notes = await res.json();
       revisionRows = (notes || []).map(function (n) {
@@ -379,7 +380,7 @@
       supervisor_signed_at: activeRevision.supervisor_signed_at || null,
       submitted_by: activeRevision.submitted_by || null,
       submitted_at: activeRevision.submitted_at || activeRevision.updated_at || new Date().toISOString(),
-      status: newStatus
+      status: newStatus === 'pending' ? 'pending_review' : newStatus
     };
     const res = await sessionNoteJvmUpsert(payload);
     if (!res.ok) {
