@@ -534,6 +534,47 @@ function gilbertoInjectOnlineUsersNav() {
   }
 }
 
+function gilbertoInjectAdministrationNav() {
+  const sidebar = document.querySelector(".sidebar");
+  if (!sidebar || sidebar.querySelector('[data-gilberto-admin-nav="1"]')) return;
+
+  const title = document.createElement("p");
+  title.className = "section-title";
+  title.dataset.gilbertoAdminNav = "1";
+  title.textContent = "Administration";
+
+  const links = [
+    ["User Management", "admin-panel.html#user-management"],
+    ["Roles & Permissions", "admin-panel.html#roles-permissions"],
+    ["Security & Audit Logs", "admin-panel.html#audit-logs"],
+    ["Organization Settings", "admin-panel.html#organization-settings"],
+    ["Provider Management", "admin-panel.html#provider-management"],
+    ["Billing Settings", "admin-panel.html#billing-settings"],
+    ["System Reports", "admin-panel.html#system-reports"],
+    ["Client Access Controls", "admin-panel.html#client-access-controls"],
+  ];
+  const current = gilbertoCurrentPageFile();
+  const adminHash = window.location.hash || "#user-management";
+  const nodes = [title].concat(links.map(function (item) {
+    const btn = document.createElement("button");
+    btn.className = "nav-item";
+    btn.dataset.gilbertoAdminNav = "1";
+    btn.textContent = item[0];
+    btn.onclick = function () { goToPage(item[1]); };
+    if (current === "admin-panel.html" && item[1].endsWith(adminHash)) btn.classList.add("active");
+    return btn;
+  }));
+
+  const logout = sidebar.querySelector(".nav-item.logout");
+  nodes.forEach(function (node) {
+    if (logout && logout.parentNode) {
+      logout.parentNode.insertBefore(node, logout);
+    } else {
+      sidebar.appendChild(node);
+    }
+  });
+}
+
 async function gilbertoWriteWorkspacePresence() {
   if (!window.supabaseClient || !window.gilbertoCurrentOrg || !window.gilbertoCurrentOrg.id) return;
   try {
@@ -609,6 +650,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
       gilbertoInjectOnlineUsersNav();
+      gilbertoInjectAdministrationNav();
       gilbertoStartWorkspacePresence();
       gilbertoInjectSwitchCompanyMenuItem();
       gilbertoInjectTopBarWorkspaceNavIfNeeded();
@@ -647,6 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     await applyWorkspaceWithOrg();
     gilbertoInjectOnlineUsersNav();
+    gilbertoInjectAdministrationNav();
     gilbertoStartWorkspacePresence();
     gilbertoInjectSwitchCompanyMenuItem();
     gilbertoInjectTopBarWorkspaceNavIfNeeded();

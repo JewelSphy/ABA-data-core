@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sessions - Gilberto ABA Care CRM</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260618d" />
+  <link rel="stylesheet" href="dashboard.css?v=20260618e" />
   <style>
     .sessions-shell { border-radius: 14px; border: 1px solid #d9e8df; box-shadow: 0 14px 30px rgba(21, 58, 46, 0.09); overflow: hidden; }
     .sessions-toolbar { background: linear-gradient(180deg, #f7fcf9, #eef7f2); border-bottom: 1px solid #d8e7dd; }
@@ -535,12 +535,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
-<script src="dashboard.js?v=20260618c"></script>
+<script src="dashboard.js?v=20260618e"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script>
   // ===========================================================================
   // sessions.html — inline controller
-  // Reads:  loadSessionsTable() in dashboard.js?v=20260618c (Supabase JS with joins)
+  // Reads:  loadSessionsTable() in dashboard.js?v=20260618e (Supabase JS with joins)
   // Writes: createSessionFromModal() routes through Java bridge when available
   // ===========================================================================
 
@@ -707,6 +707,15 @@
     refreshSessionComposerUI();
   }
 
+  function isActiveLikeStatus(value) {
+    const s = String(value || "").trim().toLowerCase();
+    return !s || s === "active" || s === "authorized" || s === "approved";
+  }
+
+  function personName(row, fallback) {
+    return String(((row && row.first_name) || "") + " " + ((row && row.last_name) || "")).trim() || fallback;
+  }
+
   async function loadSessionFormDropdowns() {
     const orgId = window.gilbertoCurrentOrg?.id || null;
     const clientSel = document.getElementById("newSessionClient");
@@ -728,7 +737,7 @@
       let caregivers = [];
       if (typeof jvmSupabaseRelayEnabled === "function" && jvmSupabaseRelayEnabled()) {
         const [cRes, sRes, cgRes] = await Promise.all([
-          jvmFetchClients(orgId, "active"),
+          jvmFetchClients(orgId, ""),
           jvmFetchStaff(orgId, "active"),
           jvmFetchCaregivers(orgId, "active"),
         ]);
@@ -737,7 +746,7 @@
         caregivers = cgRes.ok ? await cgRes.json() : [];
       } else if (window.supabaseClient) {
         const [cQ, sQ, cgQ] = await Promise.all([
-          window.supabaseClient.from("clients").select("id,first_name,last_name,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
+          window.supabaseClient.from("clients").select("id,first_name,last_name,status,auth_status").eq("org_id", orgId).order("last_name", { ascending: true }),
           window.supabaseClient.from("staff").select("id,first_name,last_name,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
           window.supabaseClient.from("caregivers").select("id,client_id,first_name,last_name,relationship,status").eq("org_id", orgId).eq("status", "active").order("last_name", { ascending: true }),
         ]);
@@ -745,12 +754,19 @@
         staff = sQ.error ? [] : (sQ.data || []);
         caregivers = cgQ.error ? [] : (cgQ.data || []);
       }
+      clients = (clients || []).sort(function (a, b) {
+        return Number(isActiveLikeStatus(b.status || b.auth_status)) - Number(isActiveLikeStatus(a.status || a.auth_status));
+      });
       _sessionClients = clients;
       _sessionCaregivers = caregivers;
       if (clientSel) {
         clientSel.innerHTML = clients.length
-          ? clients.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name}</option>`).join("")
-          : '<option value="">No active clients found</option>';
+          ? clients.map(c => {
+              const label = personName(c, "Client");
+              const status = isActiveLikeStatus(c.status || c.auth_status) ? "" : " (not active)";
+              return `<option value="${c.id}">${label}${status}</option>`;
+            }).join("")
+          : '<option value="">No clients found in this workspace</option>';
       }
       if (rbtSel) {
         rbtSel.innerHTML = staff.length
@@ -759,7 +775,7 @@
       }
       onSessionTypeChanged();
     } catch (_) {
-      setFallback("No active clients found");
+      setFallback("Could not load clients for this workspace");
     }
   }
 

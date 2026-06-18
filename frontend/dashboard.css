@@ -2971,6 +2971,273 @@ body.is-navigating .main-area {
 }
 
 /* =====================================================
+   Intentional color system for navigation and work areas
+   ===================================================== */
+.sidebar .nav-item:nth-of-type(6n + 1) { --nav-accent: #65d6c3; }
+.sidebar .nav-item:nth-of-type(6n + 2) { --nav-accent: #7d8cff; }
+.sidebar .nav-item:nth-of-type(6n + 3) { --nav-accent: #f5c84b; }
+.sidebar .nav-item:nth-of-type(6n + 4) { --nav-accent: #ef6aa8; }
+.sidebar .nav-item:nth-of-type(6n + 5) { --nav-accent: #9bdb74; }
+.sidebar .nav-item:nth-of-type(6n + 6) { --nav-accent: #f49b55; }
+.sidebar .nav-item::before {
+  background: var(--nav-accent, #d9eadf);
+  opacity: 0.18;
+}
+.sidebar .nav-item:hover::before,
+.sidebar .nav-item.active::before {
+  background: var(--nav-accent, #d9eadf) !important;
+  opacity: 1;
+}
+.sidebar .nav-item:hover,
+.sidebar .nav-item.active {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.12);
+}
+
+.dashboard-kpi:nth-child(1) { --card-accent: #65d6c3; }
+.dashboard-kpi:nth-child(2) { --card-accent: #7d8cff; }
+.dashboard-kpi:nth-child(3) { --card-accent: #ef6aa8; }
+.dashboard-kpi:nth-child(4) { --card-accent: #f5c84b; }
+.dashboard-kpi {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 18%, transparent), transparent 46%),
+    linear-gradient(180deg, #ffffff, #fbfaf7) !important;
+}
+.dashboard-kpi::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--card-accent);
+}
+
+/* =====================================================
+   Administration pages
+   ===================================================== */
+.page-admin .main-area {
+  background: linear-gradient(180deg, #f5f3f7 0%, #f3f5f3 100%);
+}
+
+.admin-overview-grid,
+.admin-role-grid,
+.admin-settings-grid,
+.admin-rate-grid,
+.admin-report-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.admin-overview-card,
+.admin-role-card,
+.admin-rate-grid > div,
+.admin-report-grid > div,
+.admin-compliance-strip > div,
+.admin-mini-grid > div,
+.admin-access-flow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 104px;
+  padding: 16px;
+  border: 1px solid rgba(28, 47, 39, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f7f4ff);
+  color: #17231e;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(20, 32, 27, 0.07);
+}
+
+.admin-overview-card:nth-child(1),
+.admin-mini-grid > div:nth-child(1),
+.admin-report-grid > div:nth-child(1) {
+  background: linear-gradient(145deg, #ffffff, #eaf8ff);
+}
+.admin-overview-card:nth-child(2),
+.admin-mini-grid > div:nth-child(2),
+.admin-report-grid > div:nth-child(2) {
+  background: linear-gradient(145deg, #ffffff, #f5edff);
+}
+.admin-overview-card:nth-child(3),
+.admin-mini-grid > div:nth-child(3),
+.admin-report-grid > div:nth-child(3) {
+  background: linear-gradient(145deg, #ffffff, #fff4dc);
+}
+.admin-overview-card:nth-child(4),
+.admin-mini-grid > div:nth-child(4),
+.admin-report-grid > div:nth-child(4) {
+  background: linear-gradient(145deg, #ffffff, #ecfff6);
+}
+
+.admin-overview-card strong,
+.admin-role-card strong,
+.admin-rate-grid strong,
+.admin-report-grid strong {
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+}
+
+.admin-overview-card span,
+.admin-role-card span,
+.admin-rate-grid span,
+.admin-report-grid span,
+.admin-compliance-strip span,
+.admin-mini-grid span,
+.admin-access-flow span {
+  color: #66766e;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.admin-section {
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(28, 47, 39, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 34px rgba(20, 32, 27, 0.07);
+}
+
+.admin-section:target {
+  outline: 3px solid rgba(91, 125, 245, 0.25);
+  scroll-margin-top: 20px;
+}
+
+.admin-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.admin-section-head h2 {
+  color: #17231e;
+  font-size: 1.25rem;
+  letter-spacing: -0.04em;
+}
+
+.admin-section-head p {
+  color: #66766e;
+  font-size: 0.86rem;
+  margin-top: 4px;
+}
+
+.admin-role-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.admin-compliance-strip,
+.admin-mini-grid,
+.admin-access-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.admin-toolbar,
+.admin-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-toolbar .search-input {
+  max-width: 360px;
+}
+
+.admin-chip-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid rgba(91, 125, 245, 0.16);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fff, #f1f5ff);
+  color: #40546b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-settings-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-settings-grid label {
+  display: grid;
+  gap: 7px;
+  color: #485b52;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-settings-grid input,
+.admin-settings-grid select {
+  width: 100%;
+  border: 1px solid rgba(71, 103, 91, 0.18);
+  border-radius: 12px;
+  background: #fff;
+  color: #17231e;
+  padding: 10px 12px;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-rate-grid,
+.admin-report-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-report-grid > div {
+  min-height: 92px;
+  background: linear-gradient(145deg, #ffffff, #eef4ff);
+}
+
+.admin-report-grid strong {
+  font-size: 2rem;
+}
+
+@media (max-width: 1100px) {
+  .admin-overview-grid,
+  .admin-role-grid,
+  .admin-settings-grid,
+  .admin-rate-grid,
+  .admin-report-grid,
+  .admin-compliance-strip,
+  .admin-mini-grid,
+  .admin-access-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-overview-grid,
+  .admin-role-grid,
+  .admin-settings-grid,
+  .admin-rate-grid,
+  .admin-report-grid,
+  .admin-compliance-strip,
+  .admin-mini-grid,
+  .admin-access-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-section-head {
+    flex-direction: column;
+  }
+}
+
+/* =====================================================
    Dashboard command-center layout
    ===================================================== */
 .dashboard-hero {
