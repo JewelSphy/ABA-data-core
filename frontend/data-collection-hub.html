@@ -73,56 +73,46 @@
           <div class="form-row">
             <div class="form-group">
               <label>Client</label>
-              <select>
-                <option>Jon Snow</option>
-                <option>Robb Stark</option>
-                <option>Arya Stark</option>
-                <option>Sansa Stark</option>
-              </select>
+              <select id="dataClient"><option value="">Select client</option></select>
             </div>
             <div class="form-group">
               <label>Date</label>
-              <input type="date" value="2026-04-25" />
+              <input id="dataDate" type="date" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Behavior</label>
-              <select>
-                <option>Off-Task Behavior</option>
-                <option>Verbal Aggression</option>
-                <option>Non-Compliance</option>
-                <option>SIB</option>
-                <option>Elopement</option>
-              </select>
+              <select id="dataBehavior"><option value="">Select behavior</option></select>
             </div>
             <div class="form-group">
               <label>Session</label>
-              <select>
-                <option>Morning Session</option>
-                <option>Afternoon Session</option>
-                <option>Evening Session</option>
-              </select>
+              <select id="dataSession"><option value="">Session not linked</option></select>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Measurement Type</label>
-              <select>
-                <option>Frequency</option>
-                <option>Duration</option>
-                <option>Rate</option>
-                <option>Intensity</option>
-              </select>
+              <select id="dataMeasurement" onchange="updateMeasurementFields()"><option>Frequency</option><option>Rate</option><option>Duration</option><option>Percentage</option><option>Interval Recording</option></select>
             </div>
             <div class="form-group">
-              <label>Value</label>
-              <input type="number" min="0" placeholder="e.g. 4" />
+              <label id="dataValueLabel">Occurrences</label>
+              <input id="dataValue" type="number" min="0" step="0.01" placeholder="Enter observed value" />
+            </div>
+          </div>
+          <div class="form-row" id="metricExtraRow" style="display:none;">
+            <div class="form-group">
+              <label id="metricExtraLabel">Denominator</label>
+              <input id="metricExtraValue" type="number" min="0" step="0.01" placeholder="Required for selected measurement" />
+            </div>
+            <div class="form-group">
+              <label>Calculated Graph Value</label>
+              <input id="metricCalculatedPreview" type="text" readonly value="—" />
             </div>
           </div>
           <div class="form-group">
             <label>Notes</label>
-            <textarea rows="3" placeholder="Any relevant observations about this data point..."></textarea>
+            <textarea id="dataNotes" rows="3" placeholder="Any relevant observations about this data point..."></textarea>
           </div>
           <button class="add-btn" onclick="recordDataPoint()">Record Data Point</button>
         </div>
@@ -154,136 +144,7 @@
               </tr>
             </thead>
             <tbody id="dataTableBody">
-              <tr>
-                <td>Apr 25, 2026</td>
-                <td>Jon Snow</td>
-                <td>Off-Task Behavior</td>
-                <td>Frequency</td>
-                <td>4</td>
-                <td>Morning</td>
-                <td>Tyrion Lannister</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 25, 2026','Jon Snow','Off-Task Behavior','Frequency','4','Morning','Tyrion Lannister')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 25, 2026</td>
-                <td>Arya Stark</td>
-                <td>Verbal Aggression</td>
-                <td>Frequency</td>
-                <td>2</td>
-                <td>Afternoon</td>
-                <td>Brienne of Tarth</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 25, 2026','Arya Stark','Verbal Aggression','Frequency','2','Afternoon','Brienne of Tarth')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 24, 2026</td>
-                <td>Robb Stark</td>
-                <td>Non-Compliance</td>
-                <td>Frequency</td>
-                <td>5</td>
-                <td>Morning</td>
-                <td>Tyrion Lannister</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 24, 2026','Robb Stark','Non-Compliance','Frequency','5','Morning','Tyrion Lannister')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 24, 2026</td>
-                <td>Sansa Stark</td>
-                <td>Off-Task Behavior</td>
-                <td>Frequency</td>
-                <td>7</td>
-                <td>Morning</td>
-                <td>Samwell Tarly</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 24, 2026','Sansa Stark','Off-Task Behavior','Frequency','7','Morning','Samwell Tarly')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 23, 2026</td>
-                <td>Jon Snow</td>
-                <td>SIB</td>
-                <td>Frequency</td>
-                <td>0</td>
-                <td>Afternoon</td>
-                <td>Brienne of Tarth</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 23, 2026','Jon Snow','SIB','Frequency','0','Afternoon','Brienne of Tarth')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 23, 2026</td>
-                <td>Arya Stark</td>
-                <td>Non-Compliance</td>
-                <td>Frequency</td>
-                <td>3</td>
-                <td>Morning</td>
-                <td>Tyrion Lannister</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 23, 2026','Arya Stark','Non-Compliance','Frequency','3','Morning','Tyrion Lannister')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 22, 2026</td>
-                <td>Robb Stark</td>
-                <td>Verbal Aggression</td>
-                <td>Frequency</td>
-                <td>1</td>
-                <td>Afternoon</td>
-                <td>Samwell Tarly</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 22, 2026','Robb Stark','Verbal Aggression','Frequency','1','Afternoon','Samwell Tarly')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 22, 2026</td>
-                <td>Sansa Stark</td>
-                <td>Off-Task Behavior</td>
-                <td>Frequency</td>
-                <td>6</td>
-                <td>Morning</td>
-                <td>Brienne of Tarth</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 22, 2026','Sansa Stark','Off-Task Behavior','Frequency','6','Morning','Brienne of Tarth')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 21, 2026</td>
-                <td>Jon Snow</td>
-                <td>Elopement</td>
-                <td>Frequency</td>
-                <td>0</td>
-                <td>Afternoon</td>
-                <td>Tyrion Lannister</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 21, 2026','Jon Snow','Elopement','Frequency','0','Afternoon','Tyrion Lannister')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Apr 21, 2026</td>
-                <td>Arya Stark</td>
-                <td>Verbal Aggression</td>
-                <td>Frequency</td>
-                <td>4</td>
-                <td>Morning</td>
-                <td>Samwell Tarly</td>
-                <td>
-                  <button class="tbl-btn" onclick="openDataModal('Apr 21, 2026','Arya Stark','Verbal Aggression','Frequency','4','Morning','Samwell Tarly')">View</button>
-                  <button class="tbl-btn danger" onclick="deleteDataPoint(this)">Delete</button>
-                </td>
-              </tr>
+              <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No behavior data points recorded yet.</td></tr>
             </tbody>
           </table>
         </div>
@@ -331,36 +192,119 @@
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2500);
   }
-
-  function openDataModal(date, client, behavior, measurement, value, session, staff) {
-    document.getElementById('dm-date').textContent = date;
-    document.getElementById('dm-client').textContent = client;
-    document.getElementById('dm-behavior').textContent = behavior;
-    document.getElementById('dm-measurement').textContent = measurement;
-    document.getElementById('dm-value').textContent = value;
-    document.getElementById('dm-session').textContent = session + ' Session';
-    document.getElementById('dm-staff').textContent = staff;
+  function esc(v) { return String(v == null ? '' : v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+  function dataStorageKey() { return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey('gilberto_behavior_data') : 'gilberto_behavior_data:no-org'; }
+  function loadRows() { try { return JSON.parse(localStorage.getItem(dataStorageKey()) || '[]'); } catch (_) { return []; } }
+  function saveRows(rows) { localStorage.setItem(dataStorageKey(), JSON.stringify(rows || [])); }
+  function todayIso() { return new Date().toISOString().slice(0, 10); }
+  function measurementConfig(type) {
+    const configs = {
+      Frequency: { valueLabel: 'Occurrences', extraLabel: '', preview: '' },
+      Rate: { valueLabel: 'Occurrences', extraLabel: 'Session hours', preview: 'occurrences / hours' },
+      Duration: { valueLabel: 'Total minutes', extraLabel: '', preview: '' },
+      Percentage: { valueLabel: 'Successful trials', extraLabel: 'Total trials', preview: 'successful / total × 100' },
+      'Interval Recording': { valueLabel: 'Intervals with behavior', extraLabel: 'Total intervals', preview: 'intervals with behavior / total intervals × 100' }
+    };
+    return configs[type] || configs.Frequency;
+  }
+  function calculateGraphMetric() {
+    const type = document.getElementById('dataMeasurement').value;
+    const primary = Number(document.getElementById('dataValue').value);
+    const extra = Number(document.getElementById('metricExtraValue').value);
+    if (!Number.isFinite(primary)) return null;
+    if (type === 'Rate') return extra > 0 ? primary / extra : null;
+    if (type === 'Percentage' || type === 'Interval Recording') return extra > 0 ? (primary / extra) * 100 : null;
+    return primary;
+  }
+  function updateMeasurementFields() {
+    const type = document.getElementById('dataMeasurement').value;
+    const config = measurementConfig(type);
+    document.getElementById('dataValueLabel').textContent = config.valueLabel;
+    document.getElementById('metricExtraLabel').textContent = config.extraLabel || 'Denominator';
+    document.getElementById('metricExtraRow').style.display = config.extraLabel ? '' : 'none';
+    const metric = calculateGraphMetric();
+    document.getElementById('metricCalculatedPreview').value = metric == null ? (config.preview || '—') : metric.toFixed(2);
+  }
+  async function populateSelectors() {
+    if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization().catch(function () {});
+    const clientSel = document.getElementById('dataClient');
+    const behaviorSel = document.getElementById('dataBehavior');
+    const dateEl = document.getElementById('dataDate');
+    if (dateEl && !dateEl.value) dateEl.value = todayIso();
+    let clients = [];
+    if (window.supabaseClient && window.gilbertoCurrentOrg?.id) {
+      const q = await window.supabaseClient.from('clients').select('id,first_name,last_name,status,auth_status').eq('org_id', window.gilbertoCurrentOrg.id).order('last_name', { ascending: true });
+      if (!q.error) clients = q.data || [];
+    }
+    clientSel.innerHTML = '<option value="">Select client</option>' + clients.map(c => {
+      const name = [c.first_name, c.last_name].filter(Boolean).join(' ').trim() || 'Client';
+      return '<option value="' + esc(name) + '">' + esc(name) + '</option>';
+    }).join('');
+    const behaviors = typeof gilbertoLoadScopedRows === 'function' ? gilbertoLoadScopedRows('gilberto_behaviors') : [];
+    behaviorSel.innerHTML = '<option value="">Select behavior</option>' + (behaviors || []).map(b => '<option>' + esc(b.name || 'Behavior') + '</option>').join('');
+    updateMeasurementFields();
+  }
+  function renderRows(rows) {
+    const body = document.getElementById('dataTableBody');
+    if (!rows.length) { body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No behavior data points recorded yet.</td></tr>'; return; }
+    body.innerHTML = rows.map((r, i) => '<tr><td>' + esc(r.date) + '</td><td>' + esc(r.client) + '</td><td>' + esc(r.behavior) + '</td><td>' + esc(r.measurement) + '</td><td>' + esc(r.value) + '</td><td>' + esc(r.session || '—') + '</td><td>' + esc(r.recordedBy || 'Current User') + '</td><td><button class="tbl-btn" onclick="openDataModal(' + i + ')">View</button><button class="tbl-btn danger" onclick="deleteDataPoint(' + i + ')">Delete</button></td></tr>').join('');
+  }
+  function openDataModal(index) {
+    const row = loadRows()[index];
+    if (!row) return;
+    document.getElementById('dm-date').textContent = row.date || '';
+    document.getElementById('dm-client').textContent = row.client || '';
+    document.getElementById('dm-behavior').textContent = row.behavior || '';
+    document.getElementById('dm-measurement').textContent = row.measurement || '';
+    document.getElementById('dm-value').textContent = row.value || '';
+    document.getElementById('dm-session').textContent = row.session || 'Not linked';
+    document.getElementById('dm-staff').textContent = row.recordedBy || 'Current User';
     openModal('viewDataModal');
   }
-
-  function deleteDataPoint(btn) {
-    const row = btn.closest('tr');
-    row.style.opacity = '0.4';
-    setTimeout(() => { row.remove(); }, 300);
+  function deleteDataPoint(index) {
+    const rows = loadRows();
+    rows.splice(index, 1);
+    saveRows(rows);
+    renderRows(rows);
     showToast('Data point deleted');
   }
-
   function recordDataPoint() {
-    showToast('Data point recorded');
+    const metric = calculateGraphMetric();
+    const row = {
+      id: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : String(Date.now()),
+      date: document.getElementById('dataDate').value || todayIso(),
+      client: document.getElementById('dataClient').value,
+      behavior: document.getElementById('dataBehavior').value,
+      measurement: document.getElementById('dataMeasurement').value,
+      value: metric == null ? '' : Number(metric.toFixed(2)),
+      raw_value: document.getElementById('dataValue').value,
+      denominator: document.getElementById('metricExtraValue').value,
+      session: document.getElementById('dataSession').value,
+      notes: document.getElementById('dataNotes').value,
+      recordedBy: window.gilbertoCurrentUserName || 'Current User',
+      createdAt: new Date().toISOString()
+    };
+    if (!row.client || !row.behavior || row.value === '') { showToast('Client, behavior, and valid measurement values are required'); return; }
+    const rows = loadRows();
+    rows.unshift(row);
+    saveRows(rows);
+    renderRows(rows);
+    document.getElementById('dataValue').value = '';
+    document.getElementById('metricExtraValue').value = '';
+    updateMeasurementFields();
+    document.getElementById('dataNotes').value = '';
+    showToast('Behavior data point recorded');
   }
-
   function filterDataTable(query) {
     const q = query.toLowerCase();
-    document.querySelectorAll('#dataTableBody tr').forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(q) ? '' : 'none';
-    });
+    document.querySelectorAll('#dataTableBody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; });
   }
+  document.addEventListener('DOMContentLoaded', async function () {
+    document.getElementById('dataValue').addEventListener('input', updateMeasurementFields);
+    document.getElementById('metricExtraValue').addEventListener('input', updateMeasurementFields);
+    await populateSelectors();
+    renderRows(loadRows());
+  });
 </script>
 </body>
 </html>

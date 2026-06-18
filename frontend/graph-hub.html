@@ -6,34 +6,30 @@
   <title>Graph Hub - Gilberto ABA Care CRM</title>
   <link rel="stylesheet" href="dashboard.css?v=20260618e" />
   <style>
-    .graph-filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .graph-filter-bar label { font-size: 12px; color: #6b8c7a; margin-right: 4px; }
-    .graph-filter-bar select, .graph-filter-bar input[type="date"] {
-      border: 1px solid #d4e4da; border-radius: 5px; padding: 6px 10px; font-size: 13px; color: #1f2d26; background: white;
-    }
-    .graph-card { background: white; border: 1px solid #d4e4da; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
-    .graph-card-header { padding: 16px 20px 12px; border-bottom: 1px solid #eef4f1; display: flex; justify-content: space-between; align-items: center; }
-    .graph-card-header h3 { font-size: 14px; font-weight: 700; color: #1f2d26; margin: 0; }
-    .graph-card-header span { font-size: 12px; color: #6b8c7a; }
-    .graph-card-body { padding: 12px 20px; overflow-x: auto; }
-    .graph-card-footer { padding: 12px 20px; border-top: 1px solid #eef4f1; display: flex; gap: 24px; align-items: center; }
-    .graph-stat { text-align: center; }
-    .graph-stat .label { font-size: 11px; color: #9dbfb0; text-transform: uppercase; letter-spacing: 0.4px; }
-    .graph-stat .value { font-size: 15px; font-weight: 700; color: #1f2d26; margin-top: 2px; }
-    .graph-stat .value.trend-down { color: #16a34a; }
-    .graph-stat .value.trend-up-good { color: #16a34a; }
-    .graph-footer-right { margin-left: auto; }
+    .graph-method-grid { display:grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+    .graph-method-card { border:1px solid rgba(28,47,39,.1); border-radius:16px; padding:14px; background:linear-gradient(145deg,#fff,#f6f8ff); }
+    .graph-method-card strong { display:block; color:#17231e; font-size:13px; margin-bottom:6px; }
+    .graph-method-card span { color:#66766e; font-size:12px; line-height:1.45; }
+    .graph-empty-state { padding:36px 20px; text-align:center; color:#66766e; background:linear-gradient(145deg,#fff,#f8faf8); border:1px dashed #cbd8d1; border-radius:18px; }
+    .graph-empty-state strong { display:block; color:#17231e; font-size:18px; margin-bottom:8px; }
+    .graph-card { background:white; border:1px solid #d4e4da; border-radius:18px; margin-bottom:20px; overflow:hidden; box-shadow:0 14px 34px rgba(20,32,27,.08); }
+    .graph-card-header { padding:16px 20px 12px; border-bottom:1px solid #eef4f1; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .graph-card-header h3 { font-size:16px; font-weight:800; color:#1f2d26; margin:0; }
+    .graph-card-header span { font-size:12px; color:#6b8c7a; }
+    .graph-card-body { padding:14px 20px; overflow-x:auto; }
+    .graph-card-footer { padding:12px 20px; border-top:1px solid #eef4f1; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+    .graph-stat .label { font-size:11px; color:#80958b; text-transform:uppercase; letter-spacing:.4px; }
+    .graph-stat .value { font-size:15px; font-weight:800; color:#1f2d26; margin-top:2px; }
+    .formula-panel { border-left:4px solid #5b7df5; background:#f5f7ff; border-radius:14px; padding:12px 14px; color:#40546b; font-size:13px; line-height:1.55; margin-bottom:18px; }
     svg text { font-family: inherit; }
+    @media (max-width: 1100px) { .graph-method-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (max-width: 620px) { .graph-method-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="page-graphs">
 <div class="app-layout">
-
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-icon">G</div>
-      <div><h2>Gilberto</h2><p>ABA Care CRM</p></div>
-    </div>
+    <div class="sidebar-header"><div class="logo-icon">G</div><div><h2>Gilberto</h2><p>ABA Care CRM</p></div></div>
     <button class="nav-item" onclick="goToPage('dashboard.html')">Dashboard</button>
     <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
     <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
@@ -41,9 +37,9 @@
     <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
     <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
     <p class="section-title">People</p>
-    <button class="nav-item" onclick="goToPage('clients.html')">Cthe calients</button>
+    <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
     <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
-    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Guardians</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
     <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
     <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
     <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
@@ -71,514 +67,95 @@
     <button class="nav-item logout" onclick="logout()">Log Out</button>
   </aside>
 
-  <div class="main-area">
-    <div class="topbar">
-      <div>
-        <h1>Graph Hub</h1>
-        <p>Visual behavior graphs for tracking client progress over time</p>
+  <main class="main-area">
+    <div class="topbar"><div><h1>Graph Hub</h1><p>Clinically precise behavior graphs generated only from recorded behavior data.</p></div><div class="top-actions"><div class="user-pill">—</div></div></div>
+    <div class="notice notice-info">No demo or fabricated clinical values are displayed. Graphs render only after behavior data is recorded in Data Collection Hub.</div>
+
+    <section class="graph-method-grid">
+      <div class="graph-method-card"><strong>Frequency</strong><span>Each point uses recorded session totals. Weekly point = average occurrences per recorded session in that week.</span></div>
+      <div class="graph-method-card"><strong>Rate</strong><span>Calculated at entry as occurrences / session hours, then averaged for the selected period.</span></div>
+      <div class="graph-method-card"><strong>Duration</strong><span>Uses recorded total minutes the behavior occurred, averaged for the selected period.</span></div>
+      <div class="graph-method-card"><strong>Percentage</strong><span>Calculated at entry as successful trials / total trials × 100.</span></div>
+      <div class="graph-method-card"><strong>Interval Recording</strong><span>Calculated at entry as intervals with behavior / total intervals × 100.</span></div>
+    </section>
+
+    <section class="section-box" style="margin-bottom:18px;">
+      <div class="section-box-header"><h3>Graph Controls</h3></div>
+      <div class="control-grid">
+        <div class="control-group"><label>Client</label><select id="clientFilter"><option value="">All Clients</option></select></div>
+        <div class="control-group"><label>Behavior</label><select id="behaviorFilter"><option value="">All Behaviors</option></select></div>
+        <div class="control-group"><label>Measurement Type</label><select id="measurementFilter" onchange="updateFormulaText()"><option>Frequency</option><option>Rate</option><option>Duration</option><option>Percentage</option><option>Interval Recording</option></select></div>
+        <div class="control-group"><label>Aggregation</label><select id="aggregationFilter"><option selected>Weekly</option><option>Daily</option><option>Monthly</option></select></div>
+        <div class="control-group"><label>From</label><input type="date" id="dateFrom" /></div>
+        <div class="control-group"><label>To</label><input type="date" id="dateTo" /></div>
+        <div class="control-group" style="display:flex;align-items:flex-end;"><button class="add-btn" style="width:100%;" onclick="applyFilters()">Apply Controls</button></div>
       </div>
-        <div class="top-actions">
-        <div class="user-pill">—</div>
-      </div>
-    </div>
+    </section>
 
-    <div style="padding: 24px;">
-
-      <div class="control-panel" style="margin-bottom: 24px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h3 style="font-size:15px;">Graph Control Panel</h3>
-          <div class="segmented">
-            <button class="small-btn active-blue">Data</button>
-            <button class="small-btn">Initial Observations</button>
-          </div>
-        </div>
-        <div class="control-grid">
-          <div class="control-group">
-            <label>Category</label>
-            <select id="categoryFilter">
-              <option>Maladaptive Behaviors</option>
-              <option>Replacement Behaviors</option>
-              <option>Skills</option>
-              <option>Family Training</option>
-              <option>RBT Competency</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>Client</label>
-            <select id="clientFilter">
-              <option>All Clients</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>Chart Type</label>
-            <select>
-              <option>Line</option>
-              <option>Bar</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>Aggregation</label>
-            <select>
-              <option>Daily</option>
-              <option selected>Weekly</option>
-              <option>Monthly</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>Interval By</label>
-            <select>
-              <option>Day</option>
-              <option selected>Week</option>
-              <option>Month</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>Split By STO</label>
-            <select>
-              <option>Yes</option>
-              <option selected>No</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>From</label>
-            <input type="date" id="dateFrom" value="2026-03-01" />
-          </div>
-          <div class="control-group">
-            <label>To</label>
-            <input type="date" id="dateTo" value="2026-04-25" />
-          </div>
-          <div class="control-group" style="display:flex;align-items:flex-end;">
-            <button class="add-btn" style="width:100%;" onclick="applyFilters()">Apply Controls</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Graph 1: Off-Task Behavior - John Doe -->
-      <!-- Data: 12,10,11,8,7,6,5,4 | range 4-12 | y = 20 + (12-v)/(8)*150 -->
-      <!-- y values: 12->20, 10->57.5, 11->38.75, 8->95, 7->113.75, 6->132.5, 5->151.25, 4->170 -->
-      <div class="graph-card" id="graph1">
-        <div class="graph-card-header">
-          <div>
-            <h3>Off-Task Behavior</h3>
-            <span>John Doe 1 - Frequency per session</span>
-          </div>
-          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
-        </div>
-        <div class="graph-card-body">
-          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
-            <!-- Grid lines -->
-            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="113.75" x2="580" y2="113.75" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
-            <line x1="40" y1="57.5" x2="580" y2="57.5" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
-
-            <!-- Baseline: value 12 -> y=20, red dashed -->
-            <line x1="40" y1="20" x2="580" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
-            <text x="585" y="23" font-size="9" fill="#ef4444">Baseline</text>
-
-            <!-- Target: value 2 -> y = 20 + (12-2)/8*150 = 20+187.5 = out of range, so cap near 170 -->
-            <!-- value 2 -> y=20+(10/8)*150=20+187.5 -> beyond chart, place at bottom label -->
-            <!-- Actually target 2 is below min visible, show a reference line below chart -->
-            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
-            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
-
-            <!-- Data line -->
-            <polyline points="40,20 118,57.5 196,38.75 274,95 352,113.75 430,132.5 508,151.25 580,170"
-              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
-
-            <!-- Data point circles -->
-            <circle cx="40" cy="20" r="4" fill="#6b9e7e"/>
-            <circle cx="118" cy="57.5" r="4" fill="#6b9e7e"/>
-            <circle cx="196" cy="38.75" r="4" fill="#6b9e7e"/>
-            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
-            <circle cx="352" cy="113.75" r="4" fill="#6b9e7e"/>
-            <circle cx="430" cy="132.5" r="4" fill="#6b9e7e"/>
-            <circle cx="508" cy="151.25" r="4" fill="#6b9e7e"/>
-            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
-
-            <!-- X axis labels -->
-            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
-            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
-            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
-            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
-            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
-            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
-            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
-            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
-
-            <!-- Y axis labels -->
-            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">12</text>
-            <text x="34" y="60" font-size="9" fill="#9dbfb0" text-anchor="end">10</text>
-            <text x="34" y="117" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
-            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">4</text>
-          </svg>
-        </div>
-        <div class="graph-card-footer">
-          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">4 / session</div></div>
-          <div class="graph-stat"><div class="label">Baseline</div><div class="value">12 / session</div></div>
-          <div class="graph-stat"><div class="label">Target</div><div class="value">2 / session</div></div>
-          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Decreasing</div></div>
-          <div class="graph-stat"><div class="label">Legend</div><div class="value" style="font-size:12px;">Green: actual · Red: baseline · Dashed green: target</div></div>
-        </div>
-      </div>
-
-      <!-- Graph 2: Verbal Aggression - Jane Doe -->
-      <!-- Data: 8,7,9,6,5,4,3,3 | range 3-9 | y=20+(9-v)/(6)*150 -->
-      <!-- 8->45, 7->70, 9->20, 6->95, 5->120, 4->145, 3->170, 3->170 -->
-      <div class="graph-card" id="graph2">
-        <div class="graph-card-header">
-          <div>
-            <h3>Verbal Aggression</h3>
-            <span>Jane Doe 1 - Frequency per session</span>
-          </div>
-          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
-        </div>
-        <div class="graph-card-body">
-          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
-            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
-
-            <!-- Baseline: 8 -> y=45 -->
-            <line x1="40" y1="45" x2="580" y2="45" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
-            <text x="585" y="48" font-size="9" fill="#ef4444">Baseline</text>
-
-            <!-- Target: 0 -> y=20+(9/6)*150=20+225 -> off chart, place below -->
-            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
-            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
-
-            <polyline points="40,45 118,70 196,20 274,95 352,120 430,145 508,170 580,170"
-              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
-
-            <circle cx="40" cy="45" r="4" fill="#6b9e7e"/>
-            <circle cx="118" cy="70" r="4" fill="#6b9e7e"/>
-            <circle cx="196" cy="20" r="4" fill="#6b9e7e"/>
-            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
-            <circle cx="352" cy="120" r="4" fill="#6b9e7e"/>
-            <circle cx="430" cy="145" r="4" fill="#6b9e7e"/>
-            <circle cx="508" cy="170" r="4" fill="#6b9e7e"/>
-            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
-
-            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
-            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
-            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
-            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
-            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
-            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
-            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
-            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
-
-            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">9</text>
-            <text x="34" y="48" font-size="9" fill="#9dbfb0" text-anchor="end">8</text>
-            <text x="34" y="98" font-size="9" fill="#9dbfb0" text-anchor="end">6</text>
-            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">3</text>
-          </svg>
-        </div>
-        <div class="graph-card-footer">
-          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">3 / session</div></div>
-          <div class="graph-stat"><div class="label">Baseline</div><div class="value">8 / session</div></div>
-          <div class="graph-stat"><div class="label">Target</div><div class="value">0 / session</div></div>
-          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Decreasing</div></div>
-        </div>
-      </div>
-
-      <!-- Graph 3: Requesting Break - John Doe (replacement behavior) -->
-      <!-- Data: 0,1,2,3,4,5,6,7 | range 0-7 | y=20+(7-v)/7*150 -->
-      <!-- 0->170, 1->148.57, 2->127.14, 3->105.71, 4->84.29, 5->62.86, 6->41.43, 7->20 -->
-      <div class="graph-card" id="graph3">
-        <div class="graph-card-header">
-          <div>
-            <h3>Requesting Break <span style="font-size:11px; color:#16a34a; font-weight:600;">(Replacement Behavior)</span></h3>
-            <span>John Doe 1 - Frequency per session</span>
-          </div>
-          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
-        </div>
-        <div class="graph-card-body">
-          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
-            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
-
-            <!-- Baseline: 0 -> y=170 -->
-            <line x1="40" y1="170" x2="580" y2="170" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
-            <text x="585" y="173" font-size="9" fill="#ef4444">Baseline</text>
-
-            <!-- Target: 10 -> y=20+(7-10)/7*150 = off chart top, use y=10 -->
-            <line x1="40" y1="10" x2="580" y2="10" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
-            <text x="585" y="13" font-size="9" fill="#6b9e7e">Target (10)</text>
-
-            <polyline points="40,170 118,148.57 196,127.14 274,105.71 352,84.29 430,62.86 508,41.43 580,20"
-              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
-
-            <circle cx="40" cy="170" r="4" fill="#6b9e7e"/>
-            <circle cx="118" cy="148.57" r="4" fill="#6b9e7e"/>
-            <circle cx="196" cy="127.14" r="4" fill="#6b9e7e"/>
-            <circle cx="274" cy="105.71" r="4" fill="#6b9e7e"/>
-            <circle cx="352" cy="84.29" r="4" fill="#6b9e7e"/>
-            <circle cx="430" cy="62.86" r="4" fill="#6b9e7e"/>
-            <circle cx="508" cy="41.43" r="4" fill="#6b9e7e"/>
-            <circle cx="580" cy="20" r="4" fill="#6b9e7e"/>
-
-            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
-            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
-            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
-            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
-            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
-            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
-            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
-            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
-
-            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">0</text>
-            <text x="34" y="108" font-size="9" fill="#9dbfb0" text-anchor="end">3</text>
-            <text x="34" y="65" font-size="9" fill="#9dbfb0" text-anchor="end">5</text>
-            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">7</text>
-          </svg>
-        </div>
-        <div class="graph-card-footer">
-          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-up-good">7 / session</div></div>
-          <div class="graph-stat"><div class="label">Baseline</div><div class="value">0 / session</div></div>
-          <div class="graph-stat"><div class="label">Target</div><div class="value">10 / session</div></div>
-          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-up-good">Increasing</div></div>
-        </div>
-      </div>
-
-    
-      <div class="graph-card" id="graph4">
-        <div class="graph-card-header">
-          <div>
-            <h3>Non-Compliance</h3>
-            <span>Jane Doe 1 - Frequency per session</span>
-          </div>
-          <button class="small-btn" onclick="showToast('Graph exported')">Export PNG</button>
-        </div>
-        <div class="graph-card-body">
-          <svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">
-            <line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>
-            <line x1="40" y1="95" x2="580" y2="95" stroke="#f0f5f2" stroke-width="1" stroke-dasharray="4,4"/>
-
-            <!-- Baseline: 10 -> y=20 -->
-            <line x1="40" y1="20" x2="580" y2="20" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>
-            <text x="585" y="23" font-size="9" fill="#ef4444">Baseline</text>
-
-            <!-- Target: 1 -> y=20+(10-1)/4*150=20+337.5 -> off chart, place below -->
-            <line x1="40" y1="188" x2="580" y2="188" stroke="#6b9e7e" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.5"/>
-            <text x="585" y="191" font-size="9" fill="#6b9e7e">Target</text>
-
-            <polyline points="40,20 118,57.5 196,20 274,95 352,57.5 430,132.5 508,170 580,170"
-              fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>
-
-            <circle cx="40" cy="20" r="4" fill="#6b9e7e"/>
-            <circle cx="118" cy="57.5" r="4" fill="#6b9e7e"/>
-            <circle cx="196" cy="20" r="4" fill="#6b9e7e"/>
-            <circle cx="274" cy="95" r="4" fill="#6b9e7e"/>
-            <circle cx="352" cy="57.5" r="4" fill="#6b9e7e"/>
-            <circle cx="430" cy="132.5" r="4" fill="#6b9e7e"/>
-            <circle cx="508" cy="170" r="4" fill="#6b9e7e"/>
-            <circle cx="580" cy="170" r="4" fill="#6b9e7e"/>
-
-            <text x="40" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W1</text>
-            <text x="118" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W2</text>
-            <text x="196" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W3</text>
-            <text x="274" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W4</text>
-            <text x="352" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W5</text>
-            <text x="430" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W6</text>
-            <text x="508" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W7</text>
-            <text x="580" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">W8</text>
-
-            <text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">10</text>
-            <text x="34" y="60" font-size="9" fill="#9dbfb0" text-anchor="end">9</text>
-            <text x="34" y="98" font-size="9" fill="#9dbfb0" text-anchor="end">8</text>
-            <text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">6</text>
-          </svg>
-        </div>
-        <div class="graph-card-footer">
-          <div class="graph-stat"><div class="label">Current Avg</div><div class="value trend-down">6 / session</div></div>
-          <div class="graph-stat"><div class="label">Baseline</div><div class="value">10 / session</div></div>
-          <div class="graph-stat"><div class="label">Target</div><div class="value">1 / session</div></div>
-          <div class="graph-stat"><div class="label">Trend</div><div class="value trend-down">Slowly Decreasing</div></div>
-        </div>
-      </div>
-
-    </div>
-  </div>
+    <div class="formula-panel" id="formulaPanel"></div>
+    <section id="graphOutput"></section>
+  </main>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260618e"></script>
 <script>
-  let graphSessions = [];
-  let graphClients = [];
-
-  function openModal(id) { document.getElementById(id).classList.add('open'); }
-  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-  function showToast(msg) {
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#2d4a3e;color:white;padding:12px 20px;border-radius:6px;font-size:13px;z-index:999;';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
+  let graphData = [];
+  function esc(v) { return String(v == null ? '' : v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+  function graphStorageKey() { return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey('gilberto_behavior_data') : 'gilberto_behavior_data:no-org'; }
+  function loadGraphData() { try { graphData = JSON.parse(localStorage.getItem(graphStorageKey()) || '[]'); } catch (_) { graphData = []; } if (!Array.isArray(graphData)) graphData = []; }
+  function uniqueValues(key) { return Array.from(new Set(graphData.map(r => r[key]).filter(Boolean))).sort(); }
+  function fillSelect(id, values, allLabel) { const el = document.getElementById(id); const prev = el.value; el.innerHTML = '<option value="">' + allLabel + '</option>' + values.map(v => '<option>' + esc(v) + '</option>').join(''); if (values.includes(prev)) el.value = prev; }
+  function updateFormulaText() {
+    const type = document.getElementById('measurementFilter').value;
+    const formulas = {
+      Frequency: 'Frequency = total occurrences for one recorded session. Weekly point = average frequency across recorded sessions in that week.',
+      Rate: 'Rate = occurrences / session hours. Weekly point = average calculated rate across recorded sessions in that week.',
+      Duration: 'Duration = total minutes behavior occurred. Weekly point = average duration minutes across recorded sessions in that week.',
+      Percentage: 'Percentage = successful trials / total trials × 100. Weekly point = average calculated percentage across recorded sessions in that week.',
+      'Interval Recording': 'Interval Recording = intervals with behavior / total intervals × 100. Weekly point = average calculated interval percentage across recorded sessions in that week.'
+    };
+    document.getElementById('formulaPanel').textContent = formulas[type] || '';
   }
-
-  function esc(v) {
-    return String(v == null ? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;');
+  function periodKey(date, agg) { const d = new Date(date + 'T00:00:00'); if (Number.isNaN(d.getTime())) return ''; if (agg === 'Daily') return date; if (agg === 'Monthly') return date.slice(0, 7); const day = d.getDay(); d.setDate(d.getDate() - ((day + 6) % 7)); return d.toISOString().slice(0, 10); }
+  function computedValue(row, type) {
+    const v = Number(row.value || 0);
+    if (type === 'Rate') return Number(row.rate_per_hour || v || 0);
+    if (type === 'Percentage' || type === 'Interval Recording') return Number(row.percent || v || 0);
+    return v;
   }
-
-  function weekStartIso(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00');
-    if (isNaN(d.getTime())) return '';
-    const day = d.getDay();
-    const diff = (day + 6) % 7;
-    d.setDate(d.getDate() - diff);
-    return d.toISOString().slice(0, 10);
+  function aggregate(rows, type, agg) {
+    const buckets = {};
+    rows.forEach(r => { const key = periodKey(r.date, agg); if (!key) return; if (!buckets[key]) buckets[key] = []; buckets[key].push(computedValue(r, type)); });
+    return Object.keys(buckets).sort().map(key => { const vals = buckets[key]; return { label: key, value: vals.reduce((a,b)=>a+b,0) / vals.length, n: vals.length }; });
   }
-
-  function fmtShortDate(v) {
-    const d = new Date(v + 'T00:00:00');
-    if (isNaN(d.getTime())) return v;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-
-  function loadClientFilter() {
-    const sel = document.getElementById('clientFilter');
-    const prev = sel.value || 'All Clients';
-    sel.innerHTML = '<option>All Clients</option>' + graphClients.map(function (name) {
-      return '<option>' + esc(name) + '</option>';
-    }).join('');
-    if ([...sel.options].some(function (o) { return o.value === prev; })) sel.value = prev;
-  }
-
-  function getClientName(row) {
-    return [row?.clients?.first_name || '', row?.clients?.last_name || ''].join(' ').trim() || 'Unknown Client';
-  }
-
-  function aggregateByWeek(rows) {
-    const map = {};
-    (rows || []).forEach(function (r) {
-      if (!r || !r.session_date) return;
-      const wk = weekStartIso(r.session_date);
-      if (!wk) return;
-      if (!map[wk]) map[wk] = 0;
-      map[wk] += 1;
-    });
-    return Object.keys(map).sort().slice(-8).map(function (wk) { return { week: wk, value: map[wk] }; });
-  }
-
-  function metricTrend(points) {
-    if (!points.length) return 'Flat';
-    if (points.length === 1) return 'Stable';
-    const first = points[0].value;
-    const last = points[points.length - 1].value;
-    if (last > first) return 'Increasing';
-    if (last < first) return 'Decreasing';
-    return 'Stable';
-  }
-
   function svgFor(points) {
-    const w = 600;
-    const h = 200;
-    const left = 40;
-    const right = 580;
-    const top = 20;
-    const bottom = 170;
-    if (!points.length) {
-      return '<svg viewBox="0 0 600 200" width="100%" height="200"><text x="300" y="105" text-anchor="middle" fill="#9dbfb0" font-size="13">No data in selected range</text></svg>';
-    }
-    const vals = points.map(function (p) { return p.value; });
-    const min = Math.min.apply(null, vals);
-    const max = Math.max.apply(null, vals);
-    const span = Math.max(1, max - min);
-    const step = points.length > 1 ? (right - left) / (points.length - 1) : 0;
-    const xy = points.map(function (p, i) {
-      const x = left + (i * step);
-      const y = bottom - ((p.value - min) / span) * (bottom - top);
-      return { x: x, y: y, v: p.value, label: p.week };
-    });
-    const poly = xy.map(function (p) { return p.x + ',' + p.y; }).join(' ');
-    const circles = xy.map(function (p) { return '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="#6b9e7e"/>'; }).join('');
-    const labels = xy.map(function (p) { return '<text x="' + p.x + '" y="186" font-size="9" fill="#9dbfb0" text-anchor="middle">' + esc(fmtShortDate(p.label)) + '</text>'; }).join('');
-    const yTop = '<text x="34" y="23" font-size="9" fill="#9dbfb0" text-anchor="end">' + max + '</text>';
-    const yBot = '<text x="34" y="173" font-size="9" fill="#9dbfb0" text-anchor="end">' + min + '</text>';
-    return '<svg viewBox="0 0 600 200" width="100%" height="200" style="display:block;">'
-      + '<line x1="40" y1="20" x2="40" y2="170" stroke="#e8f0ec" stroke-width="1"/>'
-      + '<line x1="40" y1="170" x2="580" y2="170" stroke="#e8f0ec" stroke-width="1"/>'
-      + '<polyline points="' + poly + '" fill="none" stroke="#6b9e7e" stroke-width="2.5" stroke-linejoin="round"/>'
-      + circles + labels + yTop + yBot + '</svg>';
+    if (!points.length) return '<div class="graph-empty-state"><strong>No graphable data yet</strong><span>Record behavior data points first. The graph will calculate from those records only.</span></div>';
+    const left=44,right=580,top=20,bottom=170,max=Math.max(...points.map(p=>p.value)),min=Math.min(...points.map(p=>p.value)),span=Math.max(1,max-min),step=points.length>1?(right-left)/(points.length-1):0;
+    const xy=points.map((p,i)=>({x:left+i*step,y:bottom-((p.value-min)/span)*(bottom-top),v:p.value,label:p.label}));
+    const poly=xy.map(p=>p.x+','+p.y).join(' ');
+    return '<svg viewBox="0 0 620 205" width="100%" height="220"><line x1="44" y1="20" x2="44" y2="170" stroke="#dfe9e4"/><line x1="44" y1="170" x2="580" y2="170" stroke="#dfe9e4"/><polyline points="'+poly+'" fill="none" stroke="#5b7df5" stroke-width="3" stroke-linejoin="round"/>'+xy.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#fff" stroke="#5b7df5" stroke-width="2"><title>'+esc(p.label)+': '+p.v.toFixed(2)+'</title></circle>').join('')+xy.map(p=>'<text x="'+p.x+'" y="190" font-size="9" fill="#80958b" text-anchor="middle">'+esc(p.label.slice(5))+'</text>').join('')+'<text x="36" y="24" font-size="9" fill="#80958b" text-anchor="end">'+max.toFixed(1)+'</text><text x="36" y="174" font-size="9" fill="#80958b" text-anchor="end">'+min.toFixed(1)+'</text></svg>';
   }
-
-  function renderCard(cardId, title, clientName, points) {
-    const card = document.getElementById(cardId);
-    if (!card) return;
-    const avg = points.length ? (points.reduce(function (a, p) { return a + p.value; }, 0) / points.length) : 0;
-    const baseline = points.length ? points[0].value : 0;
-    const target = Math.max(0, Math.round((baseline || 0) * 0.5));
-    const trend = metricTrend(points);
-    card.innerHTML =
-      '<div class="graph-card-header"><div><h3>' + esc(title) + '</h3><span>' + esc(clientName) + ' - Sessions per week</span></div>'
-      + '<button class="small-btn" onclick="showToast(\'Export coming soon\')">Export PNG</button></div>'
-      + '<div class="graph-card-body">' + svgFor(points) + '</div>'
-      + '<div class="graph-card-footer">'
-      + '<div class="graph-stat"><div class="label">Current Avg</div><div class="value">' + avg.toFixed(1) + ' / week</div></div>'
-      + '<div class="graph-stat"><div class="label">Baseline</div><div class="value">' + baseline + ' / week</div></div>'
-      + '<div class="graph-stat"><div class="label">Target</div><div class="value">' + target + ' / week</div></div>'
-      + '<div class="graph-stat"><div class="label">Trend</div><div class="value">' + esc(trend) + '</div></div>'
-      + '</div>';
+  function renderGraph(points, type) {
+    const output = document.getElementById('graphOutput');
+    const unit = type === 'Frequency' ? 'per session' : type === 'Rate' ? 'per hour' : type === 'Duration' ? 'minutes' : '%';
+    if (!points.length) { output.innerHTML = '<div class="graph-card"><div class="graph-card-body">' + svgFor(points) + '</div></div>'; return; }
+    const avg = points.reduce((a,p)=>a+p.value,0) / points.length;
+    output.innerHTML = '<div class="graph-card"><div class="graph-card-header"><div><h3>'+esc(type)+' Graph</h3><span>Calculated from recorded behavior data only</span></div><button class="small-btn" onclick="showToast(\'Export coming soon\')">Export</button></div><div class="graph-card-body">'+svgFor(points)+'</div><div class="graph-card-footer"><div class="graph-stat"><div class="label">Average</div><div class="value">'+avg.toFixed(2)+' '+unit+'</div></div><div class="graph-stat"><div class="label">Data Points</div><div class="value">'+points.reduce((a,p)=>a+p.n,0)+'</div></div><div class="graph-stat"><div class="label">Calculation</div><div class="value">'+esc(type)+'</div></div></div></div>';
   }
-
-  function applyFilters(noToast) {
+  function applyFilters() {
     const client = document.getElementById('clientFilter').value;
-    const from = document.getElementById('dateFrom').value || '';
-    const to = document.getElementById('dateTo').value || '';
-    const scoped = graphSessions.filter(function (r) {
-      if (!r || !r.session_date) return false;
-      const n = getClientName(r);
-      if (client !== 'All Clients' && n !== client) return false;
-      if (from && r.session_date < from) return false;
-      if (to && r.session_date > to) return false;
-      return true;
-    });
-    const byClient = {};
-    scoped.forEach(function (r) {
-      const n = getClientName(r);
-      if (!byClient[n]) byClient[n] = [];
-      byClient[n].push(r);
-    });
-    const names = Object.keys(byClient).sort();
-    const c1 = names[0] || client;
-    const c2 = names[1] || names[0] || client;
-    renderCard('graph1', 'Session Frequency (Client A)', c1 || 'No client selected', aggregateByWeek(byClient[c1] || []));
-    renderCard('graph2', 'Session Frequency (Client B)', c2 || 'No client selected', aggregateByWeek(byClient[c2] || []));
-    renderCard('graph3', 'Completed Sessions', c1 || 'No client selected', aggregateByWeek((byClient[c1] || []).filter(function (r) { return String(r.status || '').toLowerCase() === 'completed'; })));
-    renderCard('graph4', 'Pending Sessions', c2 || 'No client selected', aggregateByWeek((byClient[c2] || []).filter(function (r) { return String(r.status || '').toLowerCase() !== 'completed'; })));
-    if (!noToast) showToast('Controls applied');
+    const behavior = document.getElementById('behaviorFilter').value;
+    const type = document.getElementById('measurementFilter').value;
+    const agg = document.getElementById('aggregationFilter').value;
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
+    const rows = graphData.filter(r => (!client || r.client === client) && (!behavior || r.behavior === behavior) && r.measurement === type && (!from || r.date >= from) && (!to || r.date <= to));
+    renderGraph(aggregate(rows, type, agg), type);
   }
-
-  async function initGraphHub() {
-    try {
-      await loadGilbertoOrganization();
-      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
-      const res = await jvmFetchSessionsTable(orgId, 500);
-      if (!res.ok) throw new Error(await readJvmErrorResponse(res));
-      graphSessions = await res.json();
-      graphClients = Array.from(new Set(graphSessions.map(getClientName))).sort();
-      loadClientFilter();
-      applyFilters(true);
-    } catch (e) {
-      showToast('Failed to load graph data');
-      ['graph1', 'graph2', 'graph3', 'graph4'].forEach(function (id) {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = '<div class="graph-card-body" style="padding:20px;color:#9f3a38;">Failed to load: ' + esc(e && e.message ? e.message : String(e)) + '</div>';
-      });
-    }
-  }
-
+  async function initGraphHub() { if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization().catch(()=>{}); loadGraphData(); fillSelect('clientFilter', uniqueValues('client'), 'All Clients'); fillSelect('behaviorFilter', uniqueValues('behavior'), 'All Behaviors'); updateFormulaText(); applyFilters(); }
   document.addEventListener('DOMContentLoaded', function () { void initGraphHub(); });
 </script>
 </body>
