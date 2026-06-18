@@ -394,10 +394,36 @@ async function gilbertoFetchOrgMembershipsForUser(client, uid) {
   }
 }
 
-// handles page navigation, called from every sidebar button
+// Handles page navigation, called from every sidebar button.
 function goToPage(page) {
-  window.location.href = page;
+  const target = String(page || "").trim();
+  if (!target) return;
+
+  window.location.assign(new URL(target, window.location.href).href);
 }
+
+window.goToPage = goToPage;
+
+function getNavTargetFromButton(button) {
+  if (!button || button.classList.contains("logout")) return "";
+  const inlineClick = button.getAttribute("onclick") || "";
+  const match = inlineClick.match(/goToPage\(\s*['"]([^'"]+)['"]\s*\)/);
+  return match ? match[1] : "";
+}
+
+document.addEventListener(
+  "click",
+  function handleSidebarNavigation(event) {
+    const button = event.target.closest(".nav-item");
+    const page = getNavTargetFromButton(button);
+    if (!page) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    goToPage(page);
+  },
+  true
+);
 
 async function logout() {
   try {
