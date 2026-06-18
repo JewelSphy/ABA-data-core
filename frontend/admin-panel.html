@@ -17,8 +17,8 @@
     <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
     <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
     <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
-    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
-    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions</button>
+    <button class="nav-item" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures</button>
     <p class="section-title">People</p>
     <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
     <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
@@ -33,7 +33,7 @@
     <header class="topbar">
       <div>
         <h1>Administration</h1>
-        <p>Manage users, security, billing, organization settings, and manager reports.</p>
+        <p>View administration records that come from real app data. Unconnected areas stay blank or marked not configured.</p>
       </div>
       <div class="top-actions">
         <button class="small-btn" onclick="goToPage('online-users.html')">Online Users</button>
@@ -44,35 +44,33 @@
     <section class="admin-overview-grid">
       <a class="admin-overview-card" href="#user-management"><strong>User Management</strong><span>Create, invite, disable, and reset users</span></a>
       <a class="admin-overview-card" href="#roles-permissions"><strong>Roles & Permissions</strong><span>Control clinical and business access</span></a>
-      <a class="admin-overview-card" href="#audit-logs"><strong>Security & Audit Logs</strong><span>Track HIPAA-relevant activity</span></a>
+      <a class="admin-overview-card" href="#audit-logs"><strong>Security & Audit Logs</strong><span>Track recorded app activity</span></a>
       <a class="admin-overview-card" href="#client-access-controls"><strong>Client Access</strong><span>Assign client visibility by provider</span></a>
     </section>
 
     <section class="admin-compliance-strip">
-      <div><span>Security posture</span><strong>HIPAA review ready</strong></div>
-      <div><span>Open admin tasks</span><strong>4</strong></div>
-      <div><span>Permission changes</span><strong>2 this week</strong></div>
-      <div><span>Provider credentials</span><strong>1 expiring soon</strong></div>
+      <div><span>Security posture</span><strong>Not configured</strong></div>
+      <div><span>Open admin tasks</span><strong id="adminOpenTasks">—</strong></div>
+      <div><span>Permission changes</span><strong id="adminPermissionChanges">0 recorded</strong></div>
+      <div><span>Provider credentials</span><strong id="adminCredentialAlerts">—</strong></div>
     </section>
 
     <section class="admin-section" id="user-management">
       <div class="admin-section-head">
-        <div><h2>User Management</h2><p>Create users, invite employees, reset passwords, disable users, and lock accounts.</p></div>
-        <button class="add-btn" type="button">Invite New Employee</button>
+        <div><h2>User Management</h2><p>User records appear here only after authentication/admin user syncing is connected.</p></div>
+        <button class="add-btn" type="button" disabled>Invite New Employee</button>
       </div>
       <div class="admin-toolbar">
         <input class="search-input" type="search" placeholder="Search users by name, email, or role" />
-        <button class="small-btn" type="button">Active Users</button>
-        <button class="small-btn" type="button">Pending Invites</button>
-        <button class="small-btn" type="button">Locked Accounts</button>
+        <button class="small-btn" type="button" disabled>Active Users</button>
+        <button class="small-btn" type="button" disabled>Pending Invites</button>
+        <button class="small-btn" type="button" disabled>Locked Accounts</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>MFA</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr><td>Jane Doe</td><td>jane@email.com</td><td><span class="badge badge-active">Provider</span></td><td>Active</td><td>Today</td><td><span class="badge badge-approved">On</span></td><td><button class="tbl-btn">Edit</button><button class="tbl-btn">Reset Password</button><button class="tbl-btn danger">Deactivate</button></td></tr>
-            <tr><td>John Smith</td><td>john@email.com</td><td><span class="badge badge-approved">Admin</span></td><td>Active</td><td>Yesterday</td><td><span class="badge badge-approved">On</span></td><td><button class="tbl-btn">Edit</button><button class="tbl-btn">Change Role</button><button class="tbl-btn danger">Lock</button></td></tr>
-            <tr><td>Maria Rivera</td><td>maria@email.com</td><td><span class="badge badge-pending">Manager</span></td><td>Invite Pending</td><td>Never</td><td><span class="badge badge-draft">Required</span></td><td><button class="tbl-btn">Resend Invite</button><button class="tbl-btn">Change Role</button></td></tr>
+          <tbody id="adminUsersBody">
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No user management records are available yet. Real users will appear after authentication/admin user syncing is connected.</td></tr>
           </tbody>
         </table>
       </div>
@@ -80,31 +78,21 @@
 
     <section class="admin-section" id="roles-permissions">
       <div class="admin-section-head">
-        <div><h2>Roles & Permissions</h2><p>Define what each role can view, create, delete, and administer.</p></div>
+        <div><h2>Roles & Permissions</h2><p>Role permissions must come from real role configuration before they are displayed.</p></div>
       </div>
-      <div class="admin-role-grid">
-        <div class="admin-role-card"><strong>Administrator</strong><span>Full system access</span></div>
-        <div class="admin-role-card"><strong>Manager</strong><span>Manage staff, sessions, users</span></div>
-        <div class="admin-role-card"><strong>Provider / Therapist</strong><span>Create notes and sessions</span></div>
-        <div class="admin-role-card"><strong>Billing Specialist</strong><span>Billing access, no clinical notes</span></div>
-        <div class="admin-role-card"><strong>Caregiver</strong><span>Document signatures only</span></div>
-        <div class="admin-role-card"><strong>Viewer</strong><span>Read-only access</span></div>
+      <div class="admin-role-grid" id="adminRolesGrid">
+        <div class="admin-role-card"><strong>No roles configured</strong><span>Connect role records before displaying access claims.</span></div>
       </div>
       <div class="admin-chip-row">
-        <span>Least privilege enabled</span>
-        <span>Clinical note access separated from billing</span>
-        <span>Caregiver portal restricted to signatures</span>
+        <span>Permission policy not connected</span>
+        <span>No static access claims shown</span>
+        <span>Audit changes when roles are connected</span>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Permission</th><th>Admin</th><th>Manager</th><th>Provider</th><th>Billing</th><th>Caregiver</th></tr></thead>
-          <tbody>
-            <tr><td>View Sessions</td><td>✓</td><td>✓</td><td>✓</td><td>Limited</td><td>✗</td></tr>
-            <tr><td>Create Sessions</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
-            <tr><td>Delete Sessions</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
-            <tr><td>Manage Users</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
-            <tr><td>View Audit Logs</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
-            <tr><td>Sign Documents</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td><td>✓</td></tr>
+          <tbody id="adminPermissionBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No role permission records configured yet.</td></tr>
           </tbody>
         </table>
       </div>
@@ -112,21 +100,19 @@
 
     <section class="admin-section" id="audit-logs">
       <div class="admin-section-head">
-        <div><h2>Security & Audit Logs</h2><p>HIPAA-supporting trail for logins, notes, deletions, and permission changes.</p></div>
+        <div><h2>Security & Audit Logs</h2><p>Trail for real app events captured by the current workspace.</p></div>
       </div>
       <div class="admin-mini-grid">
-        <div><span>Failed logins</span><strong>0 today</strong></div>
-        <div><span>Clinical edits</span><strong>3 this week</strong></div>
-        <div><span>Permission changes</span><strong>2 this week</strong></div>
-        <div><span>Exports</span><strong>0 today</strong></div>
+        <div><span>Failed logins</span><strong id="auditFailedLogins">0 recorded</strong></div>
+        <div><span>Clinical edits</span><strong id="auditClinicalEdits">0 recorded</strong></div>
+        <div><span>Permission changes</span><strong id="auditPermissionChanges">0 recorded</strong></div>
+        <div><span>Exports</span><strong id="auditExports">0 recorded</strong></div>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Date</th><th>User</th><th>Action</th><th>Area</th><th>Risk</th></tr></thead>
-          <tbody>
-            <tr><td>10:34 AM</td><td>Jane</td><td>Edited Session</td><td>Sessions</td><td><span class="badge badge-pending">Medium</span></td></tr>
-            <tr><td>10:40 AM</td><td>Admin</td><td>Changed Role</td><td>Permissions</td><td><span class="badge badge-expiring">High</span></td></tr>
-            <tr><td>11:01 AM</td><td>John</td><td>Logged In</td><td>Authentication</td><td><span class="badge badge-active">Low</span></td></tr>
+          <tbody id="auditLogsBody">
+            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet. This table will only show real login, session, export, deletion, and permission-change events captured by the app.</td></tr>
           </tbody>
         </table>
       </div>
@@ -134,18 +120,18 @@
 
     <section class="admin-section" id="organization-settings">
       <div class="admin-section-head">
-        <div><h2>Organization Settings</h2><p>Company identity, timezone, session defaults, and signature settings.</p></div>
+        <div><h2>Organization Settings</h2><p>Only saved organization settings should appear here.</p></div>
       </div>
       <div class="admin-settings-grid">
-        <label>Company Name<input value="Gilberto ABA Care" /></label>
-        <label>Address<input value="Clinic address" /></label>
-        <label>Time Zone<select><option>Eastern Time</option><option>Central Time</option><option>Pacific Time</option></select></label>
-        <label>Default Session Length<select><option>2 hours</option><option>1 hour</option><option>30 minutes</option></select></label>
-        <label>Signature Style<select><option>Classic clinical signature</option><option>Friendly signature</option></select></label>
+        <label>Company Name<input id="adminOrgName" placeholder="Not configured" readonly /></label>
+        <label>Address<input id="adminOrgAddress" placeholder="Not configured" readonly /></label>
+        <label>Time Zone<select id="adminOrgTimezone" disabled><option>Not configured</option></select></label>
+        <label>Default Session Length<select disabled><option>Not configured</option></select></label>
+        <label>Signature Style<select disabled><option>Not configured</option></select></label>
         <label>Logo Upload<input type="file" /></label>
-        <label>Session Note Deadline<select><option>Same day</option><option>24 hours</option><option>48 hours</option></select></label>
-        <label>Require Supervisor Signature<select><option>For supervision sessions</option><option>Always</option><option>Never</option></select></label>
-        <label>Auto-lock Completed Notes<select><option>After approval</option><option>After 24 hours</option><option>Manual only</option></select></label>
+        <label>Session Note Deadline<select disabled><option>Not configured</option></select></label>
+        <label>Require Supervisor Signature<select disabled><option>Not configured</option></select></label>
+        <label>Auto-lock Completed Notes<select disabled><option>Not configured</option></select></label>
       </div>
     </section>
 
@@ -157,9 +143,8 @@
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Provider</th><th>License</th><th>NPI</th><th>Specialty</th><th>Expires</th></tr></thead>
-          <tbody>
-            <tr><td>Sarah Jones</td><td>ABA-12345</td><td>1234567890</td><td>BCBA</td><td>12/31/2027</td></tr>
-            <tr><td>Michael Chen</td><td>RBT-88291</td><td>—</td><td>RBT</td><td>08/15/2026</td></tr>
+          <tbody id="adminProvidersBody">
+            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No provider credential records loaded here yet. Open Providers to manage real provider data.</td></tr>
           </tbody>
         </table>
       </div>
@@ -170,14 +155,14 @@
         <div><h2>Billing Settings</h2><p>CPT codes, insurance rates, billing rules, and service rates.</p></div>
       </div>
       <div class="admin-rate-grid">
-        <div><strong>97153</strong><span>$65/hr Behavior treatment</span></div>
-        <div><strong>97155</strong><span>$95/hr Protocol modification</span></div>
-        <div><strong>97156</strong><span>$85/hr Family training</span></div>
+        <div><strong>97153</strong><span>Rate not configured</span></div>
+        <div><strong>97155</strong><span>Rate not configured</span></div>
+        <div><strong>97156</strong><span>Rate not configured</span></div>
       </div>
       <div class="admin-chip-row">
-        <span>Claim hold: missing signatures</span>
-        <span>Claim hold: missing notes</span>
-        <span>Rate rule: authorization required</span>
+        <span>Billing rules not configured</span>
+        <span>Claim holds not connected</span>
+        <span>Rates must come from real billing settings</span>
       </div>
     </section>
 
@@ -186,18 +171,18 @@
         <div><h2>System Reports</h2><p>Manager view of sessions, providers, missing notes, active clients, and revenue.</p></div>
       </div>
       <div class="admin-report-grid">
-        <div><span>Sessions Today</span><strong>0</strong></div>
-        <div><span>Sessions This Week</span><strong>0</strong></div>
-        <div><span>Missing Notes</span><strong>0</strong></div>
-        <div><span>Active Clients</span><strong>1</strong></div>
-        <div><span>Revenue This Month</span><strong>$0</strong></div>
-        <div><span>Pending Claims</span><strong>0</strong></div>
+        <div><span>Sessions Today</span><strong id="reportSessionsToday">—</strong></div>
+        <div><span>Sessions This Week</span><strong id="reportSessionsWeek">—</strong></div>
+        <div><span>Missing Notes</span><strong id="reportMissingNotes">—</strong></div>
+        <div><span>Active Clients</span><strong id="reportActiveClients">—</strong></div>
+        <div><span>Revenue This Month</span><strong>Not connected</strong></div>
+        <div><span>Pending Claims</span><strong>Not connected</strong></div>
       </div>
       <div class="admin-chip-row">
-        <span>Export CSV</span>
-        <span>Monthly utilization</span>
-        <span>Provider productivity</span>
-        <span>Compliance exceptions</span>
+        <span>Report exports not connected</span>
+        <span>Utilization requires session data</span>
+        <span>Provider productivity not connected</span>
+        <span>Compliance exceptions not connected</span>
       </div>
     </section>
 
@@ -207,17 +192,16 @@
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Client</th><th>Provider 1</th><th>Provider 2</th><th>Supervisor</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr><td>Client A</td><td>Provider 1</td><td>Provider 2</td><td>Supervisor</td><td><button class="tbl-btn">Edit Access</button></td></tr>
-            <tr><td>Client B</td><td>Provider 3</td><td>—</td><td>Supervisor</td><td><button class="tbl-btn">Edit Access</button></td></tr>
+          <thead><tr><th>Client</th><th>Primary Provider</th><th>Secondary Provider</th><th>Supervisor</th><th>Actions</th></tr></thead>
+          <tbody id="clientAccessBody">
+            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No client access assignments configured yet. Real assignments should be generated from provider-client access records.</td></tr>
           </tbody>
         </table>
       </div>
       <div class="admin-access-flow">
-        <div><strong>Client A</strong><span>Provider 1 → Provider 2 → Supervisor</span></div>
-        <div><strong>Rule</strong><span>Providers only see assigned clients and related notes.</span></div>
-        <div><strong>Review cadence</strong><span>Managers review assignments monthly.</span></div>
+        <div><strong>Access records</strong><span>Waiting for real provider-client assignments.</span></div>
+        <div><strong>Access rule</strong><span>Not configured</span></div>
+        <div><strong>Review cadence</strong><span>Not configured</span></div>
       </div>
     </section>
   </main>
@@ -228,5 +212,92 @@
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260618e"></script>
+<script>
+  function adminEsc(v) {
+    return String(v == null ? '' : v)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+  function adminScopedKey(name) {
+    return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey(name) : name + ':no-org';
+  }
+  function loadAdminRows(key) {
+    try {
+      const rows = JSON.parse(localStorage.getItem(adminScopedKey(key)) || '[]');
+      return Array.isArray(rows) ? rows : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  function riskBadge(risk) {
+    const value = String(risk || 'Low');
+    const cls = value.toLowerCase() === 'high' ? 'badge-expiring' : value.toLowerCase() === 'medium' ? 'badge-pending' : 'badge-active';
+    return '<span class="badge ' + cls + '">' + adminEsc(value) + '</span>';
+  }
+  function renderAuditLogs() {
+    const body = document.getElementById('auditLogsBody');
+    const rows = loadAdminRows('gilberto_audit_events').sort(function (a, b) {
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+    if (!rows.length) return;
+    body.innerHTML = rows.map(function (r) {
+      const date = r.createdAt ? new Date(r.createdAt).toLocaleString() : (r.date || '—');
+      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td></tr>';
+    }).join('');
+    const permissionChanges = rows.filter(function (r) { return /permission|role/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
+    const clinicalEdits = rows.filter(function (r) { return /session|note|clinical|data collection|behavior data/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
+    const exports = rows.filter(function (r) { return /export/i.test(String(r.action || '')); }).length;
+    const failedLogins = rows.filter(function (r) { return /failed login/i.test(String(r.action || '')); }).length;
+    document.getElementById('auditPermissionChanges').textContent = permissionChanges + ' recorded';
+    document.getElementById('adminPermissionChanges').textContent = permissionChanges + ' recorded';
+    document.getElementById('auditClinicalEdits').textContent = clinicalEdits + ' recorded';
+    document.getElementById('auditExports').textContent = exports + ' recorded';
+    document.getElementById('auditFailedLogins').textContent = failedLogins + ' recorded';
+  }
+  function renderOrganizationSettings() {
+    const org = window.gilbertoCurrentOrg || {};
+    const name = org.company_display_name || org.company_legal_name || org.name || '';
+    const address = org.address || org.company_address || '';
+    document.getElementById('adminOrgName').value = name || '';
+    document.getElementById('adminOrgAddress').value = address || '';
+  }
+  async function renderAdminReports() {
+    let activeClients = null;
+    let sessions = [];
+    try {
+      if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
+      if (window.supabaseClient && orgId) {
+        const clients = await window.supabaseClient.from('clients').select('id,status,auth_status').eq('org_id', orgId);
+        if (!clients.error) {
+          activeClients = (clients.data || []).filter(function (c) {
+            return ['active', 'authorized', 'approved'].includes(String(c.status || c.auth_status || '').toLowerCase());
+          }).length;
+        }
+      }
+      if (typeof jvmFetchSessionsTable === 'function') {
+        const res = await jvmFetchSessionsTable(orgId, 500);
+        if (res && res.ok) sessions = await res.json();
+      }
+    } catch (_) {}
+    const today = new Date().toISOString().slice(0, 10);
+    const start = new Date();
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const weekStart = start.toISOString().slice(0, 10);
+    document.getElementById('reportSessionsToday').textContent = sessions.filter(function (s) { return s.session_date === today; }).length;
+    document.getElementById('reportSessionsWeek').textContent = sessions.filter(function (s) { return s.session_date >= weekStart; }).length;
+    document.getElementById('reportMissingNotes').textContent = 'Not connected';
+    document.getElementById('reportActiveClients').textContent = activeClients == null ? '—' : activeClients;
+    renderOrganizationSettings();
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    renderAuditLogs();
+    renderOrganizationSettings();
+    void renderAdminReports();
+  });
+</script>
 </body>
 </html>

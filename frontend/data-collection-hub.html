@@ -196,6 +196,20 @@
   function dataStorageKey() { return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey('gilberto_behavior_data') : 'gilberto_behavior_data:no-org'; }
   function loadRows() { try { return JSON.parse(localStorage.getItem(dataStorageKey()) || '[]'); } catch (_) { return []; } }
   function saveRows(rows) { localStorage.setItem(dataStorageKey(), JSON.stringify(rows || [])); }
+  function recordAuditEvent(event) {
+    const key = typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey('gilberto_audit_events') : 'gilberto_audit_events:no-org';
+    let rows = [];
+    try { rows = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { rows = []; }
+    if (!Array.isArray(rows)) rows = [];
+    rows.unshift({
+      createdAt: new Date().toISOString(),
+      user: window.gilbertoCurrentUserName || 'Current User',
+      action: event.action,
+      area: event.area || 'Data Collection',
+      risk: event.risk || 'Medium'
+    });
+    localStorage.setItem(key, JSON.stringify(rows.slice(0, 250)));
+  }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   function measurementConfig(type) {
     const configs = {
@@ -263,9 +277,11 @@
   }
   function deleteDataPoint(index) {
     const rows = loadRows();
+    const removed = rows[index];
     rows.splice(index, 1);
     saveRows(rows);
     renderRows(rows);
+    if (removed) recordAuditEvent({ action: 'Deleted behavior data point', area: 'Data Collection', risk: 'High' });
     showToast('Data point deleted');
   }
   function recordDataPoint() {
@@ -288,6 +304,7 @@
     const rows = loadRows();
     rows.unshift(row);
     saveRows(rows);
+    recordAuditEvent({ action: 'Recorded behavior data point', area: 'Data Collection', risk: 'Medium' });
     renderRows(rows);
     document.getElementById('dataValue').value = '';
     document.getElementById('metricExtraValue').value = '';
