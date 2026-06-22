@@ -954,6 +954,8 @@ async function gilbertoResolveEffectiveOrgRole(client, uid, orgId, membershipRol
 }
 
 function gilbertoIsAdminRole(org) {
+  const access = String(window.gilbertoWorkspaceAccess || "").toLowerCase();
+  if (access === "owner" || access === "admin") return true;
   const role = String((org || window.gilbertoCurrentOrg)?.role || "").toLowerCase();
   return role === "owner" || role === "admin";
 }
@@ -967,18 +969,30 @@ async function gilbertoRefreshCurrentOrgRole() {
     const uid = sess?.session?.user?.id || window.gilbertoCurrentUserId || "";
     if (!uid) return null;
     const orgId = window.gilbertoCurrentOrg.id;
-    let role = null;
+    let access = null;
 
     try {
-      const { data: rpcRole, error: rpcErr } = await window.supabaseClient.rpc("get_my_org_role", {
-        p_org_id: orgId,
-      });
-      if (!rpcErr && rpcRole) role = String(rpcRole).toLowerCase();
+      const { data: workspaceAccess, error: accessErr } = await window.supabaseClient.rpc(
+        "get_my_workspace_access",
+        { p_org_id: orgId }
+      );
+      if (!accessErr && workspaceAccess) access = String(workspaceAccess).toLowerCase();
     } catch (_) {
       /* optional RPC */
     }
 
-    if (!role) {
+    if (!access) {
+      try {
+        const { data: rpcRole, error: rpcErr } = await window.supabaseClient.rpc("get_my_org_role", {
+          p_org_id: orgId,
+        });
+        if (!rpcErr && rpcRole) access = String(rpcRole).toLowerCase();
+      } catch (_) {
+        /* optional RPC */
+      }
+    }
+
+    if (!access) {
       const { data, error } = await window.supabaseClient
         .from("organization_members")
         .select("role")
@@ -986,17 +1000,23 @@ async function gilbertoRefreshCurrentOrgRole() {
         .eq("user_id", uid)
         .maybeSingle();
       if (error || !data?.role) return null;
-      role = String(data.role).toLowerCase();
+      access = String(data.role).toLowerCase();
     }
 
-    window.gilbertoCurrentOrg.role = role;
+    window.gilbertoWorkspaceAccess = access;
+    if (access === "owner" || access === "admin") {
+      window.gilbertoCurrentOrg.role = access;
+    } else if (access === "member") {
+      window.gilbertoCurrentOrg.role = "member";
+    }
+
     try {
       localStorage.setItem("gilberto_active_org:" + uid, JSON.stringify(window.gilbertoCurrentOrg));
     } catch (_) {
       /* empty */
     }
     gilbertoInjectAdministrationNav();
-    return role;
+    return access;
   } catch (_) {
     return null;
   }

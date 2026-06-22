@@ -81,7 +81,7 @@
 
     <section class="admin-section" id="users">
       <div class="admin-section-head">
-        <div><h2>Users</h2><p>Manage workspace members. <strong>Owner</strong> and <strong>Admin</strong> roles unlock the Administration menu for that person after they refresh. Other roles (Manager, Viewer, etc.) control permissions inside Administration only.</p></div>
+        <div><h2>Users</h2><p>Use <strong>Grant admin</strong> or the checkbox <strong>Can open Administration menu</strong> to control who sees Administration in the sidebar. The <strong>Admin menu</strong> column shows live workspace access from Supabase.</p></div>
         <button class="add-btn" type="button" id="adminInviteUserBtn">Invite User</button>
       </div>
       <div class="admin-toolbar">
@@ -93,9 +93,9 @@
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Site / Access Scope</th><th>MFA</th><th>Account</th><th>Online</th><th>Last Active</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Admin menu</th><th>Site / Access Scope</th><th>MFA</th><th>Account</th><th>Online</th><th>Last Active</th><th>Actions</th></tr></thead>
           <tbody id="adminUsersBody">
-            <tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">Loading users…</td></tr>
+            <tr><td colspan="10" style="text-align:center;padding:20px;color:#6b8c7a;">Loading users…</td></tr>
           </tbody>
         </table>
       </div>
@@ -278,8 +278,8 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260623c"></script>
-<script src="admin-center.js?v=20260623f"></script>
+<script src="dashboard.js?v=20260623d"></script>
+<script src="admin-center.js?v=20260623g"></script>
 <script>
   function withBootTimeout(promise, ms) {
     if (!promise || typeof promise.then !== 'function') return Promise.resolve(promise);

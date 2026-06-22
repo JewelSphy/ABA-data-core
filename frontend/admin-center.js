@@ -307,6 +307,8 @@
     this.revokedIds = [];
     this.removedUserIds = [];
     this.auditEvents = [];
+    this.workspaceAccessByUserId = {};
+    this.workspaceAccessByEmail = {};
     this.providers = [];
     this.presenceRows = [];
     this.onlineByUserId = {};
@@ -668,6 +670,138 @@
   AdminCenter.prototype.roleGrantsAdminPanelAccess = function (roleId) {
     var r = String(roleId || "").toLowerCase();
     return r === "owner" || r === "admin";
+  };
+
+  AdminCenter.prototype.userHasAdminMenu = function (user) {
+    if (!user) return false;
+    if (user.roleId === "owner") return true;
+    if (user.userId && this.workspaceAccessByUserId[user.userId]) {
+      return !!this.workspaceAccessByUserId[user.userId].adminMenu;
+    }
+    var email = String(user.email || "").trim().toLowerCase();
+    if (email && this.workspaceAccessByEmail[email]) {
+      return !!this.workspaceAccessByEmail[email].adminMenu;
+    }
+    return user.roleId === "admin";
+  };
+
+  AdminCenter.prototype.loadWorkspaceAccessMap = async function () {
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (!orgId || !window.supabaseClient) return;
+    this.workspaceAccessByUserId = {};
+    this.workspaceAccessByEmail = {};
+    try {
+      var rpc = await window.supabaseClient.rpc("list_workspace_member_access", { p_org_id: orgId });
+      if (rpc.error || !Array.isArray(rpc.data)) return;
+      var self = this;
+      rpc.data.forEach(function (row) {
+        if (!row || !row.user_id) return;
+        var entry = {
+          adminMenu: !!row.admin_menu,
+          memberRole: String(row.member_role || "member").toLowerCase(),
+          email: String(row.email || "").trim().toLowerCase(),
+        };
+        self.workspaceAccessByUserId[row.user_id] = entry;
+        if (entry.email) self.workspaceAccessByEmail[entry.email] = entry;
+      });
+    } catch (_) {}
+  };
+
+  AdminCenter.prototype.setWorkspaceAdminAccess = async function (user, enabled) {
+    if (!user || !window.supabaseClient) {
+      return { ok: false, reason: "Sign-in required." };
+    }
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (!orgId) return { ok: false, reason: "No active workspace." };
+    if (user.roleId === "owner") {
+      return { ok: true, access: "owner", userId: user.userId || null };
+    }
+
+    await this.resolveWorkspaceUserId(user);
+    var email = String(user.email || "").trim();
+    var lastError = "";
+
+    if (user.userId) {
+      try {
+        var rpc = await window.supabaseClient.rpc("set_workspace_admin_access", {
+          p_org_id: orgId,
+          p_target_user_id: user.userId,
+          p_enabled: !!enabled,
+        });
+        if (!rpc.error) {
+          var access = String(rpc.data || (enabled ? "admin" : "member")).toLowerCase();
+          this.workspaceAccessByUserId[user.userId] = {
+            adminMenu: access === "owner" || access === "admin",
+            memberRole: access,
+            email: email.toLowerCase(),
+          };
+          if (email) {
+            this.workspaceAccessByEmail[email.toLowerCase()] = this.workspaceAccessByUserId[user.userId];
+          }
+          if (enabled) user.roleId = access === "owner" ? "owner" : "admin";
+          else if (user.roleId === "admin") user.roleId = "viewer";
+          return { ok: true, access: access, userId: user.userId };
+        }
+        lastError = rpc.error.message || "Could not update Administration access.";
+      } catch (err) {
+        lastError = String(err && err.message ? err.message : err);
+      }
+    }
+
+    if (email && !this.isPlaceholderEmail(email)) {
+      try {
+        var byEmail = await window.supabaseClient.rpc("set_workspace_admin_access_by_email", {
+          p_org_id: orgId,
+          p_email: email,
+          p_enabled: !!enabled,
+        });
+        if (!byEmail.error && byEmail.data) {
+          user.userId = byEmail.data;
+          var access2 = enabled ? "admin" : "member";
+          this.workspaceAccessByUserId[user.userId] = {
+            adminMenu: enabled,
+            memberRole: access2,
+            email: email.toLowerCase(),
+          };
+          this.workspaceAccessByEmail[email.toLowerCase()] = this.workspaceAccessByUserId[user.userId];
+          if (enabled) user.roleId = "admin";
+          else if (user.roleId === "admin") user.roleId = "viewer";
+          this.persistUsers();
+          return { ok: true, access: access2, userId: user.userId };
+        }
+        if (byEmail.error) lastError = byEmail.error.message || lastError;
+      } catch (err2) {
+        lastError = String(err2 && err2.message ? err2.message : err2);
+      }
+    }
+
+    if (/set_workspace_admin_access/i.test(lastError)) {
+      lastError += " Run security/supabase-workspace-admin-access.sql in Supabase SQL Editor.";
+    }
+    return {
+      ok: false,
+      reason: lastError || "This person must join the workspace before Administration access can apply.",
+    };
+  };
+
+  AdminCenter.prototype.toggleAdminMenu = async function (userId) {
+    if (!this.hasPermission("users.edit")) return this.toastError("Insufficient permissions.");
+    var user = this.users.find(function (u) { return u.id === userId; });
+    if (!user) return;
+    if (user.roleId === "owner") return this.toastError("The workspace owner always has Administration access.");
+    var enable = !this.userHasAdminMenu(user);
+    var label = this.displayEmailForUser(user);
+    if (label === "—") label = this.displayNameForUser(user);
+    if (!(await this.confirmAction((enable ? "Grant" : "Remove") + " Administration access for " + label + "?"))) return;
+    var result = await this.setWorkspaceAdminAccess(user, enable);
+    if (!result.ok) return this.toastError(result.reason || "Could not update Administration access.");
+    this.persistUsers();
+    this.renderUsers();
+    this.toastSuccess(
+      enable
+        ? "Administration access granted. They should see it within a minute (or after refresh)."
+        : "Administration access removed."
+    );
   };
 
   AdminCenter.prototype.resolveWorkspaceUserId = async function (user) {
@@ -1268,6 +1402,7 @@
         await withTimeout(window.gilbertoWriteWorkspacePresence(), 8000);
       }
       await withTimeout(this.syncUsersFromSupabase(), 15000);
+      await withTimeout(this.loadWorkspaceAccessMap(), 10000);
       await withTimeout(this.seedCurrentUserAsOwner(), 8000);
       await withTimeout(this.loadProviders(), 8000);
       await withTimeout(this.refreshPresence(), 8000);
@@ -1316,6 +1451,7 @@
       '<div class="modal-body admin-settings-grid" style="grid-template-columns:1fr 1fr;">' +
       '<label>Full Name<input id="adminUserName" type="text" placeholder="First and last name"/></label><label>Email<input id="adminUserEmail" type="email" placeholder="user@company.com"/></label>' +
       '<label>Role<select id="adminUserRole"></select></label><label>Site<input id="adminUserSite" type="text"/></label>' +
+      '<label style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:4px;"><input id="adminUserAdminMenu" type="checkbox"/> Can open Administration menu (workspace access)</label>' +
       '<label>Status<select id="adminUserStatus"></select></label><label>MFA<select id="adminUserMfa"><option value="false">Off</option><option value="true">On</option></select></label>' +
       '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminUserModal\')">Cancel</button>' +
       '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveUserEditor()">Save</button></div></div></div>' +
@@ -1634,7 +1770,7 @@
     if (!body) return;
     var rows = this.getFilteredUsers();
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No users match this filter.</td></tr>';
+      body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#6b8c7a;">No users match this filter.</td></tr>';
       return;
     }
     var self = this;
@@ -1647,13 +1783,18 @@
         : (u.site || "—");
       var live = u.userId && self.onlineByUserId[u.userId];
       var lastActive = (live && live.last_activity_at) || u.lastLogin || u.loginAt;
+      var adminMenu = self.userHasAdminMenu(u);
+      var adminBadge = adminMenu
+        ? '<span class="badge badge-active">Yes</span>'
+        : '<span class="badge badge-pending">No</span>';
       return "<tr><td>" + adminEsc(self.displayNameForUser(u)) + "</td><td>" + adminEsc(self.displayEmailForUser(u)) + "</td><td>" +
-        adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(scopeLabel) + "</td><td>" +
+        adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminBadge + "</td><td>" + adminEsc(scopeLabel) + "</td><td>" +
         (u.mfaEnabled ? '<span class="badge badge-active">On</span>' : '<span class="badge badge-pending">Off</span>') +
         "</td><td>" + self.statusBadge(u.status) + "</td><td>" + self.onlineStatusBadgeForUser(u) + "</td><td>" +
         adminEsc(formatDateTime(lastActive)) +
         '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(u.id) +
-        "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
+        "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.toggleAdminMenu('" +
+        adminEsc(u.id) + "')\">" + (adminMenu ? "Remove admin" : "Grant admin") + "</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
         adminEsc(u.id) + "')\">Access</button>" +
         (u.status !== "Disabled" && u.roleId !== "owner" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.disableUser(\'' + adminEsc(u.id) + "')\">Disable</button>" : "") +
         (u.status !== "Terminated" && u.roleId !== "owner" ? ' <button class="tbl-btn danger" type="button" onclick="GilbertoAdmin.terminateUser(\'' + adminEsc(u.id) + "')\">Terminate</button>" : "") +
@@ -2040,6 +2181,11 @@
     document.getElementById("adminUserSite").value = u ? u.site || "" : "";
     document.getElementById("adminUserStatus").value = u ? u.status : "Pending Invite";
     document.getElementById("adminUserMfa").value = u && u.mfaEnabled ? "true" : "false";
+    var adminMenuEl = document.getElementById("adminUserAdminMenu");
+    if (adminMenuEl) {
+      adminMenuEl.checked = u ? this.userHasAdminMenu(u) : false;
+      adminMenuEl.disabled = !!(u && u.roleId === "owner");
+    }
     this.openModal("adminUserModal");
   };
 
@@ -2052,34 +2198,26 @@
     var site = document.getElementById("adminUserSite").value.trim();
     var status = document.getElementById("adminUserStatus").value;
     var mfaEnabled = document.getElementById("adminUserMfa").value === "true";
+    var adminMenuEnabled = document.getElementById("adminUserAdminMenu")
+      ? document.getElementById("adminUserAdminMenu").checked
+      : this.roleGrantsAdminPanelAccess(roleId);
     var existing = this._editingUserId ? this.users.find(function (u) { return u.id === this._editingUserId; }, this) : null;
     if (existing) {
-      var oldRole = existing.roleId;
       existing.name = name;
       existing.email = email;
       existing.roleId = roleId;
       existing.site = site;
       existing.status = status;
       existing.mfaEnabled = mfaEnabled;
-      var syncResult = null;
-      await this.resolveWorkspaceUserId(existing);
-      if (existing.userId || (email && !this.isPlaceholderEmail(email))) {
-        syncResult = await this.syncUserOrgMembershipRole(existing, roleId);
-      } else if (this.roleGrantsAdminPanelAccess(roleId)) {
-        syncResult = { ok: false, reason: "This person must join and sign in to the workspace before Admin access can apply." };
+      var accessResult = null;
+      if (existing.roleId !== "owner") {
+        accessResult = await this.setWorkspaceAdminAccess(existing, adminMenuEnabled);
       }
       if (existing.userId && existing.userId === window.gilbertoCurrentUserId) {
         window.gilbertoCurrentUserName = name;
         window.gilbertoCurrentUserEmail = email;
-        if (syncResult && syncResult.ok && window.gilbertoCurrentOrg) {
-          window.gilbertoCurrentOrg.role = syncResult.orgRole;
-          try {
-            var orgCacheKey = "gilberto_active_org:" + existing.userId;
-            localStorage.setItem(orgCacheKey, JSON.stringify(window.gilbertoCurrentOrg));
-          } catch (_) {}
-          if (typeof window.gilbertoInjectAdministrationNav === "function") {
-            window.gilbertoInjectAdministrationNav();
-          }
+        if (typeof window.gilbertoRefreshCurrentOrgRole === "function") {
+          await window.gilbertoRefreshCurrentOrgRole();
         }
         if (typeof window.gilbertoSaveAuthProfile === "function" && window.supabaseClient) {
           try {
@@ -2094,25 +2232,19 @@
         }
       }
       this.persistUsers();
-      this.recordAudit({ action: "User updated", area: "Users", affectedUser: email, oldValue: oldRole, newValue: roleId, risk: "Medium" });
-      if (syncResult && !syncResult.ok) {
-        var syncMsg = syncResult.reason || "Could not update workspace membership.";
-        if (/admin_set_org_member_role/i.test(syncMsg)) {
-          syncMsg += " Run security/supabase-fix-broken-access.sql in Supabase SQL Editor, then save again.";
-        }
-        this.toastError("Workspace access was not updated: " + syncMsg);
-      } else if (syncResult && syncResult.ok) {
-        var verifiedRole = await this.verifyMemberWorkspaceRole(existing);
-        var expectedRole = this.mapRoleIdToOrgMembership(roleId);
-        if (verifiedRole && verifiedRole !== expectedRole) {
-          this.toastError("User saved, but workspace access is still " + verifiedRole + " (expected " + expectedRole + ").");
-        } else if (this.roleGrantsAdminPanelAccess(roleId)) {
-          this.toastSuccess("Admin access applied in workspace. They should see Administration within a minute (or after refresh).");
-        } else {
-          this.toastSuccess("User saved. Workspace access: " + (verifiedRole || expectedRole) + ".");
-        }
-      } else if (this.roleGrantsAdminPanelAccess(roleId)) {
-        this.toastError("User saved locally only. They must join this workspace before Admin access can apply.");
+      this.recordAudit({
+        action: "User updated",
+        area: "Users",
+        affectedUser: email,
+        newValue: adminMenuEnabled ? "Admin menu: yes" : "Admin menu: no",
+        risk: "Medium",
+      });
+      if (accessResult && !accessResult.ok) {
+        this.toastError(accessResult.reason || "Could not update Administration access.");
+      } else if (accessResult && accessResult.ok && adminMenuEnabled) {
+        this.toastSuccess("Administration access granted in workspace. They should see it within a minute (or after refresh).");
+      } else if (accessResult && accessResult.ok) {
+        this.toastSuccess("User saved. Administration access: " + (accessResult.access || "updated") + ".");
       } else {
         this.toastSuccess("User saved.");
       }
