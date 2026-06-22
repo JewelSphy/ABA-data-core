@@ -296,6 +296,7 @@
     this.auditEvents = [];
     this.providers = [];
     this.presenceRows = [];
+    this.onlineByUserId = {};
     this.userFilter = "all";
     this.auditFilters = { actor: "", action: "", dateFrom: "", dateTo: "" };
     this._confirmResolve = null;
@@ -951,9 +952,21 @@
       await window.gilbertoWriteWorkspacePresence();
     }
     await this.syncUsersFromSupabase();
+    await this.refreshPresence();
     this.renderUsers();
     this.renderComplianceStrip();
-    this.toastSuccess("User list refreshed from workspace accounts.");
+    this.toastSuccess("User list refreshed from workspace.");
+  };
+
+  AdminCenter.prototype.startUsersOnlineRefresh = function () {
+    var self = this;
+    if (this._usersOnlineInterval) clearInterval(this._usersOnlineInterval);
+    this._usersOnlineInterval = setInterval(function () {
+      void self.refreshPresence().then(function () {
+        self.renderUsers();
+        self.renderComplianceStrip();
+      });
+    }, 30000);
   };
 
   AdminCenter.prototype.applyDerivedUserStatuses = function () {
@@ -1039,6 +1052,7 @@
     this.wireSectionActions();
     this.renderAll();
     this.applyPermissionGating();
+    this.startUsersOnlineRefresh();
 
     var hash = window.location.hash.replace("#", "");
     if (hash) this.navigateToSection(hash);
@@ -1285,6 +1299,56 @@
     return '<span class="badge ' + cls + '">' + adminEsc(s) + "</span>";
   };
 
+  AdminCenter.prototype.getUserOnlineStatus = function (user) {
+    if (!user || !user.userId) return { key: "offline", label: "Offline" };
+    var row = this.onlineByUserId[user.userId];
+    if (!row) return { key: "offline", label: "Offline" };
+    return { key: row.status || "offline", label: row.label || "Offline" };
+  };
+
+  AdminCenter.prototype.onlineStatusBadgeForUser = function (user) {
+    var st = this.getUserOnlineStatus(user);
+    var cls = st.key === "online" ? "badge-active" : st.key === "idle" ? "badge-pending" : "badge-expiring";
+    return '<span class="badge ' + cls + '">' + adminEsc(st.label) + "</span>";
+  };
+
+  AdminCenter.prototype.displayNameForUser = function (user) {
+    var live = user && user.userId ? this.onlineByUserId[user.userId] : null;
+    return this.displayName({
+      name: this.pickBestName(live && live.full_name, user && user.name),
+      email: this.pickBestEmail(live && live.email, user && user.email),
+      userId: user && user.userId,
+    });
+  };
+
+  AdminCenter.prototype.displayEmailForUser = function (user) {
+    var live = user && user.userId ? this.onlineByUserId[user.userId] : null;
+    return this.displayEmail({
+      email: this.pickBestEmail(live && live.email, user && user.email),
+      userId: user && user.userId,
+    });
+  };
+
+  AdminCenter.prototype.indexOnlineUsers = function (rows) {
+    var self = this;
+    this.onlineByUserId = {};
+    (rows || []).forEach(function (row) {
+      if (!row || !row.user_id) return;
+      var st = self.presenceStatus(row);
+      var prev = self.onlineByUserId[row.user_id];
+      var ts = row.last_activity_at || row.last_seen_at || "";
+      if (prev && prev.last_activity_at && ts && new Date(prev.last_activity_at) > new Date(ts)) return;
+      self.onlineByUserId[row.user_id] = {
+        status: st.key,
+        label: st.label,
+        email: row.email || (prev && prev.email) || "",
+        full_name: row.full_name || (prev && prev.full_name) || "",
+        last_activity_at: ts,
+        current_page: row.current_page || "",
+      };
+    });
+  };
+
   AdminCenter.prototype.riskBadge = function (risk) {
     var v = String(risk || "Low");
     var cls = v.toLowerCase() === "high" ? "badge-expiring" : v.toLowerCase() === "medium" ? "badge-pending" : "badge-active";
@@ -1308,12 +1372,16 @@
   AdminCenter.prototype.getFilteredUsers = function () {
     var f = this.userFilter;
     var q = this._userSearch || "";
+    var self = this;
     return this.users.filter(function (u) {
       if (f === "pending" && u.status !== "Pending Invite") return false;
       if (f === "locked" && u.status !== "Locked") return false;
       if (f === "dormant" && u.status !== "Dormant") return false;
       if (q) {
-        var hay = String(u.name + " " + u.email + " " + u.site + " " + u.status + " " + u.roleId).toLowerCase();
+        var online = self.getUserOnlineStatus(u).label;
+        var hay = String(
+          u.name + " " + u.email + " " + u.site + " " + u.status + " " + u.roleId + " " + online
+        ).toLowerCase();
         if (hay.indexOf(q) < 0) return false;
       }
       return true;
@@ -1331,7 +1399,7 @@
     if (!body) return;
     var rows = this.getFilteredUsers();
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No users match this filter.</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No users match this filter.</td></tr>';
       return;
     }
     var self = this;
@@ -1342,10 +1410,13 @@
             return s ? s.name : sid;
           }).join(", ")
         : (u.site || "—");
-      return "<tr><td>" + adminEsc(self.displayName(u)) + "</td><td>" + adminEsc(self.displayEmail(u)) + "</td><td>" +
+      var live = u.userId && self.onlineByUserId[u.userId];
+      var lastActive = (live && live.last_activity_at) || u.lastLogin || u.loginAt;
+      return "<tr><td>" + adminEsc(self.displayNameForUser(u)) + "</td><td>" + adminEsc(self.displayEmailForUser(u)) + "</td><td>" +
         adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(scopeLabel) + "</td><td>" +
         (u.mfaEnabled ? '<span class="badge badge-active">On</span>' : '<span class="badge badge-pending">Off</span>') +
-        "</td><td>" + self.statusBadge(u.status) + "</td><td>" + adminEsc(formatDateTime(u.lastLogin)) +
+        "</td><td>" + self.statusBadge(u.status) + "</td><td>" + self.onlineStatusBadgeForUser(u) + "</td><td>" +
+        adminEsc(formatDateTime(lastActive)) +
         '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(u.id) +
         "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
         adminEsc(u.id) + "')\">Access</button>" +
@@ -2134,6 +2205,7 @@
     var orgId = window.gilbertoCurrentOrg?.id;
     if (!window.supabaseClient || !orgId) return;
     this.presenceRows = [];
+    var indexedRows = [];
     try {
       if (typeof window.gilbertoFetchWorkspaceOnlineSessions === "function") {
         var sessions = await window.gilbertoFetchWorkspaceOnlineSessions(orgId);
@@ -2145,12 +2217,14 @@
               full_name: s.full_name,
               current_page: s.current_page,
               last_seen_at: s.last_activity_at || s.last_seen_at,
+              last_activity_at: s.last_activity_at || s.last_seen_at,
               status: s.status,
               device: s.device,
               browser: s.browser,
               session_id: s.id,
             };
           });
+          indexedRows = indexedRows.concat(this.presenceRows);
         }
       }
     } catch (_) {}
@@ -2160,9 +2234,13 @@
         var q = await window.supabaseClient.from("workspace_user_presence")
           .select("user_id,email,full_name,current_page,last_seen_at")
           .eq("org_id", orgId).gte("last_seen_at", since).order("last_seen_at", { ascending: false });
-        if (!q.error) this.presenceRows = q.data || [];
+        if (!q.error) {
+          this.presenceRows = q.data || [];
+          indexedRows = indexedRows.concat(this.presenceRows);
+        }
       } catch (_) {}
     }
+    this.indexOnlineUsers(indexedRows.length ? indexedRows : this.presenceRows);
     this.renderOnlineModalTable();
     this.renderIdentity();
   };
