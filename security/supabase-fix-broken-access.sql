@@ -1,10 +1,8 @@
 -- EMERGENCY FIX: Run this when client counts, saving clients, or admin access break
 -- after running admin/session SQL migrations.
 --
--- Root cause: RLS policies that query organization_members from inside other tables
--- can trigger infinite recursion when org_members admin policy also queries org_members.
---
--- Safe to run multiple times.
+-- Creates workspace_user_presence / workspace_user_sessions if missing.
+-- Safe to run multiple times even if you have not run other session SQL files yet.
 
 create or replace function public.gilberto_is_org_member(p_org_id uuid)
 returns boolean
@@ -83,32 +81,59 @@ create policy "clients_delete_member"
   on public.clients for delete to authenticated
   using (public.gilberto_is_org_member(org_id));
 
--- staff
-drop policy if exists "staff_select_member" on public.staff;
-drop policy if exists "staff_insert_member" on public.staff;
-drop policy if exists "staff_update_member" on public.staff;
-drop policy if exists "staff_delete_member" on public.staff;
+-- staff (skip if table not created yet)
+do $$
+begin
+  if to_regclass('public.staff') is not null then
+    execute 'drop policy if exists "staff_select_member" on public.staff';
+    execute 'drop policy if exists "staff_insert_member" on public.staff';
+    execute 'drop policy if exists "staff_update_member" on public.staff';
+    execute 'drop policy if exists "staff_delete_member" on public.staff';
+    execute $p$
+      create policy "staff_select_member"
+        on public.staff for select to authenticated
+        using (public.gilberto_is_org_member(org_id))
+    $p$;
+    execute $p$
+      create policy "staff_insert_member"
+        on public.staff for insert to authenticated
+        with check (public.gilberto_is_org_member(org_id))
+    $p$;
+    execute $p$
+      create policy "staff_update_member"
+        on public.staff for update to authenticated
+        using (public.gilberto_is_org_member(org_id))
+        with check (public.gilberto_is_org_member(org_id))
+    $p$;
+    execute $p$
+      create policy "staff_delete_member"
+        on public.staff for delete to authenticated
+        using (public.gilberto_is_org_member(org_id))
+    $p$;
+  end if;
+end $$;
 
-create policy "staff_select_member"
-  on public.staff for select to authenticated
-  using (public.gilberto_is_org_member(org_id));
+-- workspace presence (create table if missing, then safe RLS)
+create table if not exists public.workspace_user_presence (
+  org_id       uuid not null references public.organizations (id) on delete cascade,
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  email        text,
+  full_name    text,
+  current_page text,
+  last_seen_at timestamptz not null default now(),
+  created_at   timestamptz not null default now(),
+  primary key (org_id, user_id)
+);
 
-create policy "staff_insert_member"
-  on public.staff for insert to authenticated
-  with check (public.gilberto_is_org_member(org_id));
+create index if not exists workspace_presence_org_seen_idx
+  on public.workspace_user_presence (org_id, last_seen_at desc);
 
-create policy "staff_update_member"
-  on public.staff for update to authenticated
-  using (public.gilberto_is_org_member(org_id))
-  with check (public.gilberto_is_org_member(org_id));
+alter table public.workspace_user_presence enable row level security;
 
-create policy "staff_delete_member"
-  on public.staff for delete to authenticated
-  using (public.gilberto_is_org_member(org_id));
-
--- workspace presence
 drop policy if exists "presence_select_workspace_members" on public.workspace_user_presence;
 drop policy if exists "presence_insert_self" on public.workspace_user_presence;
+drop policy if exists "presence_update_self" on public.workspace_user_presence;
+drop policy if exists "presence_delete_self" on public.workspace_user_presence;
 
 create policy "presence_select_workspace_members"
   on public.workspace_user_presence for select to authenticated
@@ -133,9 +158,48 @@ create policy "presence_insert_self"
     )
   );
 
--- workspace sessions
+create policy "presence_update_self"
+  on public.workspace_user_presence for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+create policy "presence_delete_self"
+  on public.workspace_user_presence for delete to authenticated
+  using (user_id = auth.uid());
+
+revoke all on public.workspace_user_presence from anon;
+grant select, insert, update, delete on public.workspace_user_presence to authenticated;
+
+-- workspace sessions (create table if missing, then safe RLS)
+create table if not exists public.workspace_user_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  org_id uuid not null references public.organizations (id) on delete cascade,
+  email text,
+  full_name text,
+  role text,
+  login_time timestamptz not null default now(),
+  last_activity_at timestamptz not null default now(),
+  logout_time timestamptz,
+  status text not null default 'online' check (status in ('online', 'idle', 'offline')),
+  device text,
+  browser text,
+  ip_address text,
+  current_page text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists workspace_user_sessions_org_activity_idx
+  on public.workspace_user_sessions (org_id, last_activity_at desc);
+
+create index if not exists workspace_user_sessions_user_org_idx
+  on public.workspace_user_sessions (user_id, org_id, login_time desc);
+
+alter table public.workspace_user_sessions enable row level security;
+
 drop policy if exists "workspace_sessions_select_org_members" on public.workspace_user_sessions;
 drop policy if exists "workspace_sessions_insert_self" on public.workspace_user_sessions;
+drop policy if exists "workspace_sessions_update_self" on public.workspace_user_sessions;
 
 create policy "workspace_sessions_select_org_members"
   on public.workspace_user_sessions for select to authenticated
@@ -159,6 +223,14 @@ create policy "workspace_sessions_insert_self"
       )
     )
   );
+
+create policy "workspace_sessions_update_self"
+  on public.workspace_user_sessions for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+revoke all on public.workspace_user_sessions from anon;
+grant select, insert, update on public.workspace_user_sessions to authenticated;
 
 -- repair membership row for signed-in user
 create or replace function public.ensure_my_org_membership()
