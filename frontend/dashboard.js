@@ -537,8 +537,7 @@ function gilbertoInjectOnlineUsersNav() {
 function gilbertoInjectAdministrationNav() {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar || sidebar.querySelector('[data-gilberto-admin-nav="1"]')) return;
-  const role = String(window.gilbertoCurrentOrg?.role || "").toLowerCase();
-  if (role !== "owner" && role !== "admin") return;
+  if (!gilbertoIsAdminRole()) return;
 
   const title = document.createElement("p");
   title.className = "section-title";
@@ -701,6 +700,30 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 });
 
+async function gilbertoResolveEffectiveOrgRole(client, uid, orgId, membershipRole) {
+  let role = String(membershipRole || "").trim().toLowerCase() || "member";
+  if (role === "owner" || role === "admin") return role;
+  if (!client || !uid || !orgId) return role;
+  try {
+    const { data: orgRow } = await client
+      .from("organizations")
+      .select("created_by")
+      .eq("id", orgId)
+      .maybeSingle();
+    if (orgRow?.created_by === uid) return "owner";
+  } catch (_) {
+    /* empty */
+  }
+  return role;
+}
+
+function gilbertoIsAdminRole(org) {
+  const role = String((org || window.gilbertoCurrentOrg)?.role || "").toLowerCase();
+  return role === "owner" || role === "admin";
+}
+
+window.gilbertoIsAdminRole = gilbertoIsAdminRole;
+
 /**
  * Resolves the signed-in user’s current company (blank dashboard = no rows yet, but this scopes data by org).
  * Later: add organization_id to clients, sessions, etc., and always filter with .eq('organization_id', window.gilbertoCurrentOrg.id).
@@ -715,7 +738,7 @@ async function loadGilbertoOrganization() {
 
   function normalizeOrgShape(o, roleFallback) {
     if (!o || !o.id) return null;
-    const rf = roleFallback || o.role || "member";
+    const rf = o.role || roleFallback || "member";
     return {
       id: o.id,
       name: (o.name && String(o.name).trim()) ? o.name : "My Organization",
@@ -730,7 +753,7 @@ async function loadGilbertoOrganization() {
       const raw = localStorage.getItem(key);
       if (!raw) return null;
       const o = JSON.parse(raw);
-      return normalizeOrgShape(o, "member");
+      return normalizeOrgShape(o);
     } catch (_) {
       return null;
     }
@@ -804,6 +827,12 @@ async function loadGilbertoOrganization() {
     let role = provisional?.role || "member";
     let chosenMember = null;
     let memberships = [];
+
+    try {
+      await window.supabaseClient.rpc("ensure_my_org_membership");
+    } catch (_) {
+      /* optional RPC; membership repair still runs below */
+    }
 
     try {
       memberships = await gilbertoFetchOrgMembershipsForUser(window.supabaseClient, uid);
@@ -881,6 +910,7 @@ async function loadGilbertoOrganization() {
     } else if (provisional?.role && provisional.id === orgId) {
       role = provisional.role;
     }
+    role = await gilbertoResolveEffectiveOrgRole(window.supabaseClient, uid, orgId, role);
 
     let org =
       chosenMember && chosenMember.organizations ? chosenMember.organizations : null;

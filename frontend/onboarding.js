@@ -202,6 +202,7 @@
             id: organizationId,
             name: row.company_display_name,
             company_legal_name: row.company_legal_name,
+            role: "owner",
           })
         );
       } catch (_) {

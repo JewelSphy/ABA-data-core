@@ -252,7 +252,7 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260622a"></script>
+<script src="dashboard.js?v=20260622b"></script>
 <script>
   function adminEsc(v) {
     return String(v == null ? '' : v)
@@ -328,8 +328,27 @@
     return '<span class="badge ' + cls + '">' + adminEsc(value) + '</span>';
   }
   function isAdminRole() {
+    if (typeof window.gilbertoIsAdminRole === 'function') {
+      return window.gilbertoIsAdminRole();
+    }
     const role = String(window.gilbertoCurrentOrg?.role || '').toLowerCase();
     return role === 'owner' || role === 'admin';
+  }
+  async function ensureAdminAccessReady() {
+    if (typeof enforceAuthGuard === 'function') {
+      await enforceAuthGuard();
+    }
+    if (typeof window.ensureGilbertoOrgReady === 'function') {
+      await window.ensureGilbertoOrgReady();
+    } else if (typeof loadGilbertoOrganization === 'function') {
+      await loadGilbertoOrganization();
+    }
+    if (typeof window.repairOrgMembershipIfNeeded === 'function' && window.gilbertoCurrentOrg?.id) {
+      await window.repairOrgMembershipIfNeeded(window.gilbertoCurrentOrg.id);
+    }
+    if (typeof loadGilbertoOrganization === 'function') {
+      await loadGilbertoOrganization();
+    }
   }
   function redirectUnauthorizedAdmin() {
     window.location.replace('dashboard.html');
@@ -390,7 +409,7 @@
     renderOrganizationSettings();
   }
   document.addEventListener('DOMContentLoaded', async function () {
-    if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+    await ensureAdminAccessReady();
     if (!isAdminRole()) {
       redirectUnauthorizedAdmin();
       return;
