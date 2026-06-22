@@ -239,6 +239,9 @@ async function saveProfile() {
     window.gilbertoCurrentUserInitial = avatarInitial;
     window.dispatchEvent(new Event('gilberto-profile-updated'));
     syncAvatarPreview();
+    if (typeof gilbertoWriteWorkspacePresence === 'function') {
+      await gilbertoWriteWorkspacePresence();
+    }
     profileToast('Profile saved');
   } catch (err) {
     profileToast(

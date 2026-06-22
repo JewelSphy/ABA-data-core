@@ -92,7 +92,7 @@
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Site / Access Scope</th><th>MFA</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Site / Access Scope</th><th>MFA</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
           <tbody id="adminUsersBody">
             <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">Loading users…</td></tr>
           </tbody>
@@ -263,7 +263,7 @@
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260622c"></script>
-<script src="admin-center.js?v=20260622d"></script>
+<script src="admin-center.js?v=20260622e"></script>
 <script>
   async function ensureAdminAccessReady() {
     if (typeof enforceAuthGuard === 'function') await enforceAuthGuard();

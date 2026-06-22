@@ -363,10 +363,6 @@
       var candidate = String(arguments[i] || "").trim();
       if (candidate && !this.isPlaceholderEmail(candidate)) return candidate;
     }
-    for (var j = 0; j < arguments.length; j += 1) {
-      var fallback = String(arguments[j] || "").trim();
-      if (fallback) return fallback;
-    }
     return "";
   };
 
@@ -382,9 +378,71 @@
     return "Workspace member";
   };
 
+  AdminCenter.prototype.displayEmail = function (user) {
+    var email = this.pickBestEmail(user && user.email);
+    return email || "—";
+  };
+
+  AdminCenter.prototype.displayName = function (user) {
+    var name = this.pickBestName(user && user.name);
+    if (!name || name === "Workspace member" || name === "Current User") {
+      var email = this.pickBestEmail(user && user.email);
+      return email ? email.split("@")[0] : "—";
+    }
+    return name;
+  };
+
+  AdminCenter.prototype.sanitizeStoredUsers = function () {
+    var self = this;
+    var changed = false;
+    this.users.forEach(function (u) {
+      if (self.isPlaceholderEmail(u.email)) {
+        u.email = "";
+        changed = true;
+      }
+      if (!u.name || u.name === "Workspace member") {
+        var email = self.pickBestEmail(u.email);
+        if (email) {
+          u.name = email.split("@")[0];
+          changed = true;
+        }
+      }
+    });
+    if (changed) this.persistUsers();
+  };
+
+  AdminCenter.prototype.buildFullNameFromParts = function (row) {
+    if (!row) return "";
+    var direct = String(row.full_name || row.contact_name || row.name || "").trim();
+    if (direct && direct !== "Workspace member" && direct !== "Current User") return direct;
+    var parts = [row.contact_first_name, row.contact_last_name].filter(function (p) {
+      return p && String(p).trim();
+    });
+    if (parts.length) return parts.join(" ").trim();
+    return "";
+  };
+
   AdminCenter.prototype.fetchWorkspaceIdentityMap = async function (orgId) {
     var map = {};
     if (!window.supabaseClient || !orgId) return map;
+
+    try {
+      var rpc = await window.supabaseClient.rpc("admin_list_org_members", { p_org_id: orgId });
+      if (!rpc.error && Array.isArray(rpc.data)) {
+        rpc.data.forEach(function (m) {
+          if (!m || !m.user_id) return;
+          map[m.user_id] = {
+            email: this.pickBestEmail(m.email, map[m.user_id] && map[m.user_id].email),
+            full_name: this.pickBestName(
+              this.buildFullNameFromParts(m),
+              map[m.user_id] && map[m.user_id].full_name
+            ),
+            current_page: "",
+            last_seen_at: "",
+          };
+        }, this);
+      }
+    } catch (_) {}
 
     try {
       var presQ = await window.supabaseClient
@@ -395,15 +453,14 @@
       if (!presQ.error && presQ.data) {
         presQ.data.forEach(function (p) {
           if (!p || !p.user_id) return;
-          if (!map[p.user_id]) {
-            map[p.user_id] = {
-              email: p.email || "",
-              full_name: p.full_name || "",
-              current_page: p.current_page || "",
-              last_seen_at: p.last_seen_at || "",
-            };
-          }
-        });
+          var prev = map[p.user_id] || {};
+          map[p.user_id] = {
+            email: this.pickBestEmail(p.email, prev.email),
+            full_name: this.pickBestName(p.full_name, prev.full_name, p.email),
+            current_page: p.current_page || prev.current_page || "",
+            last_seen_at: p.last_seen_at || prev.last_seen_at || "",
+          };
+        }, this);
       }
     } catch (_) {}
 
@@ -412,9 +469,17 @@
       var user = sess?.data?.session?.user;
       if (user && user.id) {
         var row = map[user.id] || {};
+        var profName = "";
+        if (typeof window.gilbertoLoadAuthProfile === "function") {
+          try {
+            var prof = await window.gilbertoLoadAuthProfile(window.supabaseClient, user.id);
+            profName = prof && prof.full_name ? String(prof.full_name).trim() : "";
+          } catch (_) {}
+        }
         map[user.id] = {
           email: this.pickBestEmail(user.email, row.email),
           full_name: this.pickBestName(
+            profName,
             user.user_metadata?.full_name,
             window.gilbertoCurrentUserName,
             row.full_name,
@@ -449,6 +514,9 @@
       );
       if (bestEmail && bestEmail !== u.email) {
         u.email = bestEmail;
+        changed = true;
+      } else if (self.isPlaceholderEmail(u.email)) {
+        u.email = "";
         changed = true;
       }
       if (bestName && bestName !== u.name) {
@@ -630,7 +698,7 @@
         id: uid(),
         userId: sessionUserId || null,
         name: this.pickBestName(actor.name, email),
-        email: this.pickBestEmail(email) || "owner@workspace.local",
+        email: this.pickBestEmail(email) || "",
         roleId: "owner",
         site: "HQ",
         scopeIds: [],
@@ -713,6 +781,7 @@
         var nextName = self.pickBestName(name, idRow.full_name, found.name, nextEmail);
         if (nextName && found.name !== nextName) { found.name = nextName; changed = true; }
         if (nextEmail && found.email !== nextEmail) { found.email = nextEmail; changed = true; }
+        else if (self.isPlaceholderEmail(found.email)) { found.email = ""; changed = true; }
         if (!found.userId) { found.userId = m.user_id; changed = true; }
         if (idRow.last_seen_at) {
           found.currentPage = idRow.current_page || found.currentPage;
@@ -729,7 +798,7 @@
           id: uid(),
           userId: m.user_id,
           name: name,
-          email: email || ("member+" + String(m.user_id).slice(0, 8) + "@workspace.local"),
+          email: email,
           roleId: roleId === "owner" ? "owner" : roleId === "admin" ? "admin" : "viewer",
           site: "—",
           scopeIds: [],
@@ -816,7 +885,11 @@
     }
 
     this.loadAllData();
+    this.sanitizeStoredUsers();
     this.seedDefaultsIfEmpty();
+    if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+      await window.gilbertoWriteWorkspacePresence();
+    }
     await this.syncUsersFromSupabase();
     await this.seedCurrentUserAsOwner();
     await this.loadProviders();
@@ -868,7 +941,7 @@
       '<div class="modal-overlay" id="adminUserModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminUserModal\')">' +
       '<div class="modal-box wide"><div class="modal-header"><h3 id="adminUserModalTitle">User</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminUserModal\')">&times;</button></div>' +
       '<div class="modal-body admin-settings-grid" style="grid-template-columns:1fr 1fr;">' +
-      '<label>Name<input id="adminUserName" type="text"/></label><label>Email<input id="adminUserEmail" type="email"/></label>' +
+      '<label>Full Name<input id="adminUserName" type="text" placeholder="First and last name"/></label><label>Email<input id="adminUserEmail" type="email" placeholder="user@company.com"/></label>' +
       '<label>Role<select id="adminUserRole"></select></label><label>Site<input id="adminUserSite" type="text"/></label>' +
       '<label>Status<select id="adminUserStatus"></select></label><label>MFA<select id="adminUserMfa"><option value="false">Off</option><option value="true">On</option></select></label>' +
       '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminUserModal\')">Cancel</button>' +
@@ -1120,7 +1193,7 @@
             return s ? s.name : sid;
           }).join(", ")
         : (u.site || "—");
-      return "<tr><td>" + adminEsc(u.name) + "</td><td>" + adminEsc(u.email) + "</td><td>" +
+      return "<tr><td>" + adminEsc(self.displayName(u)) + "</td><td>" + adminEsc(self.displayEmail(u)) + "</td><td>" +
         adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(scopeLabel) + "</td><td>" +
         (u.mfaEnabled ? '<span class="badge badge-active">On</span>' : '<span class="badge badge-pending">Off</span>') +
         "</td><td>" + self.statusBadge(u.status) + "</td><td>" + adminEsc(formatDateTime(u.lastLogin)) +
@@ -1504,8 +1577,8 @@
     }
     var u = userId ? this.users.find(function (x) { return x.id === userId; }) : null;
     if (title) title.textContent = u ? "Edit User" : "Invite User";
-    document.getElementById("adminUserName").value = u ? u.name : "";
-    document.getElementById("adminUserEmail").value = u ? u.email : "";
+    document.getElementById("adminUserName").value = u ? (this.displayName(u) === "—" ? "" : u.name) : "";
+    document.getElementById("adminUserEmail").value = u ? (this.isPlaceholderEmail(u.email) ? "" : u.email) : "";
     document.getElementById("adminUserRole").value = u ? u.roleId : "viewer";
     document.getElementById("adminUserSite").value = u ? u.site || "" : "";
     document.getElementById("adminUserStatus").value = u ? u.status : "Pending Invite";
@@ -1516,7 +1589,8 @@
   AdminCenter.prototype.saveUserEditor = async function () {
     var name = document.getElementById("adminUserName").value.trim();
     var email = document.getElementById("adminUserEmail").value.trim();
-    if (!name || !email) { this.toastError("Name and email are required."); return; }
+    if (!name || !email) { this.toastError("Full name and email are required."); return; }
+    if (this.isPlaceholderEmail(email)) { this.toastError("Enter a real email address."); return; }
     var roleId = document.getElementById("adminUserRole").value;
     var site = document.getElementById("adminUserSite").value.trim();
     var status = document.getElementById("adminUserStatus").value;
@@ -1530,6 +1604,21 @@
       existing.site = site;
       existing.status = status;
       existing.mfaEnabled = mfaEnabled;
+      if (existing.userId && existing.userId === window.gilbertoCurrentUserId) {
+        window.gilbertoCurrentUserName = name;
+        window.gilbertoCurrentUserEmail = email;
+        if (typeof window.gilbertoSaveAuthProfile === "function" && window.supabaseClient) {
+          try {
+            await window.gilbertoSaveAuthProfile(window.supabaseClient, existing.userId, {
+              full_name: name,
+              email: email,
+            });
+          } catch (_) {}
+        }
+        if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+          await window.gilbertoWriteWorkspacePresence();
+        }
+      }
       this.persistUsers();
       this.recordAudit({ action: "User updated", area: "Users", affectedUser: email, oldValue: oldRole, newValue: roleId, risk: "Medium" });
       this.toastSuccess("User saved.");

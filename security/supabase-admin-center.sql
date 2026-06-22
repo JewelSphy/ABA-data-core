@@ -68,7 +68,9 @@ returns table (
   user_id uuid,
   role text,
   email text,
-  full_name text
+  full_name text,
+  contact_first_name text,
+  contact_last_name text
 )
 language plpgsql
 security definer
@@ -93,21 +95,28 @@ begin
     m.user_id,
     m.role,
     coalesce(
-      nullif(trim(pres.email), ''),
-      nullif(trim(p.email), ''),
       nullif(trim(au.email::text), ''),
+      nullif(trim(pres.email), ''),
+      nullif(trim(onb.contact_email), ''),
+      nullif(trim(p.email), ''),
       ''
     ) as email,
     coalesce(
       nullif(trim(pres.full_name), ''),
       nullif(trim(p.full_name), ''),
+      nullif(trim(onb.contact_name), ''),
+      nullif(trim(concat_ws(' ', onb.contact_first_name, onb.contact_last_name)), ''),
+      nullif(trim(au.raw_user_meta_data->>'full_name'), ''),
       nullif(trim(au.email::text), ''),
       'Workspace member'
-    ) as full_name
+    ) as full_name,
+    onb.contact_first_name,
+    onb.contact_last_name
   from public.organization_members m
   left join public.profiles p on p.id = m.user_id
   left join public.workspace_user_presence pres
     on pres.org_id = m.organization_id and pres.user_id = m.user_id
+  left join public.user_onboarding onb on onb.user_id = m.user_id
   left join auth.users au on au.id = m.user_id
   where m.organization_id = p_org_id
   order by m.role desc, full_name nulls last;
