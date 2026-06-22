@@ -1326,8 +1326,13 @@
   AdminCenter.prototype.getUserOnlineStatus = function (user) {
     if (!user || !user.userId) return { key: "offline", label: "Offline" };
     var row = this.onlineByUserId[user.userId];
-    if (!row) return { key: "offline", label: "Offline" };
-    return { key: row.status || "offline", label: row.label || "Offline" };
+    if (!row || row.logout_time) return { key: "offline", label: "Offline" };
+    var mins = minutesSince(row.last_activity_at || row.last_seen_at);
+    if (mins > 5) return { key: "offline", label: "Offline" };
+    if (row.status === "offline") return { key: "offline", label: "Offline" };
+    if (mins <= 2 || row.status === "online") return { key: "online", label: "Online" };
+    if (mins <= 5 || row.status === "idle") return { key: "idle", label: "Idle" };
+    return { key: "offline", label: "Offline" };
   };
 
   AdminCenter.prototype.onlineStatusBadgeForUser = function (user) {
@@ -1357,8 +1362,9 @@
     var self = this;
     this.onlineByUserId = {};
     (rows || []).forEach(function (row) {
-      if (!row || !row.user_id) return;
+      if (!row || !row.user_id || row.logout_time) return;
       var st = self.presenceStatus(row);
+      if (st.key === "offline") return;
       var prev = self.onlineByUserId[row.user_id];
       var ts = row.last_activity_at || row.last_seen_at || "";
       if (prev && prev.last_activity_at && ts && new Date(prev.last_activity_at) > new Date(ts)) return;
@@ -1369,6 +1375,7 @@
         full_name: row.full_name || (prev && prev.full_name) || "",
         last_activity_at: ts,
         current_page: row.current_page || "",
+        logout_time: row.logout_time || null,
       };
     });
   };
@@ -2276,52 +2283,43 @@
     var orgId = window.gilbertoCurrentOrg?.id;
     if (!window.supabaseClient || !orgId) return;
     this.presenceRows = [];
-    var indexedRows = [];
     try {
       if (typeof window.gilbertoFetchWorkspaceOnlineSessions === "function") {
         var sessions = await window.gilbertoFetchWorkspaceOnlineSessions(orgId);
-        if (sessions.length) {
-          this.presenceRows = sessions.map(function (s) {
-            return {
-              user_id: s.user_id,
-              email: s.email,
-              full_name: s.full_name,
-              current_page: s.current_page,
-              last_seen_at: s.last_activity_at || s.last_seen_at,
-              last_activity_at: s.last_activity_at || s.last_seen_at,
-              status: s.status,
-              device: s.device,
-              browser: s.browser,
-              session_id: s.id,
-            };
-          });
-          indexedRows = indexedRows.concat(this.presenceRows);
-        }
+        this.presenceRows = (sessions || []).map(function (s) {
+          return {
+            user_id: s.user_id,
+            email: s.email,
+            full_name: s.full_name,
+            role: s.role,
+            current_page: s.current_page,
+            last_seen_at: s.last_activity_at || s.last_seen_at,
+            last_activity_at: s.last_activity_at || s.last_seen_at,
+            logout_time: s.logout_time || null,
+            status: s.status,
+            device: s.device,
+            browser: s.browser,
+            session_id: s.id,
+            login_time: s.login_time,
+          };
+        }).filter(function (row) {
+          return row.user_id && !row.logout_time;
+        });
       }
     } catch (_) {}
-    if (!this.presenceRows.length) {
-      try {
-        var since = new Date(Date.now() - 10 * 60000).toISOString();
-        var q = await window.supabaseClient.from("workspace_user_presence")
-          .select("user_id,email,full_name,current_page,last_seen_at")
-          .eq("org_id", orgId).gte("last_seen_at", since).order("last_seen_at", { ascending: false });
-        if (!q.error) {
-          this.presenceRows = q.data || [];
-          indexedRows = indexedRows.concat(this.presenceRows);
-        }
-      } catch (_) {}
-    }
-    this.indexOnlineUsers(indexedRows.length ? indexedRows : this.presenceRows);
+    this.indexOnlineUsers(this.presenceRows);
     this.renderOnlineUsersTable();
     this.renderIdentity();
+    this.renderUsers();
   };
 
   AdminCenter.prototype.presenceStatus = function (row) {
+    if (row && row.logout_time) return { key: "offline", label: "Offline" };
     if (row && row.status) {
       var st = String(row.status).toLowerCase();
+      if (st === "offline") return { key: "offline", label: "Offline" };
       if (st === "online") return { key: "online", label: "Online" };
       if (st === "idle") return { key: "idle", label: "Idle" };
-      if (st === "offline") return { key: "offline", label: "Offline" };
     }
     var mins = minutesSince(row.last_seen_at || row.last_activity_at);
     if (mins <= 2) return { key: "online", label: "Online" };
@@ -2346,7 +2344,13 @@
     if (!this.presenceRows.length) {
       html = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No one is online in this workspace right now.</td></tr>';
     } else {
-      html = this.presenceRows.map(function (p) {
+      var visibleRows = this.presenceRows.filter(function (p) {
+        return self.presenceStatus(p).key !== "offline";
+      });
+      if (!visibleRows.length) {
+        html = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No one is online in this workspace right now.</td></tr>';
+      } else {
+        html = visibleRows.map(function (p) {
         var st = self.presenceStatus(p);
         var cls = st.key === "online" ? "badge-active" : st.key === "idle" ? "badge-pending" : "badge-expiring";
         var user = self.users.find(function (u) { return u.userId === p.user_id || u.email === p.email; });
@@ -2363,7 +2367,8 @@
           "')\">View</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" +
           adminEsc(key) + "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
           adminEsc(key) + "')\">Lock</button></td></tr>";
-      }).join("");
+        }).join("");
+      }
     }
     bodies.forEach(function (body) { body.innerHTML = html; });
   };
@@ -2380,11 +2385,35 @@
     if (!this.hasPermission("online.force_logout")) return this.toastError("Insufficient permissions.");
     if (!(await this.confirmAction("Force logout this session?"))) return;
     var user = this.users.find(function (u) { return u.userId === key || u.email === key || u.id === key; });
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    var targetUserId = user && user.userId ? user.userId : key;
+    if (window.supabaseClient && orgId && targetUserId) {
+      try {
+        await window.supabaseClient.rpc("admin_force_logout_user", {
+          p_org_id: orgId,
+          p_user_id: targetUserId,
+        });
+      } catch (_) {
+        try {
+          await window.supabaseClient
+            .from("workspace_user_sessions")
+            .update({ logout_time: new Date().toISOString(), status: "offline" })
+            .eq("org_id", orgId)
+            .eq("user_id", targetUserId)
+            .is("logout_time", null);
+          await window.supabaseClient
+            .from("workspace_user_presence")
+            .delete()
+            .eq("org_id", orgId)
+            .eq("user_id", targetUserId);
+        } catch (_) {}
+      }
+    }
     if (user && user.userId && this.revokedIds.indexOf(user.userId) < 0) this.revokedIds.push(user.userId);
     this.persistRevoked();
     this.recordAudit({ action: "Force logout", area: "Online", affectedUser: user ? user.email : key, risk: "High" });
-    this.toastSuccess("Session marked for logout.");
-    this.refreshPresence();
+    await this.refreshPresence();
+    this.toastSuccess("User logged out.");
   };
 
   AdminCenter.prototype.lockPresenceUser = async function (key) {

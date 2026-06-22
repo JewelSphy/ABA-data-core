@@ -128,6 +128,9 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_org uuid;
+  v_user uuid;
 begin
   if p_session_id is null then
     return;
@@ -140,7 +143,38 @@ begin
     last_activity_at = now()
   where s.id = p_session_id
     and s.user_id = auth.uid()
+    and s.logout_time is null
+  returning s.org_id, s.user_id into v_org, v_user;
+
+  if v_org is not null and v_user is not null then
+    delete from public.workspace_user_presence pres
+    where pres.org_id = v_org and pres.user_id = v_user;
+  end if;
+end;
+$$;
+
+create or replace function public.workspace_end_all_my_sessions(p_org_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_org_id is null then
+    return;
+  end if;
+
+  update public.workspace_user_sessions s
+  set
+    logout_time = now(),
+    status = 'offline',
+    last_activity_at = now()
+  where s.org_id = p_org_id
+    and s.user_id = auth.uid()
     and s.logout_time is null;
+
+  delete from public.workspace_user_presence pres
+  where pres.org_id = p_org_id and pres.user_id = auth.uid();
 end;
 $$;
 
@@ -247,6 +281,41 @@ grant execute on function public.workspace_session_heartbeat(uuid, text, text, t
 
 revoke all on function public.workspace_session_logout(uuid) from public;
 grant execute on function public.workspace_session_logout(uuid) to authenticated;
+
+revoke all on function public.workspace_end_all_my_sessions(uuid) from public;
+grant execute on function public.workspace_end_all_my_sessions(uuid) to authenticated;
+
+create or replace function public.admin_force_logout_user(p_org_id uuid, p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_org_id is null or p_user_id is null then
+    return;
+  end if;
+
+  if not public.gilberto_is_org_admin(p_org_id) then
+    return;
+  end if;
+
+  update public.workspace_user_sessions s
+  set
+    logout_time = now(),
+    status = 'offline',
+    last_activity_at = now()
+  where s.org_id = p_org_id
+    and s.user_id = p_user_id
+    and s.logout_time is null;
+
+  delete from public.workspace_user_presence pres
+  where pres.org_id = p_org_id and pres.user_id = p_user_id;
+end;
+$$;
+
+revoke all on function public.admin_force_logout_user(uuid, uuid) from public;
+grant execute on function public.admin_force_logout_user(uuid, uuid) to authenticated;
 
 revoke all on function public.admin_list_workspace_online_users(uuid) from public;
 grant execute on function public.admin_list_workspace_online_users(uuid) to authenticated;

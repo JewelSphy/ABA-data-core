@@ -428,6 +428,11 @@ document.addEventListener(
 
 async function logout() {
   try {
+    if (window.__gilbertoPresenceTimer) {
+      clearInterval(window.__gilbertoPresenceTimer);
+      window.__gilbertoPresenceTimer = null;
+    }
+    window.__gilbertoPresenceStarted = false;
     if (typeof gilbertoEndWorkspaceSession === "function") {
       await gilbertoEndWorkspaceSession();
     }
@@ -437,8 +442,14 @@ async function logout() {
     // Clear cached org so next login starts fresh
     try {
       Object.keys(localStorage)
-        .filter(k => k.startsWith("gilberto_active_org:") || k.startsWith("gilberto_onboarding"))
-        .forEach(k => localStorage.removeItem(k));
+        .filter(function (k) {
+          return (
+            k.startsWith("gilberto_active_org:") ||
+            k.startsWith("gilberto_onboarding") ||
+            k.indexOf("gilberto_workspace_session_id") >= 0
+          );
+        })
+        .forEach(function (k) { localStorage.removeItem(k); });
     } catch (_) {}
   } catch (_) {
     // noop; still redirect
@@ -580,29 +591,61 @@ function gilbertoParseBrowserDevice() {
 
 async function gilbertoEndWorkspaceSession() {
   if (!window.supabaseClient) return;
-  const sessionId = localStorage.getItem(gilbertoWorkspaceSessionStorageKey());
-  if (!sessionId) return;
+  const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+  let userId = "";
   try {
-    await window.supabaseClient.rpc("workspace_session_logout", { p_session_id: sessionId });
+    const { data } = await window.supabaseClient.auth.getSession();
+    userId = data?.session?.user?.id || "";
   } catch (_) {
+    /* empty */
+  }
+
+  if (orgId) {
     try {
-      const { data } = await window.supabaseClient.auth.getSession();
-      const userId = data?.session?.user?.id;
-      if (userId) {
-        await window.supabaseClient
-          .from("workspace_user_sessions")
-          .update({ logout_time: new Date().toISOString(), status: "offline" })
-          .eq("id", sessionId)
-          .eq("user_id", userId);
-      }
+      await window.supabaseClient.rpc("workspace_end_all_my_sessions", { p_org_id: orgId });
     } catch (_) {
-      /* best effort */
+      /* fall back below */
     }
   }
+
   try {
-    localStorage.removeItem(gilbertoWorkspaceSessionStorageKey());
+    Object.keys(localStorage)
+      .filter(function (k) { return k.indexOf("gilberto_workspace_session_id") >= 0; })
+      .forEach(function (key) {
+        const sessionId = localStorage.getItem(key);
+        if (sessionId) {
+          void window.supabaseClient.rpc("workspace_session_logout", { p_session_id: sessionId });
+        }
+        localStorage.removeItem(key);
+      });
   } catch (_) {}
+
+  if (orgId && userId) {
+    try {
+      await window.supabaseClient
+        .from("workspace_user_sessions")
+        .update({ logout_time: new Date().toISOString(), status: "offline" })
+        .eq("org_id", orgId)
+        .eq("user_id", userId)
+        .is("logout_time", null);
+    } catch (_) {}
+    try {
+      await window.supabaseClient
+        .from("workspace_user_presence")
+        .delete()
+        .eq("org_id", orgId)
+        .eq("user_id", userId);
+    } catch (_) {}
+  }
 }
+
+window.gilbertoStopWorkspacePresence = function gilbertoStopWorkspacePresence() {
+  if (window.__gilbertoPresenceTimer) {
+    clearInterval(window.__gilbertoPresenceTimer);
+    window.__gilbertoPresenceTimer = null;
+  }
+  window.__gilbertoPresenceStarted = false;
+};
 
 async function gilbertoEnsureWorkspaceSession() {
   if (!window.supabaseClient || !window.gilbertoCurrentOrg || !window.gilbertoCurrentOrg.id) return null;
@@ -738,7 +781,11 @@ async function gilbertoFetchWorkspaceOnlineSessions(orgId) {
   if (!window.supabaseClient || !orgId) return [];
   try {
     const rpc = await window.supabaseClient.rpc("admin_list_workspace_online_users", { p_org_id: orgId });
-    if (!rpc.error && Array.isArray(rpc.data)) return rpc.data;
+    if (!rpc.error && Array.isArray(rpc.data)) {
+      return rpc.data.filter(function (row) {
+        return row && String(row.status || "").toLowerCase() !== "offline";
+      });
+    }
   } catch (_) {
     /* fall back to direct query */
   }
@@ -747,13 +794,19 @@ async function gilbertoFetchWorkspaceOnlineSessions(orgId) {
     const q = await window.supabaseClient
       .from("workspace_user_sessions")
       .select(
-        "id,user_id,email,full_name,role,login_time,last_activity_at,status,device,browser,current_page"
+        "id,user_id,email,full_name,role,login_time,last_activity_at,logout_time,status,device,browser,current_page"
       )
       .eq("org_id", orgId)
       .is("logout_time", null)
       .gte("last_activity_at", since)
       .order("last_activity_at", { ascending: false });
-    if (!q.error && Array.isArray(q.data)) return q.data;
+    if (!q.error && Array.isArray(q.data)) {
+      return q.data.filter(function (row) {
+        if (!row || row.logout_time) return false;
+        var mins = Math.round((Date.now() - new Date(row.last_activity_at || 0).getTime()) / 60000);
+        return mins <= 5;
+      });
+    }
   } catch (_) {
     /* empty */
   }
