@@ -1,10 +1,9 @@
--- Administration center tables + RPC for Gilberto CRM.
--- Run in Supabase SQL Editor after supabase-organizations.sql and supabase-workspace-presence.sql.
+-- HOTFIX: Run this immediately if clients won't save or Administration disappeared
+-- after running supabase-admin-center.sql.
 --
--- If clients stop saving or Administration disappears after running this file,
--- run security/supabase-admin-center-rls-hotfix.sql (fixes RLS recursion).
+-- Cause: org_members_select_org_admins queried organization_members inside its own
+-- RLS policy, causing infinite recursion that broke clients, org boot, and admin access.
 
--- Helper avoids infinite recursion when org_members policies reference organization_members.
 create or replace function public.gilberto_is_org_admin(p_org_id uuid)
 returns boolean
 language sql
@@ -24,34 +23,12 @@ $$;
 revoke all on function public.gilberto_is_org_admin(uuid) from public;
 grant execute on function public.gilberto_is_org_admin(uuid) to authenticated;
 
--- Allow owners/admins to list all members in their organization
 drop policy if exists "org_members_select_org_admins" on public.organization_members;
 create policy "org_members_select_org_admins"
   on public.organization_members
   for select
   to authenticated
   using (public.gilberto_is_org_admin(organization_id));
-
-create table if not exists public.admin_audit_logs (
-  id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references public.organizations (id) on delete cascade,
-  actor_name text,
-  actor_email text,
-  action text not null,
-  area text,
-  affected_user text,
-  old_value text,
-  new_value text,
-  status text default 'Success',
-  risk text default 'Medium',
-  details text,
-  module text,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists admin_audit_logs_org_idx on public.admin_audit_logs (org_id, created_at desc);
-
-alter table public.admin_audit_logs enable row level security;
 
 drop policy if exists "admin_audit_select_org_admins" on public.admin_audit_logs;
 create policy "admin_audit_select_org_admins"
@@ -62,8 +39,6 @@ drop policy if exists "admin_audit_insert_org_admins" on public.admin_audit_logs
 create policy "admin_audit_insert_org_admins"
   on public.admin_audit_logs for insert to authenticated
   with check (public.gilberto_is_org_admin(org_id));
-
-grant select, insert on public.admin_audit_logs to authenticated;
 
 create or replace function public.admin_list_org_members(p_org_id uuid)
 returns table (
