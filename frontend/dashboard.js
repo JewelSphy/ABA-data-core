@@ -1857,6 +1857,25 @@ async function enforceAuthGuard() {
       return;
     }
     const userId = data.session.user.id;
+
+    if (typeof window.gilbertoLoadScopedRows === "function") {
+      if (typeof loadGilbertoOrganization === "function") {
+        try { await loadGilbertoOrganization(); } catch (_) {}
+      }
+      const locked = window.gilbertoLoadScopedRows("gilberto_admin_locked");
+      const revoked = window.gilbertoLoadScopedRows("gilberto_admin_revoked");
+      const isBlocked = (locked || []).concat(revoked || []).some(function (id) {
+        return id === userId;
+      });
+      if (isBlocked) {
+        try {
+          await window.supabaseClient.auth.signOut();
+        } catch (_) {}
+        window.location.href = "index.html?locked=1";
+        return;
+      }
+    }
+
     const flow = window.gilbertoAuthFlow;
     if (!flow) return;
 

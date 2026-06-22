@@ -4,10 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Administration - Gilberto ABA Care CRM</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260622a" />
+  <link rel="stylesheet" href="dashboard.css?v=20260622c" />
   <style>
     body.page-admin:not(.admin-role-ready) .main-area {
       visibility: hidden;
+    }
+    .admin-overview-card.is-active {
+      outline: 3px solid rgba(91, 125, 245, 0.35);
+      transform: translateY(-2px);
+    }
+    .admin-toolbar .small-btn.is-filter-active {
+      background: #e8f5ee;
+      border-color: #2d5a47;
+      color: #1a3d2e;
+    }
+    .tbl-btn.danger {
+      color: #b33a3a;
+      border-color: rgba(179, 58, 58, 0.35);
     }
   </style>
 </head>
@@ -38,10 +51,10 @@
     <header class="topbar">
       <div>
         <h1>Administration</h1>
-        <p>Security, access, audit, provider, billing, and reporting controls. Values appear only when backed by real workspace data.</p>
+        <p>Security, access, audit, provider, billing, and reporting controls for your workspace.</p>
       </div>
       <div class="top-actions">
-        <button class="small-btn" onclick="goToPage('online-users.html')">Online Users</button>
+        <button class="small-btn" type="button" id="adminOnlineUsersBtn">Online Users</button>
         <div class="user-pill">—</div>
       </div>
     </header>
@@ -59,28 +72,29 @@
     </section>
 
     <section class="admin-compliance-strip">
-      <div><span>Security posture</span><strong>Not configured</strong></div>
-      <div><span>MFA coverage</span><strong>Not connected</strong></div>
+      <div><span>Security posture</span><strong id="adminSecurityPosture">Standard</strong></div>
+      <div><span>MFA coverage</span><strong id="adminMfaCoverage">—</strong></div>
       <div><span>Permission changes</span><strong id="adminPermissionChanges">0 recorded</strong></div>
-      <div><span>Provider credential alerts</span><strong id="adminCredentialAlerts">Not connected</strong></div>
+      <div><span>Provider credential alerts</span><strong id="adminCredentialAlerts">None</strong></div>
     </section>
 
     <section class="admin-section" id="users">
       <div class="admin-section-head">
-        <div><h2>Users</h2><p>Invite, disable, reset, reactivate, and terminate users once admin user records are connected.</p></div>
-        <button class="add-btn" type="button" onclick="adminNotice('Owners can invite users from the dashboard Invite your team panel. A dedicated user-invite workflow is not connected here yet.')">Invite User</button>
+        <div><h2>Users</h2><p>Invite, disable, reset, reactivate, and terminate users. Assign roles and access scopes.</p></div>
+        <button class="add-btn" type="button" id="adminInviteUserBtn">Invite User</button>
       </div>
       <div class="admin-toolbar">
-        <input class="search-input" type="search" placeholder="Search users by name, email, role, site, or status" oninput="adminTableSearch(this, 'adminUsersBody')" />
-        <button class="small-btn" type="button" onclick="adminNotice('Pending invite records are not connected yet. This will filter real invite records once user administration storage is available.')">Pending Invites</button>
-        <button class="small-btn" type="button" onclick="adminNotice('Locked account records are not connected yet. This will filter real identity lockout records once authentication administration is available.')">Locked Accounts</button>
-        <button class="small-btn" type="button" onclick="adminNotice('Dormant account records are not connected yet. This will use real last-login data once user administration storage is available.')">Dormant Accounts</button>
+        <input class="search-input" type="search" placeholder="Search users by name, email, role, site, or status" oninput="GilbertoAdmin.searchUsers(this.value)" />
+        <button class="small-btn" type="button" data-user-filter="pending">Pending Invites</button>
+        <button class="small-btn" type="button" data-user-filter="locked">Locked Accounts</button>
+        <button class="small-btn" type="button" data-user-filter="dormant">Dormant Accounts</button>
+        <button class="small-btn is-filter-active" type="button" data-user-filter="all">Show All</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Sites</th><th>MFA</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Site / Access Scope</th><th>MFA</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
           <tbody id="adminUsersBody">
-            <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No user administration records connected yet.</td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">Loading users…</td></tr>
           </tbody>
         </table>
       </div>
@@ -88,22 +102,17 @@
 
     <section class="admin-section" id="roles-permissions">
       <div class="admin-section-head">
-        <div><h2>Roles &amp; Permissions</h2><p>Show reusable roles, inherited roles, and granular permission grants only after role configuration is connected.</p></div>
-        <button class="small-btn" type="button" onclick="adminNotice('Role creation is not connected yet. Roles must save to a real role/permission table and create an audit event before this can modify access.')">Create Role</button>
+        <div><h2>Roles &amp; Permissions</h2><p>Create roles, assign permissions, and control what each role can see and do.</p></div>
+        <button class="small-btn" type="button" id="adminCreateRoleBtn">Create Role</button>
       </div>
       <div class="admin-role-grid" id="adminRolesGrid">
-        <div class="admin-role-card"><strong>No roles configured</strong><span>Connect role records before displaying access claims.</span></div>
-      </div>
-      <div class="admin-chip-row">
-        <span>Permission policy not connected</span>
-        <span>No static role matrix shown</span>
-        <span>Privilege changes should audit when connected</span>
+        <div class="admin-role-card"><strong>Loading roles…</strong><span>Role records will appear here.</span></div>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>Permission Domain</th><th>Action</th><th>Role</th><th>Scope Required</th><th>Exception</th><th>Audit Required</th></tr></thead>
           <tbody id="adminPermissionBody">
-            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No role permission records configured yet.</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">Loading permission matrix…</td></tr>
           </tbody>
         </table>
       </div>
@@ -111,21 +120,21 @@
 
     <section class="admin-section" id="access-scopes">
       <div class="admin-section-head">
-        <div><h2>Access Scopes</h2><p>Scope access by client, site, team, provider relationship, caregiver relationship, and note/session ownership.</p></div>
-        <button class="small-btn" type="button" onclick="adminNotice('Effective access preview is not connected yet. It needs real user, role, client, site, and scope records before it can calculate access.')">Preview Effective Access</button>
+        <div><h2>Access Scopes</h2><p>Scope access by client, site, team, provider relationship, and record ownership.</p></div>
+        <button class="small-btn" type="button" id="adminPreviewAccessBtn">Preview Effective Access</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>User</th><th>Scope Type</th><th>Scope Value</th><th>Start</th><th>End</th><th>Granted By</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Scope Name</th><th>Scope Type</th><th>Assigned Users</th><th>Assigned Roles</th><th>Records / Sites</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="accessScopesBody">
-            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No access scope records configured yet. Client visibility should be generated from real user-client, provider-client, site, and team scope records.</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">Loading access scopes…</td></tr>
           </tbody>
         </table>
       </div>
       <div class="admin-access-flow">
-        <div><strong>Effective access preview</strong><span>Not connected</span></div>
-        <div><strong>Break-glass access</strong><span>Not configured</span></div>
-        <div><strong>Scope expiration</strong><span>Not configured</span></div>
+        <div><strong>Effective access preview</strong><span id="adminAccessPreviewHint">Select a user and preview</span></div>
+        <div><strong>Break-glass access</strong><span id="adminBreakGlassHint">Not configured</span></div>
+        <div><strong>Scope expiration</strong><span id="adminScopeExpiryHint">Per scope record</span></div>
       </div>
     </section>
 
@@ -134,16 +143,16 @@
         <div><h2>Identity &amp; Authentication</h2><p>MFA, SSO, password policy, idle timeout, session revocation, and reauthentication controls.</p></div>
       </div>
       <div class="admin-mini-grid">
-        <div><span>MFA policy</span><strong>Not configured</strong></div>
-        <div><span>SSO status</span><strong>Not connected</strong></div>
-        <div><span>Admin idle timeout</span><strong>Not configured</strong></div>
-        <div><span>Active sessions</span><strong>Not connected</strong></div>
+        <div><span>MFA policy</span><strong id="adminIdentityMfaSummary">—</strong></div>
+        <div><span>SSO status</span><strong id="adminIdentitySsoSummary">—</strong></div>
+        <div><span>Admin idle timeout</span><strong id="adminIdentityIdleSummary">—</strong></div>
+        <div><span>Active sessions</span><strong id="adminIdentitySessionsSummary">—</strong></div>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
           <thead><tr><th>User</th><th>Device</th><th>Started</th><th>Last Active</th><th>Assurance</th><th>Actions</th></tr></thead>
           <tbody id="identitySessionsBody">
-            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No identity/session administration feed connected yet.</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">Loading sessions…</td></tr>
           </tbody>
         </table>
       </div>
@@ -152,13 +161,13 @@
     <section class="admin-section" id="providers-licenses">
       <div class="admin-section-head">
         <div><h2>Providers &amp; Licenses</h2><p>Provider legal identity, NPI, taxonomy, license, expiration, and payer enrollment metadata.</p></div>
-        <button class="small-btn" onclick="goToPage('providers.html')">Open Providers</button>
+        <button class="small-btn" type="button" onclick="goToPage('providers.html')">Open Providers</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Provider</th><th>Type</th><th>NPI</th><th>Taxonomy</th><th>License</th><th>Expires</th><th>Status</th></tr></thead>
+          <thead><tr><th>Provider</th><th>Type</th><th>License Status</th><th>Credential</th><th>Expires</th><th>Alerts</th><th>Actions</th></tr></thead>
           <tbody id="adminProvidersBody">
-            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No provider credential records loaded here yet. Open Providers to manage real provider data.</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">Loading providers…</td></tr>
           </tbody>
         </table>
       </div>
@@ -166,43 +175,38 @@
 
     <section class="admin-section" id="organization-settings">
       <div class="admin-section-head">
-        <div><h2>Organization Settings</h2><p>Only saved organization profile and policy settings should appear here.</p></div>
+        <div><h2>Organization Settings</h2><p>Workspace profile, defaults for invites, security, and notifications.</p></div>
       </div>
       <div class="admin-settings-grid">
-        <label>Legal / Display Name<input id="adminOrgName" placeholder="Not configured" readonly /></label>
-        <label>Address<input id="adminOrgAddress" placeholder="Not configured" readonly /></label>
-        <label>Timezone<select id="adminOrgTimezone" disabled><option>Not configured</option></select></label>
-        <label>Sites<select disabled><option>Not connected</option></select></label>
-        <label>Privacy Contact<input placeholder="Not configured" readonly /></label>
-        <label>Security Contact<input placeholder="Not configured" readonly /></label>
-        <label>Retention Policy<select disabled><option>Not configured</option></select></label>
-        <label>Clinical Defaults<select disabled><option>Not configured</option></select></label>
+        <label>Legal / Display Name<input id="adminOrgName" type="text" placeholder="Workspace name" /></label>
+        <label>Address<input id="adminOrgAddress" type="text" placeholder="Organization address" /></label>
+        <label>Timezone<select id="adminOrgTimezone"><option value="America/New_York">America/New_York</option><option value="America/Chicago">America/Chicago</option><option value="America/Denver">America/Denver</option><option value="America/Los_Angeles">America/Los_Angeles</option></select></label>
+        <label>Default Role for Invites<select id="adminDefaultInviteRole"><option value="viewer">Viewer</option><option value="support_staff">Support Staff</option><option value="manager">Manager</option></select></label>
+        <label>Privacy Contact<input id="adminPrivacyContact" type="email" placeholder="privacy@company.com" /></label>
+        <label>Security Contact<input id="adminSecurityContact" type="email" placeholder="security@company.com" /></label>
+        <label>Retention Policy<select id="adminRetentionPolicy"><option>7 years</option><option>10 years</option><option>Custom</option></select></label>
+        <label>Clinical Defaults<select id="adminClinicalDefaults"><option>ABA standard</option><option>Custom</option></select></label>
       </div>
     </section>
 
     <section class="admin-section" id="billing-configuration">
       <div class="admin-section-head">
-        <div><h2>Billing Configuration</h2><p>Service catalog, CPT/HCPCS, POS, fee schedule, payer mappings, modifiers, and claim hold rules.</p></div>
+        <div><h2>Billing Configuration</h2><p>Service catalog, CPT/HCPCS, POS, fee schedule, and authorization requirements.</p></div>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Service</th><th>CPT / HCPCS</th><th>POS</th><th>Fee</th><th>Authorization Required</th><th>Active</th></tr></thead>
+          <thead><tr><th>Service</th><th>CPT / HCPCS</th><th>POS</th><th>Fee</th><th>Authorization Required</th><th>Active</th><th>Actions</th></tr></thead>
           <tbody id="billingConfigBody">
-            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No billing configuration records connected yet.</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">Loading billing configuration…</td></tr>
           </tbody>
         </table>
-      </div>
-      <div class="admin-chip-row">
-        <span>Rates must come from real billing settings</span>
-        <span>Claim holds not connected</span>
-        <span>Payer mappings not connected</span>
       </div>
     </section>
 
     <section class="admin-section" id="audit-center">
       <div class="admin-section-head">
-        <div><h2>Audit Center</h2><p>Search, filter, export, and investigate real app events captured for the current workspace.</p></div>
-        <button class="small-btn" type="button" onclick="adminExportAuditReport()">Export Audit Report</button>
+        <div><h2>Audit Center</h2><p>Search, filter, export, and investigate security and administration events.</p></div>
+        <button class="small-btn" type="button" id="adminExportAuditBtn">Export Audit Report</button>
       </div>
       <div class="admin-mini-grid">
         <div><span>Failed logins</span><strong id="auditFailedLogins">0 recorded</strong></div>
@@ -211,16 +215,17 @@
         <div><span>Exports</span><strong id="auditExports">0 recorded</strong></div>
       </div>
       <div class="admin-toolbar">
-        <input class="search-input" type="search" placeholder="Search audit events by actor, client, object, or action" oninput="adminTableSearch(this, 'auditLogsBody')" />
-        <button class="small-btn" type="button" onclick="adminNotice('Date filtering will apply to real audit records once the audit center has a connected date-range picker.')">Date Filter</button>
-        <button class="small-btn" type="button" onclick="adminNotice('Actor filtering will apply to real audit records once the audit center has connected actor records.')">Actor Filter</button>
-        <button class="small-btn" type="button" onclick="adminNotice('Action filtering will apply to real audit records once the audit center has connected action categories.')">Action Filter</button>
+        <input class="search-input" type="search" placeholder="Search audit events" oninput="GilbertoAdmin.searchAudit(this.value)" />
+        <button class="small-btn" type="button" data-audit-filter="date">Date Filter</button>
+        <button class="small-btn" type="button" data-audit-filter="actor">Actor Filter</button>
+        <button class="small-btn" type="button" data-audit-filter="action">Action Filter</button>
+        <button class="small-btn" type="button" onclick="GilbertoAdmin.clearAuditFilters()">Clear Filters</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Object / Area</th><th>Result / Risk</th><th>Details</th></tr></thead>
+          <thead><tr><th>Timestamp</th><th>Actor</th><th>Affected User</th><th>Action</th><th>Module</th><th>Status</th><th>Risk</th><th>Details</th></tr></thead>
           <tbody id="auditLogsBody">
-            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet.</td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">Loading audit events…</td></tr>
           </tbody>
         </table>
       </div>
@@ -228,21 +233,26 @@
 
     <section class="admin-section" id="reports">
       <div class="admin-section-head">
-        <div><h2>Reports</h2><p>Scoped administration and operations metrics without bypassing role or client access.</p></div>
+        <div><h2>Reports</h2><p>Operational and security metrics for this workspace.</p></div>
+        <button class="small-btn" type="button" id="adminExportReportsBtn">Export Reports</button>
       </div>
       <div class="admin-report-grid">
         <div><span>Sessions Today</span><strong id="reportSessionsToday">—</strong></div>
         <div><span>Sessions This Week</span><strong id="reportSessionsWeek">—</strong></div>
-        <div><span>Missing Notes</span><strong id="reportMissingNotes">Not connected</strong></div>
         <div><span>Active Clients</span><strong id="reportActiveClients">—</strong></div>
-        <div><span>Unsigned Notes</span><strong>Not connected</strong></div>
-        <div><span>Claim Holds</span><strong>Not connected</strong></div>
-      </div>
-      <div class="admin-chip-row">
-        <span>Security metrics not connected</span>
-        <span>Workforce metrics not connected</span>
-        <span>Clinical ops requires session/note data</span>
-        <span>Billing ops not connected</span>
+        <div><span>Missing Notes</span><strong id="reportMissingNotes">—</strong></div>
+        <div><span>Total Users</span><strong id="reportTotalUsers">—</strong></div>
+        <div><span>Active Users</span><strong id="reportActiveUsers">—</strong></div>
+        <div><span>Online Users</span><strong id="reportOnlineUsers">—</strong></div>
+        <div><span>Locked Accounts</span><strong id="reportLockedAccounts">—</strong></div>
+        <div><span>Dormant Accounts</span><strong id="reportDormantAccounts">—</strong></div>
+        <div><span>MFA Coverage</span><strong id="reportMfaCoverage">—</strong></div>
+        <div><span>Role Count</span><strong id="reportRoleCount">—</strong></div>
+        <div><span>Permission Changes</span><strong id="reportPermissionChanges">—</strong></div>
+        <div><span>Provider Alerts</span><strong id="reportProviderAlerts">—</strong></div>
+        <div><span>Failed Logins</span><strong id="reportFailedLogins">—</strong></div>
+        <div><span>Admin Actions (7d)</span><strong id="reportAdminActions">—</strong></div>
+        <div><span>Unsigned Notes</span><strong id="reportUnsignedNotes">—</strong></div>
       </div>
     </section>
   </main>
@@ -252,177 +262,29 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260622b"></script>
-<script src="admin-center.js?v=20260622a"></script>
+<script src="dashboard.js?v=20260622c"></script>
+<script src="admin-center.js?v=20260622c"></script>
 <script>
-  function adminEsc(v) {
-    return String(v == null ? '' : v)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
-  }
-  function adminNotice(message) {
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:24px;right:24px;max-width:360px;background:#2d4a3e;color:white;padding:12px 16px;border-radius:10px;font-size:13px;line-height:1.45;z-index:9999;box-shadow:0 12px 28px rgba(20,32,27,.22);';
-    t.textContent = message;
-    document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 4200);
-  }
-  function adminTableSearch(input, tbodyId) {
-    const body = document.getElementById(tbodyId);
-    if (!body) return;
-    const q = String(input && input.value ? input.value : '').toLowerCase();
-    Array.from(body.querySelectorAll('tr')).forEach(function (row) {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-  }
-  function adminExportAuditReport() {
-    const rows = loadAdminRows('gilberto_audit_events');
-    if (!rows.length) {
-      adminNotice('No real audit events are recorded yet, so there is no audit report to export.');
-      return;
-    }
-    const header = ['createdAt', 'user', 'action', 'area', 'risk'];
-    const csv = [header.join(',')].concat(rows.map(function (r) {
-      return header.map(function (key) {
-        return '"' + String(r[key] == null ? '' : r[key]).replaceAll('"', '""') + '"';
-      }).join(',');
-    })).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'gilberto-audit-events.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    adminNotice('Audit report exported from recorded audit events.');
-  }
-  function adminShowAuditDetails(index) {
-    const rows = loadAdminRows('gilberto_audit_events').sort(function (a, b) {
-      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
-    });
-    const row = rows[index];
-    if (!row) {
-      adminNotice('Audit event details are not available for this row.');
-      return;
-    }
-    adminNotice('Audit event: ' + (row.action || 'Recorded event') + ' by ' + (row.user || 'System') + ' in ' + (row.area || 'System') + '.');
-  }
-  function adminScopedKey(name) {
-    return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey(name) : name + ':no-org';
-  }
-  function loadAdminRows(key) {
-    try {
-      const rows = JSON.parse(localStorage.getItem(adminScopedKey(key)) || '[]');
-      return Array.isArray(rows) ? rows : [];
-    } catch (_) {
-      return [];
-    }
-  }
-  function riskBadge(risk) {
-    const value = String(risk || 'Low');
-    const cls = value.toLowerCase() === 'high' ? 'badge-expiring' : value.toLowerCase() === 'medium' ? 'badge-pending' : 'badge-active';
-    return '<span class="badge ' + cls + '">' + adminEsc(value) + '</span>';
-  }
-  function isAdminRole() {
-    if (typeof window.gilbertoIsAdminRole === 'function') {
-      return window.gilbertoIsAdminRole();
-    }
-    const role = String(window.gilbertoCurrentOrg?.role || '').toLowerCase();
-    return role === 'owner' || role === 'admin';
-  }
   async function ensureAdminAccessReady() {
-    if (typeof enforceAuthGuard === 'function') {
-      await enforceAuthGuard();
-    }
-    if (typeof window.ensureGilbertoOrgReady === 'function') {
-      await window.ensureGilbertoOrgReady();
-    } else if (typeof loadGilbertoOrganization === 'function') {
-      await loadGilbertoOrganization();
-    }
+    if (typeof enforceAuthGuard === 'function') await enforceAuthGuard();
+    if (typeof window.ensureGilbertoOrgReady === 'function') await window.ensureGilbertoOrgReady();
+    else if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
     if (typeof window.repairOrgMembershipIfNeeded === 'function' && window.gilbertoCurrentOrg?.id) {
       await window.repairOrgMembershipIfNeeded(window.gilbertoCurrentOrg.id);
     }
-    if (typeof loadGilbertoOrganization === 'function') {
-      await loadGilbertoOrganization();
-    }
+    if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
   }
-  function redirectUnauthorizedAdmin() {
-    window.location.replace('dashboard.html');
-  }
-  function renderAuditLogs() {
-    const body = document.getElementById('auditLogsBody');
-    const rows = loadAdminRows('gilberto_audit_events').sort(function (a, b) {
-      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
-    });
-    if (!rows.length) return;
-    body.innerHTML = rows.map(function (r, index) {
-      const date = r.createdAt ? new Date(r.createdAt).toLocaleString() : (r.date || '—');
-      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td><td><button class="tbl-btn" type="button" onclick="adminShowAuditDetails(' + index + ')">Details</button></td></tr>';
-    }).join('');
-    const permissionChanges = rows.filter(function (r) { return /permission|role|scope/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
-    const clinicalEdits = rows.filter(function (r) { return /session|note|clinical|data collection|behavior data/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
-    const exports = rows.filter(function (r) { return /export/i.test(String(r.action || '')); }).length;
-    const failedLogins = rows.filter(function (r) { return /failed login/i.test(String(r.action || '')); }).length;
-    document.getElementById('auditPermissionChanges').textContent = permissionChanges + ' recorded';
-    document.getElementById('adminPermissionChanges').textContent = permissionChanges + ' recorded';
-    document.getElementById('auditClinicalEdits').textContent = clinicalEdits + ' recorded';
-    document.getElementById('auditExports').textContent = exports + ' recorded';
-    document.getElementById('auditFailedLogins').textContent = failedLogins + ' recorded';
-  }
-  function renderOrganizationSettings() {
-    const org = window.gilbertoCurrentOrg || {};
-    const name = org.company_display_name || org.company_legal_name || org.name || '';
-    const address = org.address || org.company_address || '';
-    document.getElementById('adminOrgName').value = name || '';
-    document.getElementById('adminOrgAddress').value = address || '';
-  }
-  async function renderAdminReports() {
-    let activeClients = null;
-    let sessions = [];
-    try {
-      if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
-      const orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
-      if (window.supabaseClient && orgId) {
-        const clients = await window.supabaseClient.from('clients').select('id,status,auth_status').eq('org_id', orgId);
-        if (!clients.error) {
-          activeClients = (clients.data || []).filter(function (c) {
-            return ['active', 'authorized', 'approved'].includes(String(c.status || c.auth_status || '').toLowerCase());
-          }).length;
-        }
-      }
-      if (typeof jvmFetchSessionsTable === 'function') {
-        const res = await jvmFetchSessionsTable(orgId, 500);
-        if (res && res.ok) sessions = await res.json();
-      }
-    } catch (_) {}
-    const today = new Date().toISOString().slice(0, 10);
-    const start = new Date();
-    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-    const weekStart = start.toISOString().slice(0, 10);
-    document.getElementById('reportSessionsToday').textContent = sessions.filter(function (s) { return s.session_date === today; }).length;
-    document.getElementById('reportSessionsWeek').textContent = sessions.filter(function (s) { return s.session_date >= weekStart; }).length;
-    document.getElementById('reportActiveClients').textContent = activeClients == null ? '—' : activeClients;
-    renderOrganizationSettings();
-  }
+
   document.addEventListener('DOMContentLoaded', async function () {
     await ensureAdminAccessReady();
-    if (!isAdminRole()) {
-      redirectUnauthorizedAdmin();
+    if (typeof window.gilbertoIsAdminRole === 'function' && !window.gilbertoIsAdminRole()) {
+      window.location.replace('dashboard.html');
       return;
     }
     document.body.classList.add('admin-role-ready');
     if (window.GilbertoAdmin && typeof window.GilbertoAdmin.init === 'function') {
       await window.GilbertoAdmin.init();
-      return;
     }
-    renderAuditLogs();
-    renderOrganizationSettings();
-    void renderAdminReports();
   });
 </script>
 </body>

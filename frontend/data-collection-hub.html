@@ -197,6 +197,14 @@
   function loadRows() { try { return JSON.parse(localStorage.getItem(dataStorageKey()) || '[]'); } catch (_) { return []; } }
   function saveRows(rows) { localStorage.setItem(dataStorageKey(), JSON.stringify(rows || [])); }
   function recordAuditEvent(event) {
+    if (typeof window.gilbertoRecordAdminAudit === "function") {
+      window.gilbertoRecordAdminAudit({
+        action: event.action,
+        area: event.area || "Data Collection",
+        risk: event.risk || "Medium",
+      });
+      return;
+    }
     const key = typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey('gilberto_audit_events') : 'gilberto_audit_events:no-org';
     let rows = [];
     try { rows = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { rows = []; }

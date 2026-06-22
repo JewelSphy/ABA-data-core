@@ -705,6 +705,8 @@
     await this.syncUsersFromSupabase();
     await this.seedCurrentUserAsOwner();
     await this.loadProviders();
+    await this.refreshPresence();
+    this.recordSessionLoginAudit();
 
     this.initModals();
     this.initNavigation();
@@ -714,6 +716,17 @@
 
     var hash = window.location.hash.replace("#", "");
     if (hash) this.navigateToSection(hash);
+  };
+
+  AdminCenter.prototype.recordSessionLoginAudit = function () {
+    try {
+      var key = typeof window.gilbertoScopedStorageKey === "function"
+        ? window.gilbertoScopedStorageKey("gilberto_admin_login_logged")
+        : "gilberto_admin_login_logged:no-org";
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+      this.recordAudit({ action: "Login", area: "Authentication", risk: "Low", status: "Success" });
+    } catch (_) {}
   };
 
   AdminCenter.prototype.openModal = function (id) {
@@ -763,7 +776,7 @@
 
       '<div class="modal-overlay" id="adminOnlineModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminOnlineModal\')">' +
       '<div class="modal-box wide"><div class="modal-header"><h3>Online Users</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">&times;</button></div>' +
-      '<div class="modal-body"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Session</th><th>Page</th><th>Actions</th></tr></thead>' +
+      '<div class="modal-body"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Login</th><th>Duration</th><th>Last Activity</th><th>Page</th><th>Device</th><th>Actions</th></tr></thead>' +
       '<tbody id="adminOnlineBody"></tbody></table></div></div>' +
       '<div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.refreshPresence()">Refresh</button>' +
       '<button class="add-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">Close</button></div></div></div>' +
@@ -833,61 +846,82 @@
 
   AdminCenter.prototype.wireSectionActions = function () {
     var self = this;
-    var topOnline = document.querySelector(".top-actions .small-btn");
+    var topOnline = document.getElementById("adminOnlineUsersBtn") || document.querySelector(".top-actions .small-btn");
     if (topOnline) topOnline.onclick = function () { self.openOnlineUsersModal(); };
 
-    var usersSec = document.getElementById("users");
-    if (usersSec) {
-      var inviteBtn = usersSec.querySelector(".add-btn");
-      if (inviteBtn) inviteBtn.onclick = function () { self.openUserEditor(null); };
-      var filters = usersSec.querySelectorAll(".admin-toolbar .small-btn");
-      if (filters[0]) filters[0].onclick = function () { self.filterUsers("pending"); };
-      if (filters[1]) filters[1].onclick = function () { self.filterUsers("locked"); };
-      if (filters[2]) filters[2].onclick = function () { self.filterUsers("dormant"); };
-    }
+    var inviteBtn = document.getElementById("adminInviteUserBtn");
+    if (inviteBtn) inviteBtn.onclick = function () { self.openUserEditor(null); };
 
-    var rolesSec = document.getElementById("roles-permissions");
-    if (rolesSec) {
-      var createRole = rolesSec.querySelector(".admin-section-head .small-btn");
-      if (createRole) createRole.onclick = function () { self.openRoleEditor(null); };
-    }
+    document.querySelectorAll("[data-user-filter]").forEach(function (btn) {
+      btn.onclick = function () {
+        self.filterUsers(btn.getAttribute("data-user-filter") || "all");
+        document.querySelectorAll("[data-user-filter]").forEach(function (b) {
+          b.classList.toggle("is-filter-active", b === btn);
+        });
+      };
+    });
+
+    var createRole = document.getElementById("adminCreateRoleBtn");
+    if (createRole) createRole.onclick = function () { self.openRoleEditor(null); };
+
+    var previewBtn = document.getElementById("adminPreviewAccessBtn");
+    if (previewBtn) previewBtn.onclick = function () {
+      var sel = self.users.find(function (u) { return u.status === "Active"; }) || self.users[0];
+      if (sel) self.previewEffectiveAccess(sel.id);
+      else self.toastError("Add a user before previewing effective access.");
+    };
 
     var scopesSec = document.getElementById("access-scopes");
-    if (scopesSec) {
-      var previewBtn = scopesSec.querySelector(".admin-section-head .small-btn");
-      if (previewBtn) previewBtn.onclick = function () {
-        var sel = self.users[0];
-        if (sel) self.previewEffectiveAccess(sel.id);
-        else self.toastError("Add a user before previewing effective access.");
-      };
-      if (!scopesSec.querySelector("[data-scope-create]")) {
-        var createScope = document.createElement("button");
-        createScope.className = "add-btn";
-        createScope.type = "button";
-        createScope.dataset.scopeCreate = "1";
-        createScope.textContent = "+ Create Scope";
-        createScope.onclick = function () { self.openScopeEditor(null); };
-        var head = scopesSec.querySelector(".admin-section-head");
-        if (head) head.appendChild(createScope);
-      }
+    if (scopesSec && !scopesSec.querySelector("[data-scope-create]")) {
+      var createScope = document.createElement("button");
+      createScope.className = "add-btn";
+      createScope.type = "button";
+      createScope.dataset.scopeCreate = "1";
+      createScope.textContent = "+ Create Scope";
+      createScope.onclick = function () { self.openScopeEditor(null); };
+      var head = scopesSec.querySelector(".admin-section-head");
+      if (head) head.appendChild(createScope);
     }
 
-    var auditSec = document.getElementById("audit-center");
-    if (auditSec) {
-      var exportBtn = auditSec.querySelector(".admin-section-head .small-btn");
-      if (exportBtn) exportBtn.onclick = function () { self.exportAuditReport(); };
-      var auditFilters = auditSec.querySelectorAll(".admin-toolbar .small-btn");
-      if (auditFilters[0]) auditFilters[0].onclick = function () { self.promptAuditDateFilter(); };
-      if (auditFilters[1]) auditFilters[1].onclick = function () { self.promptAuditActorFilter(); };
-      if (auditFilters[2]) auditFilters[2].onclick = function () { self.promptAuditActionFilter(); };
-    }
+    var exportAudit = document.getElementById("adminExportAuditBtn");
+    if (exportAudit) exportAudit.onclick = function () { self.exportAuditReport(); };
+
+    document.querySelectorAll("[data-audit-filter]").forEach(function (btn) {
+      var kind = btn.getAttribute("data-audit-filter");
+      btn.onclick = function () {
+        if (kind === "date") self.promptAuditDateFilter();
+        else if (kind === "actor") self.promptAuditActorFilter();
+        else if (kind === "action") self.promptAuditActionFilter();
+      };
+    });
+
+    var exportReports = document.getElementById("adminExportReportsBtn");
+    if (exportReports) exportReports.onclick = function () { self.exportReports(); };
+  };
+
+  AdminCenter.prototype.searchUsers = function (query) {
+    this._userSearch = String(query || "").toLowerCase();
+    this.renderUsers();
+  };
+
+  AdminCenter.prototype.searchAudit = function (query) {
+    this.auditFilters.search = String(query || "").toLowerCase();
+    this.renderAudit();
+  };
+
+  AdminCenter.prototype.clearAuditFilters = function () {
+    this.auditFilters = { actor: "", action: "", dateFrom: "", dateTo: "", search: "" };
+    this.renderAudit();
+    this.toastSuccess("Audit filters cleared.");
   };
 
   AdminCenter.prototype.applyPermissionGating = function () {
     var map = [
-      { sel: "#users .add-btn", perm: "users.invite" },
-      { sel: "#roles-permissions .admin-section-head .small-btn", perm: "roles.create" },
-      { sel: "#audit-center .admin-section-head .small-btn", perm: "audit.export" },
+      { sel: "#adminInviteUserBtn", perm: "users.invite" },
+      { sel: "#adminCreateRoleBtn", perm: "roles.create" },
+      { sel: "#adminExportAuditBtn", perm: "audit.export" },
+      { sel: "#adminExportReportsBtn", perm: "reports.export" },
+      { sel: "#adminOnlineUsersBtn", perm: "online.view" },
     ];
     map.forEach(function (item) {
       var el = document.querySelector(item.sel);
@@ -930,17 +964,21 @@
     this.renderOrgSettings();
     this.renderBilling();
     this.renderAudit();
-    this.renderReports();
+    void this.renderReports();
     this.renderComplianceStrip();
   };
 
   AdminCenter.prototype.getFilteredUsers = function () {
     var f = this.userFilter;
+    var q = this._userSearch || "";
     return this.users.filter(function (u) {
-      if (f === "all") return true;
-      if (f === "pending") return u.status === "Pending Invite";
-      if (f === "locked") return u.status === "Locked";
-      if (f === "dormant") return u.status === "Dormant";
+      if (f === "pending" && u.status !== "Pending Invite") return false;
+      if (f === "locked" && u.status !== "Locked") return false;
+      if (f === "dormant" && u.status !== "Dormant") return false;
+      if (q) {
+        var hay = String(u.name + " " + u.email + " " + u.site + " " + u.status + " " + u.roleId).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
       return true;
     });
   };
@@ -961,14 +999,21 @@
     }
     var self = this;
     body.innerHTML = rows.map(function (u) {
+      var scopeLabel = (u.scopeIds || []).length
+        ? (u.scopeIds || []).map(function (sid) {
+            var s = self.scopes.find(function (x) { return x.id === sid; });
+            return s ? s.name : sid;
+          }).join(", ")
+        : (u.site || "—");
       return "<tr><td>" + adminEsc(u.name) + "</td><td>" + adminEsc(u.email) + "</td><td>" +
-        adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(u.site || "—") + "</td><td>" +
+        adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(scopeLabel) + "</td><td>" +
         (u.mfaEnabled ? '<span class="badge badge-active">On</span>' : '<span class="badge badge-pending">Off</span>') +
         "</td><td>" + self.statusBadge(u.status) + "</td><td>" + adminEsc(formatDateTime(u.lastLogin)) +
         '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(u.id) +
         "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
         adminEsc(u.id) + "')\">Access</button>" +
         (u.status !== "Disabled" && u.roleId !== "owner" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.disableUser(\'' + adminEsc(u.id) + "')\">Disable</button>" : "") +
+        (u.status !== "Terminated" && u.roleId !== "owner" ? ' <button class="tbl-btn danger" type="button" onclick="GilbertoAdmin.terminateUser(\'' + adminEsc(u.id) + "')\">Terminate</button>" : "") +
         (u.status === "Locked" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.reactivateUser(\'' + adminEsc(u.id) + "')\">Unlock</button>" : ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.lockUser(\'' + adminEsc(u.id) + "')\">Lock</button>") +
         ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.resetUserPassword(\'' + adminEsc(u.id) + "')\">Reset PW</button></td></tr>";
     }).join("");
@@ -1025,8 +1070,9 @@
     body.innerHTML = this.scopes.map(function (s) {
       var userCount = (s.assignedUserIds || []).length;
       var roleCount = (s.assignedRoleIds || []).length;
-      return "<tr><td>" + userCount + " users / " + roleCount + " roles</td><td>" + adminEsc(s.type) +
-        "</td><td>" + adminEsc(s.name) + " · " + adminEsc(s.records || "—") + "</td><td>—</td><td>—</td><td>Admin</td><td>" +
+      return "<tr><td>" + adminEsc(s.name) + "</td><td>" + adminEsc(s.type) +
+        "</td><td>" + userCount + "</td><td>" + roleCount + "</td><td>" + adminEsc(s.records || "—") +
+        "</td><td>" + self.statusBadge(s.status || "Active") + "</td><td>" +
         '<button class="tbl-btn" type="button" onclick="GilbertoAdmin.openScopeEditor(\'' + adminEsc(s.id) +
         "')\">Edit</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.deleteScope('" +
         adminEsc(s.id) + "')\">Delete</button></td></tr>";
@@ -1034,14 +1080,11 @@
   };
 
   AdminCenter.prototype.renderIdentity = function () {
-    var strip = document.querySelector("#identity-authentication .admin-mini-grid");
-    if (strip) {
-      strip.innerHTML =
-        "<div><span>MFA policy</span><strong>" + adminEsc(this.identity.mfaPolicy || "Not configured") + "</strong></div>" +
-        "<div><span>SSO status</span><strong>" + (this.identity.ssoEnabled ? "Connected" : "Not connected") + "</strong></div>" +
-        "<div><span>Admin idle timeout</span><strong>" + adminEsc(String(this.identity.adminIdleTimeoutMinutes || "—")) + " min</strong></div>" +
-        "<div><span>Active sessions</span><strong>" + this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length + " online</strong></div>";
-    }
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    set("adminIdentityMfaSummary", this.identity.mfaPolicy || "Not configured");
+    set("adminIdentitySsoSummary", this.identity.ssoEnabled ? "Connected" : "Not connected");
+    set("adminIdentityIdleSummary", String(this.identity.adminIdleTimeoutMinutes || "—") + " min");
+    set("adminIdentitySessionsSummary", this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length + " online");
     var sec = document.getElementById("identity-authentication");
     if (sec && !document.getElementById("adminIdentityForm")) {
       var form = document.createElement("div");
@@ -1096,12 +1139,14 @@
     }
     body.innerHTML = this.providers.map(function (p) {
       var exp = p.license_expires ? new Date(p.license_expires).toLocaleDateString() : "—";
-      var st = p.status || "Active";
-      var cls = st.toLowerCase() === "active" ? "badge-active" : "badge-expiring";
-      return "<tr><td>" + adminEsc(p.name) + "</td><td>" + adminEsc(p.provider_type || "—") + "</td><td>" +
-        adminEsc(p.npi || "—") + "</td><td>" + adminEsc(p.taxonomy || "—") + "</td><td>" +
-        adminEsc(p.license_number || "—") + "</td><td>" + adminEsc(exp) + '</td><td><span class="badge ' + cls + '">' +
-        adminEsc(st) + "</span></td></tr>";
+      var licSt = p.license_status || p.status || "Active";
+      var credSt = p.credential_status || "Valid";
+      var alert = p.license_expires && daysSince(p.license_expires) <= 60 ? "Expiring soon" : "None";
+      var licCls = String(licSt).toLowerCase() === "active" ? "badge-active" : "badge-expiring";
+      return "<tr><td>" + adminEsc(p.name || p.full_name) + "</td><td>" + adminEsc(p.provider_type || "—") +
+        '</td><td><span class="badge ' + licCls + '">' + adminEsc(licSt) + "</span></td><td>" + adminEsc(credSt) +
+        "</td><td>" + adminEsc(exp) + "</td><td>" + adminEsc(alert) +
+        '</td><td><button class="tbl-btn" type="button" onclick="goToPage(\'providers.html\')">Manage</button></td></tr>';
     }).join("");
   };
 
@@ -1114,10 +1159,19 @@
     if (nameEl) { nameEl.value = s.displayName || org.name || ""; nameEl.readOnly = !this.hasPermission("identity.edit"); }
     if (addrEl) { addrEl.value = s.address || org.address || ""; addrEl.readOnly = !this.hasPermission("identity.edit"); }
     if (tzEl) {
-      var tz = s.timezone || "America/New_York";
-      tzEl.innerHTML = "<option>" + adminEsc(tz) + "</option>";
+      tzEl.value = s.timezone || "America/New_York";
       tzEl.disabled = !this.hasPermission("identity.edit");
     }
+    var inviteRole = document.getElementById("adminDefaultInviteRole");
+    if (inviteRole) inviteRole.value = s.defaultInviteRole || "viewer";
+    var privacy = document.getElementById("adminPrivacyContact");
+    if (privacy) privacy.value = s.privacyContact || "";
+    var security = document.getElementById("adminSecurityContact");
+    if (security) security.value = s.securityContact || "";
+    var retention = document.getElementById("adminRetentionPolicy");
+    if (retention) retention.value = s.retentionPolicy || "7 years";
+    var clinical = document.getElementById("adminClinicalDefaults");
+    if (clinical) clinical.value = s.clinicalDefaults || "ABA standard";
     var grid = document.querySelector("#organization-settings .admin-settings-grid");
     if (grid && !document.getElementById("adminSaveSettingsBtn")) {
       var btn = document.createElement("button");
@@ -1148,14 +1202,15 @@
       }
     }
     if (!this.billing.length) {
-      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No billing configuration records yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No billing configuration records yet. Use Add Service to create billing rules.</td></tr>';
       return;
     }
     body.innerHTML = this.billing.map(function (b) {
       return "<tr><td>" + adminEsc(b.service) + "</td><td>" + adminEsc(b.cpt) + "</td><td>" + adminEsc(b.pos) +
         "</td><td>$" + adminEsc(String(b.fee)) + "</td><td>" + (b.authRequired ? "Yes" : "No") + "</td><td>" +
         (b.active ? '<span class="badge badge-active">Yes</span>' : '<span class="badge badge-expiring">No</span>') +
-        ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.openBillingEditor(\'' + adminEsc(b.id) +
+        "</td><td>" +
+        '<button class="tbl-btn" type="button" onclick="GilbertoAdmin.openBillingEditor(\'' + adminEsc(b.id) +
         "')\">Edit</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.deleteBillingItem('" +
         adminEsc(b.id) + "')\">Delete</button></td></tr>";
     }).join("");
@@ -1168,6 +1223,10 @@
       if (f.action && String(e.action || "").toLowerCase().indexOf(f.action.toLowerCase()) < 0) return false;
       if (f.dateFrom && String(e.createdAt || "").slice(0, 10) < f.dateFrom) return false;
       if (f.dateTo && String(e.createdAt || "").slice(0, 10) > f.dateTo) return false;
+      if (f.search) {
+        var hay = String((e.user || "") + " " + (e.action || "") + " " + (e.area || "") + " " + (e.affectedUser || "") + " " + (e.details || "")).toLowerCase();
+        if (hay.indexOf(f.search) < 0) return false;
+      }
       return true;
     });
   };
@@ -1207,13 +1266,15 @@
       return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     });
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet.</td></tr>';
     } else {
       var self = this;
       body.innerHTML = rows.map(function (r, i) {
+        var statusCls = String(r.status || "Success").toLowerCase() === "failure" ? "badge-expiring" : "badge-active";
         return "<tr><td>" + adminEsc(formatDateTime(r.createdAt)) + "</td><td>" + adminEsc(r.user || "System") +
-          "</td><td>" + adminEsc(r.action) + "</td><td>" + adminEsc(r.area || r.module) + "</td><td>" +
-          self.riskBadge(r.risk) + "</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.showAuditDetails(" +
+          "</td><td>" + adminEsc(r.affectedUser || "—") + "</td><td>" + adminEsc(r.action) + "</td><td>" +
+          adminEsc(r.area || r.module) + "</td><td><span class=\"badge " + statusCls + "\">" + adminEsc(r.status || "Success") +
+          "</span></td><td>" + self.riskBadge(r.risk) + "</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.showAuditDetails(" +
           i + ')\">Details</button></td></tr>';
       }).join("");
     }
@@ -1254,9 +1315,13 @@
       if (typeof window.jvmFetchSessionsTable === "function") {
         var res = await window.jvmFetchSessionsTable(orgId, 500);
         if (res && res.ok) sessions = await res.json();
+      } else if (window.supabaseClient && orgId) {
+        var sq = await window.supabaseClient.from("sessions").select("id,session_date,note_status,status").eq("org_id", orgId).limit(500);
+        if (!sq.error) sessions = sq.data || [];
       }
     } catch (_) {}
     this._sessions = sessions;
+    await this.refreshPresence();
     var today = todayIso();
     var start = new Date();
     start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
@@ -1266,22 +1331,29 @@
     set("reportSessionsWeek", sessions.filter(function (s) { return s.session_date >= weekStart; }).length);
     set("reportActiveClients", activeClients == null ? "—" : activeClients);
     set("reportMissingNotes", sessions.filter(function (s) { return !s.note_status || s.note_status === "missing"; }).length || "0");
-    var reportsSec = document.getElementById("reports");
-    if (reportsSec && !reportsSec.querySelector("[data-export-reports]")) {
-      var btn = document.createElement("button");
-      btn.className = "small-btn";
-      btn.dataset.exportReports = "1";
-      btn.type = "button";
-      btn.textContent = "Export Reports";
-      btn.onclick = function () { GilbertoAdmin.exportReports(); };
-      var head = reportsSec.querySelector(".admin-section-head");
-      if (head) head.appendChild(btn);
-    }
+    set("reportUnsignedNotes", "Not connected");
+    var activeUsers = this.users.filter(function (u) { return u.status === "Active"; }).length;
+    var mfaOn = this.users.filter(function (u) { return u.mfaEnabled && u.status === "Active"; }).length;
+    var permChanges = this.auditEvents.filter(function (r) { return /permission|role|scope/i.test(String(r.area) + " " + String(r.action)); }).length;
+    var failed = this.auditEvents.filter(function (r) { return /failed login/i.test(String(r.action)); }).length;
+    var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    var adminActions = this.auditEvents.filter(function (r) { return String(r.createdAt || "") >= weekAgo; }).length;
+    var expiring = this.providers.filter(function (p) { return p.license_expires && daysSince(p.license_expires) <= 60; }).length;
+    var online = this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length;
+    set("reportTotalUsers", this.users.length);
+    set("reportActiveUsers", activeUsers);
+    set("reportOnlineUsers", online);
+    set("reportLockedAccounts", this.users.filter(function (u) { return u.status === "Locked"; }).length);
+    set("reportDormantAccounts", this.users.filter(function (u) { return u.status === "Dormant"; }).length);
+    set("reportMfaCoverage", activeUsers ? Math.round((mfaOn / activeUsers) * 100) + "%" : "—");
+    set("reportRoleCount", this.roles.length);
+    set("reportPermissionChanges", permChanges);
+    set("reportProviderAlerts", expiring || "0");
+    set("reportFailedLogins", failed);
+    set("reportAdminActions", adminActions);
   };
 
   AdminCenter.prototype.renderComplianceStrip = function () {
-    var strip = document.querySelector(".admin-compliance-strip");
-    if (!strip) return;
     var mfaOn = this.users.filter(function (u) { return u.mfaEnabled && u.status === "Active"; }).length;
     var mfaTotal = this.users.filter(function (u) { return u.status === "Active"; }).length;
     var permChanges = this.auditEvents.filter(function (r) { return /permission|role|scope/i.test(String(r.area) + " " + String(r.action)); }).length;
@@ -1289,11 +1361,11 @@
       if (!p.license_expires) return false;
       return daysSince(p.license_expires) <= 60;
     }).length;
-    strip.innerHTML =
-      "<div><span>Security posture</span><strong>" + (this.identity.reauthForSensitive ? "Hardened" : "Standard") + "</strong></div>" +
-      "<div><span>MFA coverage</span><strong>" + mfaOn + " / " + mfaTotal + " active users</strong></div>" +
-      "<div><span>Permission changes</span><strong id=\"adminPermissionChanges\">" + permChanges + " recorded</strong></div>" +
-      "<div><span>Provider credential alerts</span><strong>" + (expiring ? expiring + " expiring soon" : "None") + "</strong></div>";
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    set("adminSecurityPosture", this.identity.reauthForSensitive ? "Hardened" : "Standard");
+    set("adminMfaCoverage", mfaTotal ? mfaOn + " / " + mfaTotal + " active users" : "—");
+    set("adminPermissionChanges", permChanges + " recorded");
+    set("adminCredentialAlerts", expiring ? expiring + " expiring soon" : "None");
   };
 
   AdminCenter.prototype.openUserEditor = function (userId) {
@@ -1607,8 +1679,15 @@
     if (!this.hasPermission("identity.edit")) return this.toastError("Insufficient permissions.");
     var nameEl = document.getElementById("adminOrgName");
     var addrEl = document.getElementById("adminOrgAddress");
+    var tzEl = document.getElementById("adminOrgTimezone");
     this.settings.displayName = nameEl ? nameEl.value.trim() : this.settings.displayName;
     this.settings.address = addrEl ? addrEl.value.trim() : this.settings.address;
+    this.settings.timezone = tzEl ? tzEl.value : this.settings.timezone;
+    this.settings.defaultInviteRole = document.getElementById("adminDefaultInviteRole")?.value || "viewer";
+    this.settings.privacyContact = document.getElementById("adminPrivacyContact")?.value.trim() || "";
+    this.settings.securityContact = document.getElementById("adminSecurityContact")?.value.trim() || "";
+    this.settings.retentionPolicy = document.getElementById("adminRetentionPolicy")?.value || "7 years";
+    this.settings.clinicalDefaults = document.getElementById("adminClinicalDefaults")?.value || "ABA standard";
     this.persistSettings();
     this.recordAudit({ action: "Organization settings saved", area: "Settings", risk: "Low" });
     this.toastSuccess("Organization settings saved.");
@@ -1730,7 +1809,7 @@
     if (!body) return;
     var self = this;
     if (!this.presenceRows.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No active users in the last 10 minutes.</td></tr>';
+      body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#6b8c7a;">No active users in the last 10 minutes.</td></tr>';
       return;
     }
     body.innerHTML = this.presenceRows.map(function (p) {
@@ -1739,11 +1818,15 @@
       var user = self.users.find(function (u) { return u.userId === p.user_id || u.email === p.email; });
       var roleName = user ? self.getRoleName(user.roleId) : "—";
       var key = p.user_id || p.email;
+      var device = user && user.device ? user.device : (navigator.userAgent ? "Web browser" : "—");
       return "<tr><td><span class=\"badge " + cls + "\">" + adminEsc(st.label) + "</span></td><td>" +
         adminEsc(p.full_name || "User") + "</td><td>" + adminEsc(p.email || "—") + "</td><td>" + adminEsc(roleName) +
-        "</td><td>" + adminEsc(self.sessionDurationLabel(p)) + "</td><td>" + adminEsc(pageLabel(p.current_page)) +
-        "</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" + adminEsc(key) +
-        "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
+        "</td><td>" + adminEsc(formatDateTime(user && user.loginAt ? user.loginAt : p.last_seen_at)) +
+        "</td><td>" + adminEsc(self.sessionDurationLabel(p)) + "</td><td>" + adminEsc(formatDateTime(p.last_seen_at)) +
+        "</td><td>" + adminEsc(pageLabel(p.current_page)) + "</td><td>" + adminEsc(device.slice(0, 40)) +
+        '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(user ? user.id : "") +
+        "')\">View</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" +
+        adminEsc(key) + "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
         adminEsc(key) + "')\">Lock</button></td></tr>";
     }).join("");
   };
