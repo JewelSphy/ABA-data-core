@@ -358,6 +358,12 @@
     return e.endsWith("@workspace.local") || e.indexOf("member+") === 0 || e === "owner@workspace.local";
   };
 
+  AdminCenter.prototype.isPlaceholderName = function (name) {
+    var n = String(name || "").trim();
+    if (!n || n === "Current User" || n === "Workspace member") return true;
+    return this.isPlaceholderEmail(n);
+  };
+
   AdminCenter.prototype.pickBestEmail = function () {
     for (var i = 0; i < arguments.length; i += 1) {
       var candidate = String(arguments[i] || "").trim();
@@ -369,13 +375,9 @@
   AdminCenter.prototype.pickBestName = function () {
     for (var i = 0; i < arguments.length; i += 1) {
       var candidate = String(arguments[i] || "").trim();
-      if (candidate && candidate !== "Current User" && candidate !== "Workspace member") return candidate;
+      if (candidate && !this.isPlaceholderName(candidate)) return candidate;
     }
-    for (var j = 0; j < arguments.length; j += 1) {
-      var fallback = String(arguments[j] || "").trim();
-      if (fallback) return fallback;
-    }
-    return "Workspace member";
+    return "";
   };
 
   AdminCenter.prototype.displayEmail = function (user) {
@@ -384,12 +386,13 @@
   };
 
   AdminCenter.prototype.displayName = function (user) {
-    var name = this.pickBestName(user && user.name);
-    if (!name || name === "Workspace member" || name === "Current User") {
-      var email = this.pickBestEmail(user && user.email);
-      return email ? email.split("@")[0] : "—";
-    }
-    return name;
+    if (!user) return "—";
+    var name = this.pickBestName(user.name);
+    if (name) return name;
+    var email = this.pickBestEmail(user.email);
+    if (email) return email.split("@")[0];
+    if (user.userId) return "Workspace member";
+    return "—";
   };
 
   AdminCenter.prototype.sanitizeStoredUsers = function () {
@@ -400,15 +403,68 @@
         u.email = "";
         changed = true;
       }
-      if (!u.name || u.name === "Workspace member") {
-        var email = self.pickBestEmail(u.email);
-        if (email) {
-          u.name = email.split("@")[0];
-          changed = true;
-        }
+      if (self.isPlaceholderName(u.name)) {
+        u.name = "";
+        changed = true;
+      }
+      var email = self.pickBestEmail(u.email);
+      if (!u.name && email) {
+        u.name = email.split("@")[0];
+        changed = true;
       }
     });
     if (changed) this.persistUsers();
+  };
+
+  AdminCenter.prototype.findStoredUserForMember = function (member, email) {
+    var self = this;
+    if (!member || !member.user_id) return null;
+    var uid = String(member.user_id);
+    var uidPrefix = uid.slice(0, 8);
+    return this.users.find(function (u) {
+      if (u.userId === member.user_id) return true;
+      if (email && u.email === email) return true;
+      if (self.isPlaceholderEmail(u.email) && u.email.indexOf(uidPrefix) >= 0) return true;
+      if (self.isPlaceholderName(u.name) && String(u.name).indexOf(uidPrefix) >= 0) return true;
+      return false;
+    }) || null;
+  };
+
+  AdminCenter.prototype.reconcileUsersWithWorkspace = function (remoteMembers, identityMap) {
+    var self = this;
+    var remoteIds = {};
+    (remoteMembers || []).forEach(function (m) {
+      if (m && m.user_id) remoteIds[m.user_id] = true;
+    });
+
+    this.users = this.users.filter(function (u) {
+      if (u.userId && remoteIds[u.userId]) return true;
+      if (u.status === "Pending Invite" && u.email && !self.isPlaceholderEmail(u.email)) return true;
+      if (self.isPlaceholderEmail(u.email) || self.isPlaceholderName(u.name)) return false;
+      if (!u.userId && u.email && !self.isPlaceholderEmail(u.email)) return true;
+      return !!u.userId;
+    });
+
+    var seen = {};
+    this.users = this.users.filter(function (u) {
+      if (!u.userId) return true;
+      if (seen[u.userId]) return false;
+      seen[u.userId] = true;
+      return true;
+    });
+
+    Object.keys(identityMap || {}).forEach(function (userId) {
+      if (!remoteIds[userId]) return;
+      var idRow = identityMap[userId] || {};
+      var email = self.pickBestEmail(idRow.email);
+      var name = self.pickBestName(idRow.full_name, email);
+      var found = self.users.find(function (u) { return u.userId === userId; });
+      if (!found) return;
+      if (email) found.email = email;
+      if (name) found.name = name;
+      else if (email) found.name = email.split("@")[0];
+      if (idRow.last_seen_at) found.lastLogin = idRow.last_seen_at;
+    });
   };
 
   AdminCenter.prototype.buildFullNameFromParts = function (row) {
@@ -772,14 +828,13 @@
         roleId = "viewer";
       }
 
-      var found = self.users.find(function (u) {
-        return u.userId === m.user_id || (email && u.email === email);
-      });
+      var found = self.findStoredUserForMember(m, email);
 
       if (found) {
         var nextEmail = self.pickBestEmail(email, idRow.email, found.email);
         var nextName = self.pickBestName(name, idRow.full_name, found.name, nextEmail);
         if (nextName && found.name !== nextName) { found.name = nextName; changed = true; }
+        else if (self.isPlaceholderName(found.name)) { found.name = nextName || (nextEmail ? nextEmail.split("@")[0] : ""); changed = true; }
         if (nextEmail && found.email !== nextEmail) { found.email = nextEmail; changed = true; }
         else if (self.isPlaceholderEmail(found.email)) { found.email = ""; changed = true; }
         if (!found.userId) { found.userId = m.user_id; changed = true; }
@@ -815,9 +870,36 @@
       }
     });
 
-    this.reconcileStoredUserEmails(identityMap);
+    this.reconcileUsersWithWorkspace(remoteMembers, identityMap);
+    this.sanitizeStoredUsers();
     this.applyDerivedUserStatuses();
-    if (changed) this.persistUsers();
+    this.persistUsers();
+  };
+
+  AdminCenter.prototype.purgeLegacyPlaceholderUsers = function () {
+    var key =
+      typeof window.gilbertoScopedStorageKey === "function"
+        ? window.gilbertoScopedStorageKey("gilberto_admin_identity_migrated_v2")
+        : "gilberto_admin_identity_migrated_v2";
+    if (localStorage.getItem(key)) return;
+    var self = this;
+    this.users = this.users.filter(function (u) {
+      return !self.isPlaceholderEmail(u.email) && !self.isPlaceholderName(u.name);
+    });
+    try {
+      localStorage.setItem(key, "1");
+    } catch (_) {}
+    this.persistUsers();
+  };
+
+  AdminCenter.prototype.refreshUsersFromWorkspace = async function () {
+    if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+      await window.gilbertoWriteWorkspacePresence();
+    }
+    await this.syncUsersFromSupabase();
+    this.renderUsers();
+    this.renderComplianceStrip();
+    this.toastSuccess("User list refreshed from workspace accounts.");
   };
 
   AdminCenter.prototype.applyDerivedUserStatuses = function () {
@@ -885,11 +967,13 @@
     }
 
     this.loadAllData();
+    this.purgeLegacyPlaceholderUsers();
     this.sanitizeStoredUsers();
     this.seedDefaultsIfEmpty();
     if (typeof window.gilbertoWriteWorkspacePresence === "function") {
       await window.gilbertoWriteWorkspacePresence();
     }
+    await this.syncUsersFromSupabase();
     await this.syncUsersFromSupabase();
     await this.seedCurrentUserAsOwner();
     await this.loadProviders();
@@ -1039,6 +1123,17 @@
 
     var inviteBtn = document.getElementById("adminInviteUserBtn");
     if (inviteBtn) inviteBtn.onclick = function () { self.openUserEditor(null); };
+
+    if (!document.getElementById("adminRefreshUsersBtn")) {
+      var refreshBtn = document.createElement("button");
+      refreshBtn.id = "adminRefreshUsersBtn";
+      refreshBtn.className = "small-btn";
+      refreshBtn.type = "button";
+      refreshBtn.textContent = "Refresh Users";
+      refreshBtn.onclick = function () { self.refreshUsersFromWorkspace(); };
+      var usersHead = document.querySelector("#users .admin-section-head");
+      if (usersHead) usersHead.appendChild(refreshBtn);
+    }
 
     document.querySelectorAll("[data-user-filter]").forEach(function (btn) {
       btn.onclick = function () {
