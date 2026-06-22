@@ -345,9 +345,128 @@
 
   AdminCenter.prototype.getCurrentUserRecord = function () {
     var actor = this.getCurrentActor();
+    var uid = window.gilbertoCurrentUserId || "";
     return this.users.find(function (u) {
+      if (uid && u.userId === uid) return true;
       return (actor.email && u.email === actor.email) || u.name === actor.name;
     }) || null;
+  };
+
+  AdminCenter.prototype.isPlaceholderEmail = function (email) {
+    var e = String(email || "").trim().toLowerCase();
+    if (!e) return true;
+    return e.endsWith("@workspace.local") || e.indexOf("member+") === 0 || e === "owner@workspace.local";
+  };
+
+  AdminCenter.prototype.pickBestEmail = function () {
+    for (var i = 0; i < arguments.length; i += 1) {
+      var candidate = String(arguments[i] || "").trim();
+      if (candidate && !this.isPlaceholderEmail(candidate)) return candidate;
+    }
+    for (var j = 0; j < arguments.length; j += 1) {
+      var fallback = String(arguments[j] || "").trim();
+      if (fallback) return fallback;
+    }
+    return "";
+  };
+
+  AdminCenter.prototype.pickBestName = function () {
+    for (var i = 0; i < arguments.length; i += 1) {
+      var candidate = String(arguments[i] || "").trim();
+      if (candidate && candidate !== "Current User" && candidate !== "Workspace member") return candidate;
+    }
+    for (var j = 0; j < arguments.length; j += 1) {
+      var fallback = String(arguments[j] || "").trim();
+      if (fallback) return fallback;
+    }
+    return "Workspace member";
+  };
+
+  AdminCenter.prototype.fetchWorkspaceIdentityMap = async function (orgId) {
+    var map = {};
+    if (!window.supabaseClient || !orgId) return map;
+
+    try {
+      var presQ = await window.supabaseClient
+        .from("workspace_user_presence")
+        .select("user_id, email, full_name, current_page, last_seen_at")
+        .eq("org_id", orgId)
+        .order("last_seen_at", { ascending: false });
+      if (!presQ.error && presQ.data) {
+        presQ.data.forEach(function (p) {
+          if (!p || !p.user_id) return;
+          if (!map[p.user_id]) {
+            map[p.user_id] = {
+              email: p.email || "",
+              full_name: p.full_name || "",
+              current_page: p.current_page || "",
+              last_seen_at: p.last_seen_at || "",
+            };
+          }
+        });
+      }
+    } catch (_) {}
+
+    try {
+      var sess = await window.supabaseClient.auth.getSession();
+      var user = sess?.data?.session?.user;
+      if (user && user.id) {
+        var row = map[user.id] || {};
+        map[user.id] = {
+          email: this.pickBestEmail(user.email, row.email),
+          full_name: this.pickBestName(
+            user.user_metadata?.full_name,
+            window.gilbertoCurrentUserName,
+            row.full_name,
+            user.email
+          ),
+          current_page: row.current_page || "",
+          last_seen_at: row.last_seen_at || nowIso(),
+        };
+      }
+    } catch (_) {}
+
+    return map;
+  };
+
+  AdminCenter.prototype.reconcileStoredUserEmails = function (identityMap) {
+    var self = this;
+    var actor = this.getCurrentActor();
+    var uid = window.gilbertoCurrentUserId || "";
+    var changed = false;
+    this.users.forEach(function (u) {
+      var idRow = u.userId && identityMap[u.userId] ? identityMap[u.userId] : null;
+      var bestEmail = self.pickBestEmail(
+        idRow && idRow.email,
+        uid && u.userId === uid ? actor.email : "",
+        u.email
+      );
+      var bestName = self.pickBestName(
+        idRow && idRow.full_name,
+        uid && u.userId === uid ? actor.name : "",
+        bestEmail,
+        u.name
+      );
+      if (bestEmail && bestEmail !== u.email) {
+        u.email = bestEmail;
+        changed = true;
+      }
+      if (bestName && bestName !== u.name) {
+        u.name = bestName;
+        changed = true;
+      }
+      if (idRow) {
+        if (idRow.current_page && u.currentPage !== idRow.current_page) {
+          u.currentPage = idRow.current_page;
+          changed = true;
+        }
+        if (idRow.last_seen_at && u.lastLogin !== idRow.last_seen_at) {
+          u.lastLogin = idRow.last_seen_at;
+          changed = true;
+        }
+      }
+    });
+    if (changed) this.persistUsers();
   };
 
   AdminCenter.prototype.hasPermission = function (key) {
@@ -495,11 +614,14 @@
       return (sessionUserId && u.userId === sessionUserId) || (email && u.email === email);
     });
     if (existing) {
+      if (sessionUserId) existing.userId = sessionUserId;
+      if (email) existing.email = this.pickBestEmail(email, existing.email);
+      if (actor.name && actor.name !== "Current User") existing.name = this.pickBestName(actor.name, existing.name);
       if (existing.roleId !== "owner" && String(window.gilbertoCurrentOrg?.role || "").toLowerCase() === "owner") {
         existing.roleId = "owner";
         existing.status = "Active";
-        this.persistUsers();
       }
+      this.persistUsers();
       return;
     }
 
@@ -507,8 +629,8 @@
       this.users.unshift({
         id: uid(),
         userId: sessionUserId || null,
-        name: actor.name,
-        email: email || "owner@workspace.local",
+        name: this.pickBestName(actor.name, email),
+        email: this.pickBestEmail(email) || "owner@workspace.local",
         roleId: "owner",
         site: "HQ",
         scopeIds: [],
@@ -529,6 +651,7 @@
     var orgId = window.gilbertoCurrentOrg?.id;
     if (!window.supabaseClient || !orgId) return;
 
+    var identityMap = await this.fetchWorkspaceIdentityMap(orgId);
     var remoteMembers = [];
     try {
       var rpc = await window.supabaseClient.rpc("admin_list_org_members", { p_org_id: orgId });
@@ -545,86 +668,85 @@
           .eq("organization_id", orgId);
         if (!memQ.error && memQ.data) {
           remoteMembers = memQ.data.map(function (m) {
-            return { user_id: m.user_id, role: m.role, email: "", full_name: "" };
+            var idRow = identityMap[m.user_id] || {};
+            return {
+              user_id: m.user_id,
+              role: m.role,
+              email: idRow.email || "",
+              full_name: idRow.full_name || "",
+            };
           });
         }
       } catch (_) {}
     }
 
-    var profileMap = {};
-    var userIds = remoteMembers.map(function (m) { return m.user_id; }).filter(Boolean);
-    if (userIds.length) {
-      try {
-        var profQ = await window.supabaseClient
-          .from("profiles")
-          .select("id, email, full_name")
-          .in("id", userIds);
-        if (!profQ.error && profQ.data) {
-          profQ.data.forEach(function (p) { profileMap[p.id] = p; });
-        }
-      } catch (_) {}
+    if (!remoteMembers.length && Object.keys(identityMap).length) {
+      remoteMembers = Object.keys(identityMap).map(function (userId) {
+        var row = identityMap[userId];
+        return {
+          user_id: userId,
+          role: "member",
+          email: row.email || "",
+          full_name: row.full_name || "",
+        };
+      });
     }
-
-    var presenceMap = {};
-    try {
-      var since = new Date(Date.now() - 24 * 3600000).toISOString();
-      var presQ = await window.supabaseClient
-        .from("workspace_user_presence")
-        .select("user_id, email, full_name, current_page, last_seen_at")
-        .eq("org_id", orgId)
-        .gte("last_seen_at", since);
-      if (!presQ.error && presQ.data) {
-        presQ.data.forEach(function (p) { presenceMap[p.user_id || p.email] = p; });
-      }
-    } catch (_) {}
 
     var self = this;
     var changed = false;
     remoteMembers.forEach(function (m) {
-      var prof = profileMap[m.user_id] || {};
-      var email = m.email || prof.email || "";
-      var name = m.full_name || prof.full_name || email || "Workspace member";
-      var pres = presenceMap[m.user_id] || presenceMap[email] || null;
+      if (!m || !m.user_id) return;
+      var idRow = identityMap[m.user_id] || {};
+      var email = self.pickBestEmail(m.email, idRow.email);
+      var name = self.pickBestName(m.full_name, idRow.full_name, email);
       var roleId = String(m.role || "member").toLowerCase();
       if (roleId !== "owner" && roleId !== "admin" && roleId === "member") {
         roleId = "viewer";
       }
 
       var found = self.users.find(function (u) {
-        return (m.user_id && u.userId === m.user_id) || (email && u.email === email);
+        return u.userId === m.user_id || (email && u.email === email);
       });
 
       if (found) {
-        if (name && found.name !== name) { found.name = name; changed = true; }
-        if (email && found.email !== email) { found.email = email; changed = true; }
-        if (m.user_id && !found.userId) { found.userId = m.user_id; changed = true; }
-        if (pres) {
-          found.currentPage = pres.current_page || found.currentPage;
-          found.lastLogin = pres.last_seen_at || found.lastLogin;
+        var nextEmail = self.pickBestEmail(email, idRow.email, found.email);
+        var nextName = self.pickBestName(name, idRow.full_name, found.name, nextEmail);
+        if (nextName && found.name !== nextName) { found.name = nextName; changed = true; }
+        if (nextEmail && found.email !== nextEmail) { found.email = nextEmail; changed = true; }
+        if (!found.userId) { found.userId = m.user_id; changed = true; }
+        if (idRow.last_seen_at) {
+          found.currentPage = idRow.current_page || found.currentPage;
+          found.lastLogin = idRow.last_seen_at || found.lastLogin;
+          changed = true;
         }
         if (roleId === "owner" && found.roleId !== "owner") { found.roleId = "owner"; changed = true; }
+        else if (roleId === "admin" && found.roleId !== "owner" && found.roleId !== "admin") {
+          found.roleId = "admin";
+          changed = true;
+        }
       } else {
         self.users.push({
           id: uid(),
-          userId: m.user_id || null,
+          userId: m.user_id,
           name: name,
-          email: email || ("member+" + (m.user_id || uid()).slice(0, 8) + "@workspace.local"),
+          email: email || ("member+" + String(m.user_id).slice(0, 8) + "@workspace.local"),
           roleId: roleId === "owner" ? "owner" : roleId === "admin" ? "admin" : "viewer",
           site: "—",
           scopeIds: [],
           mfaEnabled: false,
           status: "Active",
-          lastLogin: pres?.last_seen_at || "",
+          lastLogin: idRow.last_seen_at || "",
           invitedAt: nowIso(),
-          loginAt: pres?.last_seen_at || "",
+          loginAt: idRow.last_seen_at || "",
           device: "",
           ip: "",
-          currentPage: pres?.current_page || "",
+          currentPage: idRow.current_page || "",
         });
         changed = true;
       }
     });
 
+    this.reconcileStoredUserEmails(identityMap);
     this.applyDerivedUserStatuses();
     if (changed) this.persistUsers();
   };
@@ -692,13 +814,6 @@
     if (typeof window.resolveCurrentUserIdentity === "function") {
       await window.resolveCurrentUserIdentity();
     }
-    try {
-      if (window.supabaseClient) {
-        var sess = await window.supabaseClient.auth.getSession();
-        var user = sess?.data?.session?.user;
-        if (user && user.email) window.gilbertoCurrentUserEmail = user.email;
-      }
-    } catch (_) {}
 
     this.loadAllData();
     this.seedDefaultsIfEmpty();
