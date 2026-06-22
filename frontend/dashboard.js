@@ -511,32 +511,6 @@ function applyUserIdentityPills() {
   });
 }
 
-function gilbertoInjectOnlineUsersNav() {
-  const sidebar = document.querySelector(".sidebar");
-  if (
-    !sidebar ||
-    sidebar.querySelector('[data-gilberto-online-users="1"]') ||
-    Array.from(sidebar.querySelectorAll(".nav-item")).some(function (el) {
-      return /online-users\.html/.test(el.getAttribute("onclick") || "");
-    })
-  ) return;
-  const btn = document.createElement("button");
-  btn.className = "nav-item";
-  btn.dataset.gilbertoOnlineUsers = "1";
-  btn.textContent = "Online Users";
-  btn.onclick = function () { goToPage("online-users.html"); };
-  if (gilbertoCurrentPageFile() === "online-users.html") btn.classList.add("active");
-
-  const docsBtn = Array.from(sidebar.querySelectorAll(".nav-item")).find(function (el) {
-    return /documents\.html/.test(el.getAttribute("onclick") || "");
-  });
-  if (docsBtn && docsBtn.parentNode) {
-    docsBtn.parentNode.insertBefore(btn, docsBtn.nextSibling);
-  } else {
-    sidebar.appendChild(btn);
-  }
-}
-
 function gilbertoInjectAdministrationNav() {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar || sidebar.querySelector('[data-gilberto-admin-nav="1"]')) return;
@@ -550,6 +524,7 @@ function gilbertoInjectAdministrationNav() {
   const links = [
     ["Administration Dashboard", "admin-panel.html#administration-dashboard"],
     ["Users", "admin-panel.html#users"],
+    ["Online Users", "admin-panel.html#online-users"],
     ["Roles & Permissions", "admin-panel.html#roles-permissions"],
     ["Access Scopes", "admin-panel.html#access-scopes"],
     ["Identity & Authentication", "admin-panel.html#identity-authentication"],
@@ -828,7 +803,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.querySelector(".sidebar");
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
-      gilbertoInjectOnlineUsersNav();
       gilbertoInjectAdministrationNav();
       gilbertoStartWorkspacePresence();
       gilbertoInjectSwitchCompanyMenuItem();
@@ -867,7 +841,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     await applyWorkspaceWithOrg();
-    gilbertoInjectOnlineUsersNav();
     gilbertoInjectAdministrationNav();
     gilbertoStartWorkspacePresence();
     gilbertoInjectSwitchCompanyMenuItem();

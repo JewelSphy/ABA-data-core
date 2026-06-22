@@ -964,6 +964,7 @@
     this._usersOnlineInterval = setInterval(function () {
       void self.refreshPresence().then(function () {
         self.renderUsers();
+        self.renderOnlineUsersTable();
         self.renderComplianceStrip();
       });
     }, 30000);
@@ -1114,13 +1115,6 @@
       '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminScopeModal\')">Cancel</button>' +
       '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveScopeEditor()">Save</button></div></div></div>' +
 
-      '<div class="modal-overlay" id="adminOnlineModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminOnlineModal\')">' +
-      '<div class="modal-box wide"><div class="modal-header"><h3>Online Users</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">&times;</button></div>' +
-      '<div class="modal-body"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Login</th><th>Duration</th><th>Last Activity</th><th>Page</th><th>Device</th><th>Actions</th></tr></thead>' +
-      '<tbody id="adminOnlineBody"></tbody></table></div></div>' +
-      '<div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.refreshPresence()">Refresh</button>' +
-      '<button class="add-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">Close</button></div></div></div>' +
-
       '<div class="modal-overlay" id="adminAccessModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminAccessModal\')">' +
       '<div class="modal-box wide"><div class="modal-header"><h3>Effective Access Preview</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminAccessModal\')">&times;</button></div>' +
       '<div class="modal-body" id="adminAccessPreviewBody"></div>' +
@@ -1182,12 +1176,25 @@
       c.classList.toggle("is-active", active);
       c.style.outline = active ? "3px solid rgba(91,125,245,.35)" : "";
     });
+    if (id === "online-users") {
+      void this.refreshPresence();
+    }
   };
 
   AdminCenter.prototype.wireSectionActions = function () {
     var self = this;
-    var topOnline = document.getElementById("adminOnlineUsersBtn") || document.querySelector(".top-actions .small-btn");
-    if (topOnline) topOnline.onclick = function () { self.openOnlineUsersModal(); };
+    var topOnline = document.getElementById("adminOnlineUsersBtn");
+    if (topOnline) topOnline.onclick = function () { self.openOnlineUsersSection(); };
+
+    var refreshOnline = document.getElementById("adminRefreshOnlineBtn");
+    if (refreshOnline) {
+      refreshOnline.onclick = function () {
+        void self.refreshPresence().then(function () {
+          self.renderOnlineUsersTable();
+          self.toastSuccess("Online users refreshed.");
+        });
+      };
+    }
 
     var inviteBtn = document.getElementById("adminInviteUserBtn");
     if (inviteBtn) inviteBtn.onclick = function () { self.openUserEditor(null); };
@@ -2241,7 +2248,7 @@
       } catch (_) {}
     }
     this.indexOnlineUsers(indexedRows.length ? indexedRows : this.presenceRows);
-    this.renderOnlineModalTable();
+    this.renderOnlineUsersTable();
     this.renderIdentity();
   };
 
@@ -2264,52 +2271,46 @@
     return "—";
   };
 
-  AdminCenter.prototype.renderOnlineModalTable = function () {
-    var body = document.getElementById("adminOnlineBody");
-    if (!body) return;
+  AdminCenter.prototype.renderOnlineUsersTable = function () {
+    var bodies = [
+      document.getElementById("adminOnlineSectionBody"),
+      document.getElementById("adminOnlineBody"),
+    ].filter(Boolean);
+    if (!bodies.length) return;
     var self = this;
+    var html;
     if (!this.presenceRows.length) {
-      body.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;color:#6b8c7a;">No active users in the last 10 minutes.</td></tr>';
-      return;
+      html = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">No one is online in this workspace right now.</td></tr>';
+    } else {
+      html = this.presenceRows.map(function (p) {
+        var st = self.presenceStatus(p);
+        var cls = st.key === "online" ? "badge-active" : st.key === "idle" ? "badge-pending" : "badge-expiring";
+        var user = self.users.find(function (u) { return u.userId === p.user_id || u.email === p.email; });
+        var roleName = user ? self.getRoleName(user.roleId) : (p.role || "—");
+        var key = p.user_id || p.email;
+        var device = p.browser || p.device || (user && user.device ? user.device : "Web browser");
+        return "<tr><td><span class=\"badge " + cls + "\">" + adminEsc(st.label) + "</span></td><td>" +
+          adminEsc(self.displayName({ name: p.full_name, email: p.email, userId: p.user_id })) + "</td><td>" +
+          adminEsc(self.displayEmail({ email: p.email, userId: p.user_id })) + "</td><td>" + adminEsc(roleName) +
+          "</td><td>" + adminEsc(formatDateTime(p.login_time || (user && user.loginAt) || p.last_seen_at)) +
+          "</td><td>" + adminEsc(formatDateTime(p.last_activity_at || p.last_seen_at)) +
+          "</td><td>" + adminEsc(pageLabel(p.current_page)) + "</td><td>" + adminEsc(String(device).slice(0, 40)) +
+          '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(user ? user.id : "") +
+          "')\">View</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" +
+          adminEsc(key) + "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
+          adminEsc(key) + "')\">Lock</button></td></tr>";
+      }).join("");
     }
-    body.innerHTML = this.presenceRows.map(function (p) {
-      var st = self.presenceStatus(p);
-      var cls = st.key === "online" ? "badge-active" : st.key === "idle" ? "badge-pending" : "badge-expiring";
-      var user = self.users.find(function (u) { return u.userId === p.user_id || u.email === p.email; });
-      var roleName = user ? self.getRoleName(user.roleId) : "—";
-      var key = p.user_id || p.email;
-      var device = user && user.device ? user.device : (navigator.userAgent ? "Web browser" : "—");
-      return "<tr><td><span class=\"badge " + cls + "\">" + adminEsc(st.label) + "</span></td><td>" +
-        adminEsc(p.full_name || "User") + "</td><td>" + adminEsc(p.email || "—") + "</td><td>" + adminEsc(roleName) +
-        "</td><td>" + adminEsc(formatDateTime(user && user.loginAt ? user.loginAt : p.last_seen_at)) +
-        "</td><td>" + adminEsc(self.sessionDurationLabel(p)) + "</td><td>" + adminEsc(formatDateTime(p.last_seen_at)) +
-        "</td><td>" + adminEsc(pageLabel(p.current_page)) + "</td><td>" + adminEsc(device.slice(0, 40)) +
-        '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(user ? user.id : "") +
-        "')\">View</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" +
-        adminEsc(key) + "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
-        adminEsc(key) + "')\">Lock</button></td></tr>";
-    }).join("");
+    bodies.forEach(function (body) { body.innerHTML = html; });
   };
 
-  AdminCenter.prototype.openOnlineUsersModal = async function () {
+  AdminCenter.prototype.openOnlineUsersSection = async function () {
     if (!this.hasPermission("online.view")) return this.toastError("Insufficient permissions.");
+    this.navigateToSection("online-users");
     await this.refreshPresence();
-    this.openModal("adminOnlineModal");
-    this.startPresenceRefresh();
   };
 
-  AdminCenter.prototype.startPresenceRefresh = function () {
-    var self = this;
-    if (this._presenceInterval) clearInterval(this._presenceInterval);
-    this._presenceInterval = setInterval(function () {
-      if (!document.getElementById("adminOnlineModal")?.classList.contains("open")) {
-        clearInterval(self._presenceInterval);
-        self._presenceInterval = null;
-        return;
-      }
-      self.refreshPresence();
-    }, 30000);
-  };
+  AdminCenter.prototype.openOnlineUsersModal = AdminCenter.prototype.openOnlineUsersSection;
 
   AdminCenter.prototype.forceLogoutPresence = async function (key) {
     if (!this.hasPermission("online.force_logout")) return this.toastError("Insufficient permissions.");

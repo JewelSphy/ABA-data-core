@@ -61,6 +61,7 @@
 
     <section class="admin-overview-grid" id="administration-dashboard">
       <a class="admin-overview-card" href="#users"><strong>Users</strong><span>Identity lifecycle and workforce access</span></a>
+      <a class="admin-overview-card" href="#online-users"><strong>Online Users</strong><span>Who is signed in to this workspace right now</span></a>
       <a class="admin-overview-card" href="#roles-permissions"><strong>Roles &amp; Permissions</strong><span>Reusable role and permission records</span></a>
       <a class="admin-overview-card" href="#access-scopes"><strong>Access Scopes</strong><span>Client, site, team, and relationship scoping</span></a>
       <a class="admin-overview-card" href="#identity-authentication"><strong>Identity &amp; Authentication</strong><span>MFA, SSO, sessions, and reset policy</span></a>
@@ -95,6 +96,21 @@
           <thead><tr><th>Full Name</th><th>Email</th><th>Role</th><th>Site / Access Scope</th><th>MFA</th><th>Account</th><th>Online</th><th>Last Active</th><th>Actions</th></tr></thead>
           <tbody id="adminUsersBody">
             <tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">Loading users…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section" id="online-users">
+      <div class="admin-section-head">
+        <div><h2>Online Users</h2><p>Workspace members with an active session in the last 5 minutes. Refreshes automatically every 30 seconds.</p></div>
+        <button class="small-btn" type="button" id="adminRefreshOnlineBtn">Refresh</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Login</th><th>Last Activity</th><th>Page</th><th>Device</th><th>Actions</th></tr></thead>
+          <tbody id="adminOnlineSectionBody">
+            <tr><td colspan="9" style="text-align:center;padding:20px;color:#6b8c7a;">Loading online users…</td></tr>
           </tbody>
         </table>
       </div>
@@ -262,8 +278,8 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260622g"></script>
-<script src="admin-center.js?v=20260622h"></script>
+<script src="dashboard.js?v=20260622i"></script>
+<script src="admin-center.js?v=20260622i"></script>
 <script>
   async function ensureAdminAccessReady() {
     if (typeof enforceAuthGuard === 'function') await enforceAuthGuard();
