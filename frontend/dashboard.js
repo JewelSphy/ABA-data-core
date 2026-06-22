@@ -876,7 +876,11 @@ async function loadGilbertoOrganization() {
       return null;
     }
 
-    role = provisional?.role && provisional.id === orgId ? provisional.role : role;
+    if (chosenMember?.role) {
+      role = chosenMember.role;
+    } else if (provisional?.role && provisional.id === orgId) {
+      role = provisional.role;
+    }
 
     let org =
       chosenMember && chosenMember.organizations ? chosenMember.organizations : null;
