@@ -278,8 +278,8 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260623a"></script>
-<script src="admin-center.js?v=20260623d"></script>
+<script src="dashboard.js?v=20260623b"></script>
+<script src="admin-center.js?v=20260623e"></script>
 <script>
   function withBootTimeout(promise, ms) {
     if (!promise || typeof promise.then !== 'function') return Promise.resolve(promise);
@@ -303,6 +303,9 @@
   document.addEventListener('DOMContentLoaded', async function () {
     try {
       await ensureAdminAccessReady();
+      if (typeof window.gilbertoRefreshCurrentOrgRole === 'function') {
+        await window.gilbertoRefreshCurrentOrgRole();
+      }
       if (typeof window.gilbertoIsAdminRole === 'function' && !window.gilbertoIsAdminRole()) {
         window.location.replace('dashboard.html');
         return;

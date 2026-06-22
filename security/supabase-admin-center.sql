@@ -195,4 +195,52 @@ $$;
 revoke all on function public.admin_set_org_member_role(uuid, uuid, text) from public;
 grant execute on function public.admin_set_org_member_role(uuid, uuid, text) to authenticated;
 
+create or replace function public.admin_set_org_member_role_by_email(
+  p_org_id uuid,
+  p_email text,
+  p_role text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_email text;
+begin
+  v_email := lower(trim(coalesce(p_email, '')));
+  if v_email = '' then
+    raise exception 'email is required';
+  end if;
+
+  select m.user_id into v_user_id
+  from public.organization_members m
+  inner join auth.users au on au.id = m.user_id
+  where m.organization_id = p_org_id
+    and lower(trim(au.email::text)) = v_email
+  limit 1;
+
+  if v_user_id is null then
+    select onb.user_id into v_user_id
+    from public.user_onboarding onb
+    inner join public.organization_members m
+      on m.organization_id = p_org_id
+     and m.user_id = onb.user_id
+    where lower(trim(coalesce(onb.contact_email, ''))) = v_email
+    limit 1;
+  end if;
+
+  if v_user_id is null then
+    raise exception 'workspace member not found for email %', p_email;
+  end if;
+
+  perform public.admin_set_org_member_role(p_org_id, v_user_id, p_role);
+  return v_user_id;
+end;
+$$;
+
+revoke all on function public.admin_set_org_member_role_by_email(uuid, text, text) from public;
+grant execute on function public.admin_set_org_member_role_by_email(uuid, text, text) to authenticated;
+
 do $$ begin notify pgrst, 'reload schema'; exception when others then null; end $$;

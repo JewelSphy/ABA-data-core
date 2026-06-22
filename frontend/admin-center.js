@@ -670,27 +670,136 @@
     return r === "owner" || r === "admin";
   };
 
+  AdminCenter.prototype.resolveWorkspaceUserId = async function (user) {
+    if (!user) return null;
+    if (user.userId) return user.userId;
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (!orgId || !window.supabaseClient) return null;
+    var email = String(user.email || "").trim().toLowerCase();
+    if (!email || this.isPlaceholderEmail(email)) return null;
+
+    try {
+      var rpc = await window.supabaseClient.rpc("admin_list_org_members", { p_org_id: orgId });
+      if (!rpc.error && Array.isArray(rpc.data)) {
+        var hit = rpc.data.find(function (m) {
+          return m && String(m.email || "").trim().toLowerCase() === email;
+        });
+        if (hit && hit.user_id) {
+          user.userId = hit.user_id;
+          this.persistUsers();
+          return hit.user_id;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      var memQ = await window.supabaseClient
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", orgId);
+      if (!memQ.error && Array.isArray(memQ.data)) {
+        for (var i = 0; i < memQ.data.length; i += 1) {
+          var row = memQ.data[i];
+          if (!row || !row.user_id) continue;
+          var profile = null;
+          if (typeof window.gilbertoLoadAuthProfile === "function") {
+            try {
+              profile = await window.gilbertoLoadAuthProfile(window.supabaseClient, row.user_id);
+            } catch (_) {}
+          }
+          var profileEmail = String((profile && profile.email) || "").trim().toLowerCase();
+          if (profileEmail === email) {
+            user.userId = row.user_id;
+            this.persistUsers();
+            return row.user_id;
+          }
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  };
+
   AdminCenter.prototype.syncUserOrgMembershipRole = async function (user, roleId) {
-    if (!user || !user.userId || !window.supabaseClient) {
-      return { ok: false, reason: "User must sign in to this workspace before roles can apply." };
+    if (!user || !window.supabaseClient) {
+      return { ok: false, reason: "Sign-in required to update workspace access." };
     }
     var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
     if (!orgId) return { ok: false, reason: "No active workspace." };
 
+    await this.resolveWorkspaceUserId(user);
     var orgRole = this.mapRoleIdToOrgMembership(roleId);
-    try {
-      var rpc = await window.supabaseClient.rpc("admin_set_org_member_role", {
-        p_org_id: orgId,
-        p_user_id: user.userId,
-        p_role: orgRole,
-      });
-      if (rpc.error) {
+    var lastError = "";
+
+    if (user.userId) {
+      try {
+        var rpc = await window.supabaseClient.rpc("admin_set_org_member_role", {
+          p_org_id: orgId,
+          p_user_id: user.userId,
+          p_role: orgRole,
+        });
+        if (!rpc.error) {
+          return { ok: true, orgRole: orgRole, userId: user.userId };
+        }
+        lastError = rpc.error.message || "Could not update workspace membership.";
         console.warn("syncUserOrgMembershipRole:", rpc.error);
-        return { ok: false, reason: rpc.error.message || "Could not update workspace membership." };
+      } catch (err) {
+        lastError = String(err && err.message ? err.message : err);
       }
-      return { ok: true, orgRole: orgRole };
-    } catch (err) {
-      return { ok: false, reason: String(err && err.message ? err.message : err) };
+    }
+
+    var email = String(user.email || "").trim();
+    if (email && !this.isPlaceholderEmail(email)) {
+      try {
+        var byEmail = await window.supabaseClient.rpc("admin_set_org_member_role_by_email", {
+          p_org_id: orgId,
+          p_email: email,
+          p_role: orgRole,
+        });
+        if (!byEmail.error && byEmail.data) {
+          user.userId = byEmail.data;
+          this.persistUsers();
+          return { ok: true, orgRole: orgRole, userId: byEmail.data };
+        }
+        if (byEmail.error) {
+          lastError = byEmail.error.message || lastError;
+          console.warn("syncUserOrgMembershipRole by email:", byEmail.error);
+        }
+      } catch (err) {
+        lastError = String(err && err.message ? err.message : err);
+      }
+    }
+
+    if (!user.userId && this.roleGrantsAdminPanelAccess(roleId)) {
+      return {
+        ok: false,
+        reason: lastError || "This person must join and sign in to the workspace before Admin access can apply.",
+      };
+    }
+    if (lastError) return { ok: false, reason: lastError };
+    return { ok: false, reason: "Could not update workspace membership." };
+  };
+
+  AdminCenter.prototype.reconcilePendingOrgRoles = async function (remoteMembers) {
+    if (!window.gilbertoIsAdminRole || !window.gilbertoIsAdminRole()) return;
+    var self = this;
+    var remoteByUserId = {};
+    (remoteMembers || []).forEach(function (m) {
+      if (m && m.user_id) remoteByUserId[m.user_id] = String(m.role || "member").toLowerCase();
+    });
+
+    for (var i = 0; i < this.users.length; i += 1) {
+      var u = this.users[i];
+      if (!u || !self.roleGrantsAdminPanelAccess(u.roleId)) continue;
+      await self.resolveWorkspaceUserId(u);
+      if (!u.userId) continue;
+      var expected = self.mapRoleIdToOrgMembership(u.roleId);
+      var actual = remoteByUserId[u.userId] || "member";
+      if (expected === actual) continue;
+      var result = await self.syncUserOrgMembershipRole(u, u.roleId);
+      if (result && result.ok) {
+        remoteByUserId[u.userId] = expected;
+      }
     }
   };
 
@@ -990,6 +1099,7 @@
     this.sanitizeStoredUsers();
     this.applyDerivedUserStatuses();
     this.persistUsers();
+    await this.reconcilePendingOrgRoles(remoteMembers);
   };
 
   AdminCenter.prototype.purgeLegacyPlaceholderUsers = function () {
@@ -1935,8 +2045,11 @@
       existing.status = status;
       existing.mfaEnabled = mfaEnabled;
       var syncResult = null;
-      if (existing.userId && oldRole !== roleId) {
+      await this.resolveWorkspaceUserId(existing);
+      if (existing.userId || (email && !this.isPlaceholderEmail(email))) {
         syncResult = await this.syncUserOrgMembershipRole(existing, roleId);
+      } else if (this.roleGrantsAdminPanelAccess(roleId)) {
+        syncResult = { ok: false, reason: "This person must join and sign in to the workspace before Admin access can apply." };
       }
       if (existing.userId && existing.userId === window.gilbertoCurrentUserId) {
         window.gilbertoCurrentUserName = name;
@@ -1966,7 +2079,11 @@
       this.persistUsers();
       this.recordAudit({ action: "User updated", area: "Users", affectedUser: email, oldValue: oldRole, newValue: roleId, risk: "Medium" });
       if (syncResult && !syncResult.ok) {
-        this.toastError("Saved locally, but workspace access was not updated: " + syncResult.reason);
+        var syncMsg = syncResult.reason || "Could not update workspace membership.";
+        if (/admin_set_org_member_role/i.test(syncMsg)) {
+          syncMsg += " Run security/supabase-fix-broken-access.sql in Supabase SQL Editor, then save again.";
+        }
+        this.toastError("Workspace access was not updated: " + syncMsg);
       } else if (syncResult && syncResult.ok && this.roleGrantsAdminPanelAccess(roleId)) {
         this.toastSuccess("User saved. They may need to refresh the page to see Administration.");
       } else {
@@ -2111,7 +2228,8 @@
     var old = u.roleId;
     u.roleId = roleId;
     var syncResult = null;
-    if (u.userId && old !== roleId) {
+    await this.resolveWorkspaceUserId(u);
+    if (u.userId || (u.email && !this.isPlaceholderEmail(u.email))) {
       syncResult = await this.syncUserOrgMembershipRole(u, roleId);
     }
     this.persistUsers();

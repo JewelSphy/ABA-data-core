@@ -524,7 +524,10 @@ function applyUserIdentityPills() {
 
 function gilbertoInjectAdministrationNav() {
   const sidebar = document.querySelector(".sidebar");
-  if (!sidebar || sidebar.querySelector('[data-gilberto-admin-nav="1"]')) return;
+  if (!sidebar) return;
+  sidebar.querySelectorAll('[data-gilberto-admin-nav="1"]').forEach(function (el) {
+    el.remove();
+  });
   if (!gilbertoIsAdminRole()) return;
 
   const title = document.createElement("p");
@@ -926,6 +929,36 @@ function gilbertoIsAdminRole(org) {
 
 window.gilbertoIsAdminRole = gilbertoIsAdminRole;
 
+async function gilbertoRefreshCurrentOrgRole() {
+  if (!window.supabaseClient || !window.gilbertoCurrentOrg?.id) return null;
+  try {
+    const { data: sess } = await window.supabaseClient.auth.getSession();
+    const uid = sess?.session?.user?.id || window.gilbertoCurrentUserId || "";
+    if (!uid) return null;
+    const orgId = window.gilbertoCurrentOrg.id;
+    const { data, error } = await window.supabaseClient
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", orgId)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (error || !data?.role) return null;
+    const role = String(data.role).toLowerCase();
+    window.gilbertoCurrentOrg.role = role;
+    try {
+      localStorage.setItem("gilberto_active_org:" + uid, JSON.stringify(window.gilbertoCurrentOrg));
+    } catch (_) {
+      /* empty */
+    }
+    gilbertoInjectAdministrationNav();
+    return role;
+  } catch (_) {
+    return null;
+  }
+}
+
+window.gilbertoRefreshCurrentOrgRole = gilbertoRefreshCurrentOrgRole;
+
 /**
  * Resolves the signed-in user’s current company (blank dashboard = no rows yet, but this scopes data by org).
  * Later: add organization_id to clients, sessions, etc., and always filter with .eq('organization_id', window.gilbertoCurrentOrg.id).
@@ -1216,6 +1249,7 @@ async function applyWorkspaceWithOrg() {
   if (typeof loadGilbertoOrganization === "function") {
     await loadGilbertoOrganization();
   }
+  await gilbertoRefreshCurrentOrgRole();
 
   // Preserve scroll position: async org injection can shift layout above,
   // which feels like a "refresh" when you're far down on chart-heavy pages.
