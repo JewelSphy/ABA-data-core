@@ -158,7 +158,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabaseConfig.js?v=20260608"></script>
 <script src="supabaseClient.js?v=20260608"></script>
-<script src="dashboard.js?v=20260622b"></script>
+<script src="dashboard.js?v=20260622g"></script>
 <script>
 var _presenceRows = [];
 
@@ -182,8 +182,15 @@ function minutesSince(iso) {
 }
 
 function statusForPresence(row) {
-  var mins = minutesSince(row.last_seen_at);
+  if (row.status) {
+    var st = String(row.status).toLowerCase();
+    if (st === 'online') return { cls: 'online', label: 'Online' };
+    if (st === 'idle') return { cls: 'recent', label: 'Idle' };
+    return { cls: 'recent', label: 'Offline' };
+  }
+  var mins = minutesSince(row.last_activity_at || row.last_seen_at);
   if (mins <= 2) return { cls: 'online', label: 'Online' };
+  if (mins <= 5) return { cls: 'recent', label: 'Idle' };
   return { cls: 'recent', label: 'Recently active' };
 }
 
@@ -203,7 +210,10 @@ function renderOnlineUsersTable() {
       })
     : _presenceRows;
 
-  var online = _presenceRows.filter(function (r) { return minutesSince(r.last_seen_at) <= 2; }).length;
+  var online = _presenceRows.filter(function (r) {
+    var st = statusForPresence(r);
+    return st.label === 'Online';
+  }).length;
   var recent = _presenceRows.length - online;
   document.getElementById('presenceOnlineCount').textContent = online;
   document.getElementById('presenceRecentCount').textContent = recent;
@@ -222,7 +232,7 @@ function renderOnlineUsersTable() {
       + '<td>' + escPresence(r.full_name || 'User') + '</td>'
       + '<td>' + escPresence(r.email || '—') + '</td>'
       + '<td>' + escPresence(pageLabel(r.current_page)) + '</td>'
-      + '<td><span class="presence-muted">' + escPresence(lastSeenLabel(r.last_seen_at)) + '</span></td>'
+      + '<td><span class="presence-muted">' + escPresence(lastSeenLabel(r.last_activity_at || r.last_seen_at)) + '</span></td>'
       + '</tr>';
   }).join('');
 }
@@ -239,15 +249,21 @@ async function loadOnlineUsersPage() {
     return;
   }
   try {
-    var since = new Date(Date.now() - 10 * 60000).toISOString();
-    var q = await window.supabaseClient
-      .from('workspace_user_presence')
-      .select('email,full_name,current_page,last_seen_at')
-      .eq('org_id', org.id)
-      .gte('last_seen_at', since)
-      .order('last_seen_at', { ascending: false });
-    if (q.error) throw q.error;
-    _presenceRows = q.data || [];
+    _presenceRows = [];
+    if (typeof gilbertoFetchWorkspaceOnlineSessions === 'function') {
+      _presenceRows = await gilbertoFetchWorkspaceOnlineSessions(org.id);
+    }
+    if (!_presenceRows.length) {
+      var since = new Date(Date.now() - 10 * 60000).toISOString();
+      var q = await window.supabaseClient
+        .from('workspace_user_presence')
+        .select('user_id,email,full_name,current_page,last_seen_at')
+        .eq('org_id', org.id)
+        .gte('last_seen_at', since)
+        .order('last_seen_at', { ascending: false });
+      if (q.error) throw q.error;
+      _presenceRows = q.data || [];
+    }
     renderOnlineUsersTable();
   } catch (e) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#c0392b;">Could not load online users. Please sign out and sign back in.</td></tr>';
@@ -257,7 +273,7 @@ async function loadOnlineUsersPage() {
 window.loadOnlineUsersPage = loadOnlineUsersPage;
 document.addEventListener('DOMContentLoaded', function () {
   setTimeout(loadOnlineUsersPage, 250);
-  setInterval(loadOnlineUsersPage, 60000);
+  setInterval(loadOnlineUsersPage, 30000);
 });
 </script>
 </body>

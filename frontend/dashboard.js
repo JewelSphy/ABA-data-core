@@ -428,6 +428,9 @@ document.addEventListener(
 
 async function logout() {
   try {
+    if (typeof gilbertoEndWorkspaceSession === "function") {
+      await gilbertoEndWorkspaceSession();
+    }
     if (window.supabaseClient) {
       await window.supabaseClient.auth.signOut();
     }
@@ -578,19 +581,160 @@ function gilbertoInjectAdministrationNav() {
   });
 }
 
+function gilbertoWorkspaceSessionStorageKey() {
+  if (typeof gilbertoScopedStorageKey === "function") {
+    return gilbertoScopedStorageKey("gilberto_workspace_session_id");
+  }
+  const orgId =
+    window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id
+      ? window.gilbertoCurrentOrg.id
+      : "no-org";
+  return "gilberto_workspace_session_id:" + orgId;
+}
+
+function gilbertoParseBrowserDevice() {
+  const ua = navigator.userAgent || "";
+  let browser = "Browser";
+  if (/Edg\//.test(ua)) browser = "Edge";
+  else if (/Chrome\//.test(ua)) browser = "Chrome";
+  else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
+  else if (/Firefox\//.test(ua)) browser = "Firefox";
+  const device = /Mobi|Android/i.test(ua) ? "Mobile" : "Desktop";
+  return { browser, device, ua: ua.slice(0, 180) };
+}
+
+async function gilbertoEndWorkspaceSession() {
+  if (!window.supabaseClient) return;
+  const sessionId = localStorage.getItem(gilbertoWorkspaceSessionStorageKey());
+  if (!sessionId) return;
+  try {
+    await window.supabaseClient.rpc("workspace_session_logout", { p_session_id: sessionId });
+  } catch (_) {
+    try {
+      const { data } = await window.supabaseClient.auth.getSession();
+      const userId = data?.session?.user?.id;
+      if (userId) {
+        await window.supabaseClient
+          .from("workspace_user_sessions")
+          .update({ logout_time: new Date().toISOString(), status: "offline" })
+          .eq("id", sessionId)
+          .eq("user_id", userId);
+      }
+    } catch (_) {
+      /* best effort */
+    }
+  }
+  try {
+    localStorage.removeItem(gilbertoWorkspaceSessionStorageKey());
+  } catch (_) {}
+}
+
+async function gilbertoEnsureWorkspaceSession() {
+  if (!window.supabaseClient || !window.gilbertoCurrentOrg || !window.gilbertoCurrentOrg.id) return null;
+  const orgId = window.gilbertoCurrentOrg.id;
+  const { data } = await window.supabaseClient.auth.getSession();
+  const user = data && data.session && data.session.user ? data.session.user : null;
+  if (!user || !user.id) return null;
+
+  const page = gilbertoCurrentPageFile() || "dashboard.html";
+  const email = user.email || window.gilbertoCurrentUserEmail || "";
+  const fullName =
+    window.gilbertoCurrentUserName ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    email ||
+    "Current User";
+  const role = window.gilbertoCurrentOrg.role || "member";
+  const storageKey = gilbertoWorkspaceSessionStorageKey();
+  let sessionId = localStorage.getItem(storageKey);
+
+  if (sessionId) {
+    try {
+      const hb = await window.supabaseClient.rpc("workspace_session_heartbeat", {
+        p_session_id: sessionId,
+        p_current_page: page,
+        p_email: email,
+        p_full_name: fullName,
+        p_role: role,
+      });
+      if (!hb.error) return sessionId;
+    } catch (_) {
+      /* create a fresh session below */
+    }
+    sessionId = null;
+  }
+
+  const parsed = gilbertoParseBrowserDevice();
+  const now = new Date().toISOString();
+  try {
+    const ins = await window.supabaseClient
+      .from("workspace_user_sessions")
+      .insert({
+        user_id: user.id,
+        org_id: orgId,
+        email,
+        full_name: fullName,
+        role,
+        login_time: now,
+        last_activity_at: now,
+        status: "online",
+        device: parsed.device,
+        browser: parsed.browser,
+        current_page: page,
+      })
+      .select("id")
+      .single();
+    if (!ins.error && ins.data && ins.data.id) {
+      localStorage.setItem(storageKey, ins.data.id);
+      return ins.data.id;
+    }
+  } catch (_) {
+    /* table may not exist until SQL migration runs */
+  }
+  return null;
+}
+
 async function gilbertoWriteWorkspacePresence() {
   if (!window.supabaseClient || !window.gilbertoCurrentOrg || !window.gilbertoCurrentOrg.id) return;
   try {
     const { data } = await window.supabaseClient.auth.getSession();
     const user = data && data.session && data.session.user ? data.session.user : null;
     if (!user || !user.id) return;
+    const page = gilbertoCurrentPageFile() || "dashboard.html";
+    const email = user.email || "";
+    const fullName =
+      window.gilbertoCurrentUserName ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      email ||
+      "Current User";
+    const role = window.gilbertoCurrentOrg.role || "member";
+
+    await gilbertoEnsureWorkspaceSession();
+
+    const storageKey = gilbertoWorkspaceSessionStorageKey();
+    const sessionId = localStorage.getItem(storageKey);
+    if (sessionId) {
+      try {
+        await window.supabaseClient.rpc("workspace_session_heartbeat", {
+          p_session_id: sessionId,
+          p_current_page: page,
+          p_email: email,
+          p_full_name: fullName,
+          p_role: role,
+        });
+      } catch (_) {
+        /* fallback insert handled by ensure */
+      }
+    }
+
     await window.supabaseClient.from("workspace_user_presence").upsert(
       {
         org_id: window.gilbertoCurrentOrg.id,
         user_id: user.id,
-        email: user.email || "",
-        full_name: window.gilbertoCurrentUserName || user.user_metadata?.full_name || user.email || "Current User",
-        current_page: gilbertoCurrentPageFile() || "dashboard.html",
+        email,
+        full_name: fullName,
+        current_page: page,
         last_seen_at: new Date().toISOString(),
       },
       { onConflict: "org_id,user_id" }
@@ -604,12 +748,44 @@ function gilbertoStartWorkspacePresence() {
   if (window.__gilbertoPresenceStarted) return;
   window.__gilbertoPresenceStarted = true;
   void gilbertoWriteWorkspacePresence();
-  window.__gilbertoPresenceTimer = window.setInterval(gilbertoWriteWorkspacePresence, 45000);
+  window.__gilbertoPresenceTimer = window.setInterval(gilbertoWriteWorkspacePresence, 30000);
   window.addEventListener("focus", function () { void gilbertoWriteWorkspacePresence(); });
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden) void gilbertoWriteWorkspacePresence();
   });
 }
+
+window.gilbertoWriteWorkspacePresence = gilbertoWriteWorkspacePresence;
+window.gilbertoEnsureWorkspaceSession = gilbertoEnsureWorkspaceSession;
+window.gilbertoEndWorkspaceSession = gilbertoEndWorkspaceSession;
+
+async function gilbertoFetchWorkspaceOnlineSessions(orgId) {
+  if (!window.supabaseClient || !orgId) return [];
+  try {
+    const rpc = await window.supabaseClient.rpc("admin_list_workspace_online_users", { p_org_id: orgId });
+    if (!rpc.error && Array.isArray(rpc.data)) return rpc.data;
+  } catch (_) {
+    /* fall back to direct query */
+  }
+  try {
+    const since = new Date(Date.now() - 5 * 60000).toISOString();
+    const q = await window.supabaseClient
+      .from("workspace_user_sessions")
+      .select(
+        "id,user_id,email,full_name,role,login_time,last_activity_at,status,device,browser,current_page"
+      )
+      .eq("org_id", orgId)
+      .is("logout_time", null)
+      .gte("last_activity_at", since)
+      .order("last_activity_at", { ascending: false });
+    if (!q.error && Array.isArray(q.data)) return q.data;
+  } catch (_) {
+    /* empty */
+  }
+  return [];
+}
+
+window.gilbertoFetchWorkspaceOnlineSessions = gilbertoFetchWorkspaceOnlineSessions;
 
 // Sidebar collapse — injected on every page so we don't have to touch each html file
 document.addEventListener('DOMContentLoaded', function () {

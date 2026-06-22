@@ -93,12 +93,14 @@ begin
     m.role,
     coalesce(
       nullif(trim(au.email::text), ''),
+      nullif(trim(sess.email), ''),
       nullif(trim(pres.email), ''),
       nullif(trim(onb.contact_email), ''),
       nullif(trim(p.email), ''),
       ''
     ) as email,
     coalesce(
+      nullif(trim(sess.full_name), ''),
       nullif(trim(pres.full_name), ''),
       nullif(trim(p.full_name), ''),
       nullif(trim(onb.contact_name), ''),
@@ -111,6 +113,15 @@ begin
     onb.contact_last_name
   from public.organization_members m
   left join public.profiles p on p.id = m.user_id
+  left join lateral (
+    select s.email, s.full_name
+    from public.workspace_user_sessions s
+    where s.org_id = m.organization_id
+      and s.user_id = m.user_id
+      and coalesce(nullif(trim(s.email), ''), nullif(trim(s.full_name), '')) is not null
+    order by s.last_activity_at desc nulls last
+    limit 1
+  ) sess on true
   left join public.workspace_user_presence pres
     on pres.org_id = m.organization_id and pres.user_id = m.user_id
   left join public.user_onboarding onb on onb.user_id = m.user_id

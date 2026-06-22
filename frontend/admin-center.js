@@ -501,6 +501,46 @@
     } catch (_) {}
 
     try {
+      var sessRpc = await window.supabaseClient.rpc("admin_list_workspace_identities", { p_org_id: orgId });
+      if (!sessRpc.error && Array.isArray(sessRpc.data)) {
+        sessRpc.data.forEach(function (s) {
+          if (!s || !s.user_id) return;
+          var prev = map[s.user_id] || {};
+          map[s.user_id] = {
+            email: this.pickBestEmail(s.email, prev.email),
+            full_name: this.pickBestName(s.full_name, prev.full_name, s.email),
+            current_page: s.current_page || prev.current_page || "",
+            last_seen_at: s.last_activity_at || prev.last_seen_at || "",
+            role: s.role || prev.role || "",
+          };
+        }, this);
+      }
+    } catch (_) {}
+
+    try {
+      var sessQ = await window.supabaseClient
+        .from("workspace_user_sessions")
+        .select("user_id, email, full_name, role, current_page, last_activity_at")
+        .eq("org_id", orgId)
+        .is("logout_time", null)
+        .order("last_activity_at", { ascending: false });
+      if (!sessQ.error && sessQ.data) {
+        sessQ.data.forEach(function (s) {
+          if (!s || !s.user_id) return;
+          var prev = map[s.user_id] || {};
+          if (prev.email && prev.full_name && prev.last_seen_at) return;
+          map[s.user_id] = {
+            email: this.pickBestEmail(s.email, prev.email),
+            full_name: this.pickBestName(s.full_name, prev.full_name, s.email),
+            current_page: s.current_page || prev.current_page || "",
+            last_seen_at: s.last_activity_at || prev.last_seen_at || "",
+            role: s.role || prev.role || "",
+          };
+        }, this);
+      }
+    } catch (_) {}
+
+    try {
       var presQ = await window.supabaseClient
         .from("workspace_user_presence")
         .select("user_id, email, full_name, current_page, last_seen_at")
@@ -809,12 +849,26 @@
         var row = identityMap[userId];
         return {
           user_id: userId,
-          role: "member",
+          role: row.role || "member",
           email: row.email || "",
           full_name: row.full_name || "",
         };
       });
     }
+
+    Object.keys(identityMap).forEach(function (userId) {
+      if (!userId) return;
+      var row = identityMap[userId];
+      if (!row || (!row.email && !row.full_name)) return;
+      var exists = remoteMembers.some(function (m) { return m && m.user_id === userId; });
+      if (exists) return;
+      remoteMembers.push({
+        user_id: userId,
+        role: row.role || "member",
+        email: row.email || "",
+        full_name: row.full_name || "",
+      });
+    });
 
     var self = this;
     var changed = false;
@@ -2079,21 +2133,50 @@
     }
     var orgId = window.gilbertoCurrentOrg?.id;
     if (!window.supabaseClient || !orgId) return;
+    this.presenceRows = [];
     try {
-      var since = new Date(Date.now() - 10 * 60000).toISOString();
-      var q = await window.supabaseClient.from("workspace_user_presence")
-        .select("user_id,email,full_name,current_page,last_seen_at")
-        .eq("org_id", orgId).gte("last_seen_at", since).order("last_seen_at", { ascending: false });
-      if (!q.error) this.presenceRows = q.data || [];
+      if (typeof window.gilbertoFetchWorkspaceOnlineSessions === "function") {
+        var sessions = await window.gilbertoFetchWorkspaceOnlineSessions(orgId);
+        if (sessions.length) {
+          this.presenceRows = sessions.map(function (s) {
+            return {
+              user_id: s.user_id,
+              email: s.email,
+              full_name: s.full_name,
+              current_page: s.current_page,
+              last_seen_at: s.last_activity_at || s.last_seen_at,
+              status: s.status,
+              device: s.device,
+              browser: s.browser,
+              session_id: s.id,
+            };
+          });
+        }
+      }
     } catch (_) {}
+    if (!this.presenceRows.length) {
+      try {
+        var since = new Date(Date.now() - 10 * 60000).toISOString();
+        var q = await window.supabaseClient.from("workspace_user_presence")
+          .select("user_id,email,full_name,current_page,last_seen_at")
+          .eq("org_id", orgId).gte("last_seen_at", since).order("last_seen_at", { ascending: false });
+        if (!q.error) this.presenceRows = q.data || [];
+      } catch (_) {}
+    }
     this.renderOnlineModalTable();
     this.renderIdentity();
   };
 
   AdminCenter.prototype.presenceStatus = function (row) {
-    var mins = minutesSince(row.last_seen_at);
+    if (row && row.status) {
+      var st = String(row.status).toLowerCase();
+      if (st === "online") return { key: "online", label: "Online" };
+      if (st === "idle") return { key: "idle", label: "Idle" };
+      if (st === "offline") return { key: "offline", label: "Offline" };
+    }
+    var mins = minutesSince(row.last_seen_at || row.last_activity_at);
     if (mins <= 2) return { key: "online", label: "Online" };
-    if (mins <= 10) return { key: "idle", label: "Idle" };
+    if (mins <= 5) return { key: "idle", label: "Idle" };
     return { key: "offline", label: "Offline" };
   };
 
