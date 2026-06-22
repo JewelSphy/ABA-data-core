@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Administration - Gilberto ABA Care CRM</title>
   <link rel="stylesheet" href="dashboard.css?v=20260622a" />
+  <style>
+    body.page-admin:not(.admin-role-ready) .main-area {
+      visibility: hidden;
+    }
+  </style>
 </head>
 <body class="page-admin">
 <div class="app-layout">
@@ -326,12 +331,8 @@
     const role = String(window.gilbertoCurrentOrg?.role || '').toLowerCase();
     return role === 'owner' || role === 'admin';
   }
-  function renderAccessDenied() {
-    const main = document.querySelector('.main-area');
-    if (!main) return;
-    main.innerHTML =
-      '<header class="topbar"><div><h1>Administration</h1><p>Owner or admin access is required.</p></div><div class="top-actions"><div class="user-pill">—</div></div></header>' +
-      '<section class="admin-section"><div class="admin-section-head"><div><h2>Administration Locked</h2><p>Only the company owner and users granted an admin role can view Administration. Ask the owner to invite you or update your role.</p></div><button class="small-btn" type="button" onclick="goToPage(\'dashboard.html\')">Back to Dashboard</button></div></section>';
+  function redirectUnauthorizedAdmin() {
+    window.location.replace('dashboard.html');
   }
   function renderAuditLogs() {
     const body = document.getElementById('auditLogsBody');
@@ -391,9 +392,10 @@
   document.addEventListener('DOMContentLoaded', async function () {
     if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
     if (!isAdminRole()) {
-      renderAccessDenied();
+      redirectUnauthorizedAdmin();
       return;
     }
+    document.body.classList.add('admin-role-ready');
     renderAuditLogs();
     renderOrganizationSettings();
     void renderAdminReports();
