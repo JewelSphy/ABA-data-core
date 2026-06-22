@@ -537,6 +537,8 @@ function gilbertoInjectOnlineUsersNav() {
 function gilbertoInjectAdministrationNav() {
   const sidebar = document.querySelector(".sidebar");
   if (!sidebar || sidebar.querySelector('[data-gilberto-admin-nav="1"]')) return;
+  const role = String(window.gilbertoCurrentOrg?.role || "").toLowerCase();
+  if (role !== "owner" && role !== "admin") return;
 
   const title = document.createElement("p");
   title.className = "section-title";

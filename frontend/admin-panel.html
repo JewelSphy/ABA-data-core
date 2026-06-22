@@ -63,13 +63,13 @@
     <section class="admin-section" id="users">
       <div class="admin-section-head">
         <div><h2>Users</h2><p>Invite, disable, reset, reactivate, and terminate users once admin user records are connected.</p></div>
-        <button class="add-btn" type="button" disabled>Invite User</button>
+        <button class="add-btn" type="button" onclick="adminNotice('Owners can invite users from the dashboard Invite your team panel. A dedicated user-invite workflow is not connected here yet.')">Invite User</button>
       </div>
       <div class="admin-toolbar">
-        <input class="search-input" type="search" placeholder="Search users by name, email, role, site, or status" disabled />
-        <button class="small-btn" type="button" disabled>Pending Invites</button>
-        <button class="small-btn" type="button" disabled>Locked Accounts</button>
-        <button class="small-btn" type="button" disabled>Dormant Accounts</button>
+        <input class="search-input" type="search" placeholder="Search users by name, email, role, site, or status" oninput="adminTableSearch(this, 'adminUsersBody')" />
+        <button class="small-btn" type="button" onclick="adminNotice('Pending invite records are not connected yet. This will filter real invite records once user administration storage is available.')">Pending Invites</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Locked account records are not connected yet. This will filter real identity lockout records once authentication administration is available.')">Locked Accounts</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Dormant account records are not connected yet. This will use real last-login data once user administration storage is available.')">Dormant Accounts</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -84,7 +84,7 @@
     <section class="admin-section" id="roles-permissions">
       <div class="admin-section-head">
         <div><h2>Roles &amp; Permissions</h2><p>Show reusable roles, inherited roles, and granular permission grants only after role configuration is connected.</p></div>
-        <button class="small-btn" type="button" disabled>Create Role</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Role creation is not connected yet. Roles must save to a real role/permission table and create an audit event before this can modify access.')">Create Role</button>
       </div>
       <div class="admin-role-grid" id="adminRolesGrid">
         <div class="admin-role-card"><strong>No roles configured</strong><span>Connect role records before displaying access claims.</span></div>
@@ -107,7 +107,7 @@
     <section class="admin-section" id="access-scopes">
       <div class="admin-section-head">
         <div><h2>Access Scopes</h2><p>Scope access by client, site, team, provider relationship, caregiver relationship, and note/session ownership.</p></div>
-        <button class="small-btn" type="button" disabled>Preview Effective Access</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Effective access preview is not connected yet. It needs real user, role, client, site, and scope records before it can calculate access.')">Preview Effective Access</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -197,7 +197,7 @@
     <section class="admin-section" id="audit-center">
       <div class="admin-section-head">
         <div><h2>Audit Center</h2><p>Search, filter, export, and investigate real app events captured for the current workspace.</p></div>
-        <button class="small-btn" type="button" disabled>Export Audit Report</button>
+        <button class="small-btn" type="button" onclick="adminExportAuditReport()">Export Audit Report</button>
       </div>
       <div class="admin-mini-grid">
         <div><span>Failed logins</span><strong id="auditFailedLogins">0 recorded</strong></div>
@@ -206,10 +206,10 @@
         <div><span>Exports</span><strong id="auditExports">0 recorded</strong></div>
       </div>
       <div class="admin-toolbar">
-        <input class="search-input" type="search" placeholder="Search audit events by actor, client, object, or action" disabled />
-        <button class="small-btn" type="button" disabled>Date Filter</button>
-        <button class="small-btn" type="button" disabled>Actor Filter</button>
-        <button class="small-btn" type="button" disabled>Action Filter</button>
+        <input class="search-input" type="search" placeholder="Search audit events by actor, client, object, or action" oninput="adminTableSearch(this, 'auditLogsBody')" />
+        <button class="small-btn" type="button" onclick="adminNotice('Date filtering will apply to real audit records once the audit center has a connected date-range picker.')">Date Filter</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Actor filtering will apply to real audit records once the audit center has connected actor records.')">Actor Filter</button>
+        <button class="small-btn" type="button" onclick="adminNotice('Action filtering will apply to real audit records once the audit center has connected action categories.')">Action Filter</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
@@ -257,6 +257,55 @@
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
   }
+  function adminNotice(message) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;max-width:360px;background:#2d4a3e;color:white;padding:12px 16px;border-radius:10px;font-size:13px;line-height:1.45;z-index:9999;box-shadow:0 12px 28px rgba(20,32,27,.22);';
+    t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 4200);
+  }
+  function adminTableSearch(input, tbodyId) {
+    const body = document.getElementById(tbodyId);
+    if (!body) return;
+    const q = String(input && input.value ? input.value : '').toLowerCase();
+    Array.from(body.querySelectorAll('tr')).forEach(function (row) {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  function adminExportAuditReport() {
+    const rows = loadAdminRows('gilberto_audit_events');
+    if (!rows.length) {
+      adminNotice('No real audit events are recorded yet, so there is no audit report to export.');
+      return;
+    }
+    const header = ['createdAt', 'user', 'action', 'area', 'risk'];
+    const csv = [header.join(',')].concat(rows.map(function (r) {
+      return header.map(function (key) {
+        return '"' + String(r[key] == null ? '' : r[key]).replaceAll('"', '""') + '"';
+      }).join(',');
+    })).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gilberto-audit-events.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    adminNotice('Audit report exported from recorded audit events.');
+  }
+  function adminShowAuditDetails(index) {
+    const rows = loadAdminRows('gilberto_audit_events').sort(function (a, b) {
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+    const row = rows[index];
+    if (!row) {
+      adminNotice('Audit event details are not available for this row.');
+      return;
+    }
+    adminNotice('Audit event: ' + (row.action || 'Recorded event') + ' by ' + (row.user || 'System') + ' in ' + (row.area || 'System') + '.');
+  }
   function adminScopedKey(name) {
     return typeof gilbertoScopedStorageKey === 'function' ? gilbertoScopedStorageKey(name) : name + ':no-org';
   }
@@ -273,15 +322,26 @@
     const cls = value.toLowerCase() === 'high' ? 'badge-expiring' : value.toLowerCase() === 'medium' ? 'badge-pending' : 'badge-active';
     return '<span class="badge ' + cls + '">' + adminEsc(value) + '</span>';
   }
+  function isAdminRole() {
+    const role = String(window.gilbertoCurrentOrg?.role || '').toLowerCase();
+    return role === 'owner' || role === 'admin';
+  }
+  function renderAccessDenied() {
+    const main = document.querySelector('.main-area');
+    if (!main) return;
+    main.innerHTML =
+      '<header class="topbar"><div><h1>Administration</h1><p>Owner or admin access is required.</p></div><div class="top-actions"><div class="user-pill">—</div></div></header>' +
+      '<section class="admin-section"><div class="admin-section-head"><div><h2>Administration Locked</h2><p>Only the company owner and users granted an admin role can view Administration. Ask the owner to invite you or update your role.</p></div><button class="small-btn" type="button" onclick="goToPage(\'dashboard.html\')">Back to Dashboard</button></div></section>';
+  }
   function renderAuditLogs() {
     const body = document.getElementById('auditLogsBody');
     const rows = loadAdminRows('gilberto_audit_events').sort(function (a, b) {
       return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
     });
     if (!rows.length) return;
-    body.innerHTML = rows.map(function (r) {
+    body.innerHTML = rows.map(function (r, index) {
       const date = r.createdAt ? new Date(r.createdAt).toLocaleString() : (r.date || '—');
-      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td><td><button class="tbl-btn" type="button" disabled>Details</button></td></tr>';
+      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td><td><button class="tbl-btn" type="button" onclick="adminShowAuditDetails(' + index + ')">Details</button></td></tr>';
     }).join('');
     const permissionChanges = rows.filter(function (r) { return /permission|role|scope/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
     const clinicalEdits = rows.filter(function (r) { return /session|note|clinical|data collection|behavior data/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
@@ -328,7 +388,12 @@
     document.getElementById('reportActiveClients').textContent = activeClients == null ? '—' : activeClients;
     renderOrganizationSettings();
   }
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+    if (!isAdminRole()) {
+      renderAccessDenied();
+      return;
+    }
     renderAuditLogs();
     renderOrganizationSettings();
     void renderAdminReports();
