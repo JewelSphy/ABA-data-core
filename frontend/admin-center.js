@@ -827,6 +827,7 @@
   };
 
   AdminCenter.prototype.syncUsersFromSupabase = async function () {
+    var self = this;
     var orgId = window.gilbertoCurrentOrg?.id;
     if (!window.supabaseClient || !orgId) return;
 
@@ -885,7 +886,6 @@
       });
     });
 
-    var self = this;
     var changed = false;
     remoteMembers.forEach(function (m) {
       if (!m || !m.user_id) return;
@@ -1042,38 +1042,60 @@
   };
 
   AdminCenter.prototype.init = async function () {
-    if (typeof window.ensureGilbertoOrgReady === "function") {
-      await window.ensureGilbertoOrgReady();
-    } else if (typeof window.loadGilbertoOrganization === "function") {
-      await window.loadGilbertoOrganization();
-    }
-    if (typeof window.resolveCurrentUserIdentity === "function") {
-      await window.resolveCurrentUserIdentity();
-    }
+    var self = this;
+    try {
+      if (typeof window.ensureGilbertoOrgReady === "function") {
+        await window.ensureGilbertoOrgReady();
+      } else if (typeof window.loadGilbertoOrganization === "function") {
+        await window.loadGilbertoOrganization();
+      }
+      if (typeof window.gilbertoRepairOrgAccess === "function") {
+        await window.gilbertoRepairOrgAccess(window.gilbertoCurrentOrg?.id);
+      }
+      if (typeof window.resolveCurrentUserIdentity === "function") {
+        await window.resolveCurrentUserIdentity();
+      }
 
-    this.loadAllData();
-    this.purgeLegacyPlaceholderUsers();
-    this.sanitizeStoredUsers();
-    this.seedDefaultsIfEmpty();
-    if (typeof window.gilbertoWriteWorkspacePresence === "function") {
-      await window.gilbertoWriteWorkspacePresence();
+      this.loadAllData();
+      this.purgeLegacyPlaceholderUsers();
+      this.sanitizeStoredUsers();
+      this.seedDefaultsIfEmpty();
+      this.initModals();
+      this.initNavigation();
+      this.wireSectionActions();
+      this.renderAll();
+      this.applyPermissionGating();
+      this.startUsersOnlineRefresh();
+
+      var hash = window.location.hash.replace("#", "");
+      if (hash) this.navigateToSection(hash);
+
+      void this.bootstrapAdminData();
+    } catch (err) {
+      console.error("GilbertoAdmin.init error:", err);
+      try {
+        this.loadAllData();
+        this.seedDefaultsIfEmpty();
+        this.renderAll();
+      } catch (_) {}
+      this.toastError("Admin loaded with limited data. Refresh if sections look empty.");
     }
-    await this.syncUsersFromSupabase();
-    await this.syncUsersFromSupabase();
-    await this.seedCurrentUserAsOwner();
-    await this.loadProviders();
-    await this.refreshPresence();
-    this.recordSessionLoginAudit();
+  };
 
-    this.initModals();
-    this.initNavigation();
-    this.wireSectionActions();
-    this.renderAll();
-    this.applyPermissionGating();
-    this.startUsersOnlineRefresh();
-
-    var hash = window.location.hash.replace("#", "");
-    if (hash) this.navigateToSection(hash);
+  AdminCenter.prototype.bootstrapAdminData = async function () {
+    try {
+      if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+        await window.gilbertoWriteWorkspacePresence();
+      }
+      await this.syncUsersFromSupabase();
+      await this.seedCurrentUserAsOwner();
+      await this.loadProviders();
+      await this.refreshPresence();
+      this.recordSessionLoginAudit();
+      this.renderAll();
+    } catch (err) {
+      console.warn("GilbertoAdmin.bootstrapAdminData:", err);
+    }
   };
 
   AdminCenter.prototype.recordSessionLoginAudit = function () {
@@ -1761,7 +1783,6 @@
       }
     } catch (_) {}
     this._sessions = sessions;
-    await this.refreshPresence();
     var today = todayIso();
     var start = new Date();
     start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
@@ -1779,7 +1800,9 @@
     var weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
     var adminActions = this.auditEvents.filter(function (r) { return String(r.createdAt || "") >= weekAgo; }).length;
     var expiring = this.providers.filter(function (p) { return p.license_expires && daysSince(p.license_expires) <= 60; }).length;
-    var online = this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length;
+    var online = this.presenceRows.filter(function (p) {
+      return minutesSince(p.last_activity_at || p.last_seen_at) <= 2;
+    }).length;
     set("reportTotalUsers", this.users.length);
     set("reportActiveUsers", activeUsers);
     set("reportOnlineUsers", online);

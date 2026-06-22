@@ -279,7 +279,7 @@
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260623a"></script>
-<script src="admin-center.js?v=20260623a"></script>
+<script src="admin-center.js?v=20260623b"></script>
 <script>
   async function ensureAdminAccessReady() {
     if (typeof enforceAuthGuard === 'function') await enforceAuthGuard();
@@ -292,14 +292,22 @@
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
-    await ensureAdminAccessReady();
-    if (typeof window.gilbertoIsAdminRole === 'function' && !window.gilbertoIsAdminRole()) {
-      window.location.replace('dashboard.html');
-      return;
-    }
-    document.body.classList.add('admin-role-ready');
-    if (window.GilbertoAdmin && typeof window.GilbertoAdmin.init === 'function') {
-      await window.GilbertoAdmin.init();
+    try {
+      await ensureAdminAccessReady();
+      if (typeof window.gilbertoIsAdminRole === 'function' && !window.gilbertoIsAdminRole()) {
+        window.location.replace('dashboard.html');
+        return;
+      }
+      document.body.classList.add('admin-role-ready');
+      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.init === 'function') {
+        await window.GilbertoAdmin.init();
+      }
+    } catch (err) {
+      console.error('Admin panel boot error:', err);
+      document.body.classList.add('admin-role-ready');
+      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.renderAll === 'function') {
+        window.GilbertoAdmin.renderAll();
+      }
     }
   });
 </script>
