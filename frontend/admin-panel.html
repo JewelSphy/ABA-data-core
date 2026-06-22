@@ -22,7 +22,7 @@
     <p class="section-title">People</p>
     <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
     <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
-    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers / Lady Catelyns</button>
+    <button class="nav-item" onclick="goToPage('caregivers.html')">Caregivers</button>
     <button class="nav-item" onclick="goToPage('providers.html')">Providers</button>
     <button class="nav-item" onclick="goToPage('authorizations.html')">Authorizations</button>
     <button class="nav-item" onclick="goToPage('documents.html')">Documents</button>
@@ -33,7 +33,7 @@
     <header class="topbar">
       <div>
         <h1>Administration</h1>
-        <p>View administration records that come from real app data. Unconnected areas stay blank or marked not configured.</p>
+        <p>Security, access, audit, provider, billing, and reporting controls. Values appear only when backed by real workspace data.</p>
       </div>
       <div class="top-actions">
         <button class="small-btn" onclick="goToPage('online-users.html')">Online Users</button>
@@ -41,36 +41,41 @@
       </div>
     </header>
 
-    <section class="admin-overview-grid">
-      <a class="admin-overview-card" href="#user-management"><strong>User Management</strong><span>Create, invite, disable, and reset users</span></a>
-      <a class="admin-overview-card" href="#roles-permissions"><strong>Roles & Permissions</strong><span>Control clinical and business access</span></a>
-      <a class="admin-overview-card" href="#audit-logs"><strong>Security & Audit Logs</strong><span>Track recorded app activity</span></a>
-      <a class="admin-overview-card" href="#client-access-controls"><strong>Client Access</strong><span>Assign client visibility by provider</span></a>
+    <section class="admin-overview-grid" id="administration-dashboard">
+      <a class="admin-overview-card" href="#users"><strong>Users</strong><span>Identity lifecycle and workforce access</span></a>
+      <a class="admin-overview-card" href="#roles-permissions"><strong>Roles &amp; Permissions</strong><span>Reusable role and permission records</span></a>
+      <a class="admin-overview-card" href="#access-scopes"><strong>Access Scopes</strong><span>Client, site, team, and relationship scoping</span></a>
+      <a class="admin-overview-card" href="#identity-authentication"><strong>Identity &amp; Authentication</strong><span>MFA, SSO, sessions, and reset policy</span></a>
+      <a class="admin-overview-card" href="#providers-licenses"><strong>Providers &amp; Licenses</strong><span>Provider identifiers and credential tracking</span></a>
+      <a class="admin-overview-card" href="#organization-settings"><strong>Organization Settings</strong><span>Workspace profile and governed defaults</span></a>
+      <a class="admin-overview-card" href="#billing-configuration"><strong>Billing Configuration</strong><span>Service catalog, payer, and claim rules</span></a>
+      <a class="admin-overview-card" href="#audit-center"><strong>Audit Center</strong><span>Captured app events and review queues</span></a>
+      <a class="admin-overview-card" href="#reports"><strong>Reports</strong><span>Scoped administration and operations metrics</span></a>
     </section>
 
     <section class="admin-compliance-strip">
       <div><span>Security posture</span><strong>Not configured</strong></div>
-      <div><span>Open admin tasks</span><strong id="adminOpenTasks">—</strong></div>
+      <div><span>MFA coverage</span><strong>Not connected</strong></div>
       <div><span>Permission changes</span><strong id="adminPermissionChanges">0 recorded</strong></div>
-      <div><span>Provider credentials</span><strong id="adminCredentialAlerts">—</strong></div>
+      <div><span>Provider credential alerts</span><strong id="adminCredentialAlerts">Not connected</strong></div>
     </section>
 
-    <section class="admin-section" id="user-management">
+    <section class="admin-section" id="users">
       <div class="admin-section-head">
-        <div><h2>User Management</h2><p>User records appear here only after authentication/admin user syncing is connected.</p></div>
-        <button class="add-btn" type="button" disabled>Invite New Employee</button>
+        <div><h2>Users</h2><p>Invite, disable, reset, reactivate, and terminate users once admin user records are connected.</p></div>
+        <button class="add-btn" type="button" disabled>Invite User</button>
       </div>
       <div class="admin-toolbar">
-        <input class="search-input" type="search" placeholder="Search users by name, email, or role" />
-        <button class="small-btn" type="button" disabled>Active Users</button>
+        <input class="search-input" type="search" placeholder="Search users by name, email, role, site, or status" disabled />
         <button class="small-btn" type="button" disabled>Pending Invites</button>
         <button class="small-btn" type="button" disabled>Locked Accounts</button>
+        <button class="small-btn" type="button" disabled>Dormant Accounts</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>MFA</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Roles</th><th>Sites</th><th>MFA</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
           <tbody id="adminUsersBody">
-            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No user management records are available yet. Real users will appear after authentication/admin user syncing is connected.</td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No user administration records connected yet.</td></tr>
           </tbody>
         </table>
       </div>
@@ -78,19 +83,20 @@
 
     <section class="admin-section" id="roles-permissions">
       <div class="admin-section-head">
-        <div><h2>Roles & Permissions</h2><p>Role permissions must come from real role configuration before they are displayed.</p></div>
+        <div><h2>Roles &amp; Permissions</h2><p>Show reusable roles, inherited roles, and granular permission grants only after role configuration is connected.</p></div>
+        <button class="small-btn" type="button" disabled>Create Role</button>
       </div>
       <div class="admin-role-grid" id="adminRolesGrid">
         <div class="admin-role-card"><strong>No roles configured</strong><span>Connect role records before displaying access claims.</span></div>
       </div>
       <div class="admin-chip-row">
         <span>Permission policy not connected</span>
-        <span>No static access claims shown</span>
-        <span>Audit changes when roles are connected</span>
+        <span>No static role matrix shown</span>
+        <span>Privilege changes should audit when connected</span>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Permission</th><th>Admin</th><th>Manager</th><th>Provider</th><th>Billing</th><th>Caregiver</th></tr></thead>
+          <thead><tr><th>Permission Domain</th><th>Action</th><th>Role</th><th>Scope Required</th><th>Exception</th><th>Audit Required</th></tr></thead>
           <tbody id="adminPermissionBody">
             <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No role permission records configured yet.</td></tr>
           </tbody>
@@ -98,21 +104,56 @@
       </div>
     </section>
 
-    <section class="admin-section" id="audit-logs">
+    <section class="admin-section" id="access-scopes">
       <div class="admin-section-head">
-        <div><h2>Security & Audit Logs</h2><p>Trail for real app events captured by the current workspace.</p></div>
-      </div>
-      <div class="admin-mini-grid">
-        <div><span>Failed logins</span><strong id="auditFailedLogins">0 recorded</strong></div>
-        <div><span>Clinical edits</span><strong id="auditClinicalEdits">0 recorded</strong></div>
-        <div><span>Permission changes</span><strong id="auditPermissionChanges">0 recorded</strong></div>
-        <div><span>Exports</span><strong id="auditExports">0 recorded</strong></div>
+        <div><h2>Access Scopes</h2><p>Scope access by client, site, team, provider relationship, caregiver relationship, and note/session ownership.</p></div>
+        <button class="small-btn" type="button" disabled>Preview Effective Access</button>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Date</th><th>User</th><th>Action</th><th>Area</th><th>Risk</th></tr></thead>
-          <tbody id="auditLogsBody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet. This table will only show real login, session, export, deletion, and permission-change events captured by the app.</td></tr>
+          <thead><tr><th>User</th><th>Scope Type</th><th>Scope Value</th><th>Start</th><th>End</th><th>Granted By</th><th>Actions</th></tr></thead>
+          <tbody id="accessScopesBody">
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No access scope records configured yet. Client visibility should be generated from real user-client, provider-client, site, and team scope records.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-access-flow">
+        <div><strong>Effective access preview</strong><span>Not connected</span></div>
+        <div><strong>Break-glass access</strong><span>Not configured</span></div>
+        <div><strong>Scope expiration</strong><span>Not configured</span></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="identity-authentication">
+      <div class="admin-section-head">
+        <div><h2>Identity &amp; Authentication</h2><p>MFA, SSO, password policy, idle timeout, session revocation, and reauthentication controls.</p></div>
+      </div>
+      <div class="admin-mini-grid">
+        <div><span>MFA policy</span><strong>Not configured</strong></div>
+        <div><span>SSO status</span><strong>Not connected</strong></div>
+        <div><span>Admin idle timeout</span><strong>Not configured</strong></div>
+        <div><span>Active sessions</span><strong>Not connected</strong></div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>User</th><th>Device</th><th>Started</th><th>Last Active</th><th>Assurance</th><th>Actions</th></tr></thead>
+          <tbody id="identitySessionsBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No identity/session administration feed connected yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section" id="providers-licenses">
+      <div class="admin-section-head">
+        <div><h2>Providers &amp; Licenses</h2><p>Provider legal identity, NPI, taxonomy, license, expiration, and payer enrollment metadata.</p></div>
+        <button class="small-btn" onclick="goToPage('providers.html')">Open Providers</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Provider</th><th>Type</th><th>NPI</th><th>Taxonomy</th><th>License</th><th>Expires</th><th>Status</th></tr></thead>
+          <tbody id="adminProvidersBody">
+            <tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No provider credential records loaded here yet. Open Providers to manage real provider data.</td></tr>
           </tbody>
         </table>
       </div>
@@ -120,88 +161,83 @@
 
     <section class="admin-section" id="organization-settings">
       <div class="admin-section-head">
-        <div><h2>Organization Settings</h2><p>Only saved organization settings should appear here.</p></div>
+        <div><h2>Organization Settings</h2><p>Only saved organization profile and policy settings should appear here.</p></div>
       </div>
       <div class="admin-settings-grid">
-        <label>Company Name<input id="adminOrgName" placeholder="Not configured" readonly /></label>
+        <label>Legal / Display Name<input id="adminOrgName" placeholder="Not configured" readonly /></label>
         <label>Address<input id="adminOrgAddress" placeholder="Not configured" readonly /></label>
-        <label>Time Zone<select id="adminOrgTimezone" disabled><option>Not configured</option></select></label>
-        <label>Default Session Length<select disabled><option>Not configured</option></select></label>
-        <label>Signature Style<select disabled><option>Not configured</option></select></label>
-        <label>Logo Upload<input type="file" /></label>
-        <label>Session Note Deadline<select disabled><option>Not configured</option></select></label>
-        <label>Require Supervisor Signature<select disabled><option>Not configured</option></select></label>
-        <label>Auto-lock Completed Notes<select disabled><option>Not configured</option></select></label>
+        <label>Timezone<select id="adminOrgTimezone" disabled><option>Not configured</option></select></label>
+        <label>Sites<select disabled><option>Not connected</option></select></label>
+        <label>Privacy Contact<input placeholder="Not configured" readonly /></label>
+        <label>Security Contact<input placeholder="Not configured" readonly /></label>
+        <label>Retention Policy<select disabled><option>Not configured</option></select></label>
+        <label>Clinical Defaults<select disabled><option>Not configured</option></select></label>
       </div>
     </section>
 
-    <section class="admin-section" id="provider-management">
+    <section class="admin-section" id="billing-configuration">
       <div class="admin-section-head">
-        <div><h2>Provider Management</h2><p>Track licenses, NPI, specialties, status, and expiration dates.</p></div>
-        <button class="small-btn" onclick="goToPage('providers.html')">Open Providers</button>
+        <div><h2>Billing Configuration</h2><p>Service catalog, CPT/HCPCS, POS, fee schedule, payer mappings, modifiers, and claim hold rules.</p></div>
       </div>
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr><th>Provider</th><th>License</th><th>NPI</th><th>Specialty</th><th>Expires</th></tr></thead>
-          <tbody id="adminProvidersBody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No provider credential records loaded here yet. Open Providers to manage real provider data.</td></tr>
+          <thead><tr><th>Service</th><th>CPT / HCPCS</th><th>POS</th><th>Fee</th><th>Authorization Required</th><th>Active</th></tr></thead>
+          <tbody id="billingConfigBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No billing configuration records connected yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-chip-row">
+        <span>Rates must come from real billing settings</span>
+        <span>Claim holds not connected</span>
+        <span>Payer mappings not connected</span>
+      </div>
+    </section>
+
+    <section class="admin-section" id="audit-center">
+      <div class="admin-section-head">
+        <div><h2>Audit Center</h2><p>Search, filter, export, and investigate real app events captured for the current workspace.</p></div>
+        <button class="small-btn" type="button" disabled>Export Audit Report</button>
+      </div>
+      <div class="admin-mini-grid">
+        <div><span>Failed logins</span><strong id="auditFailedLogins">0 recorded</strong></div>
+        <div><span>Clinical/data edits</span><strong id="auditClinicalEdits">0 recorded</strong></div>
+        <div><span>Permission changes</span><strong id="auditPermissionChanges">0 recorded</strong></div>
+        <div><span>Exports</span><strong id="auditExports">0 recorded</strong></div>
+      </div>
+      <div class="admin-toolbar">
+        <input class="search-input" type="search" placeholder="Search audit events by actor, client, object, or action" disabled />
+        <button class="small-btn" type="button" disabled>Date Filter</button>
+        <button class="small-btn" type="button" disabled>Actor Filter</button>
+        <button class="small-btn" type="button" disabled>Action Filter</button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Object / Area</th><th>Result / Risk</th><th>Details</th></tr></thead>
+          <tbody id="auditLogsBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet.</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <section class="admin-section" id="billing-settings">
+    <section class="admin-section" id="reports">
       <div class="admin-section-head">
-        <div><h2>Billing Settings</h2><p>CPT codes, insurance rates, billing rules, and service rates.</p></div>
-      </div>
-      <div class="admin-rate-grid">
-        <div><strong>97153</strong><span>Rate not configured</span></div>
-        <div><strong>97155</strong><span>Rate not configured</span></div>
-        <div><strong>97156</strong><span>Rate not configured</span></div>
-      </div>
-      <div class="admin-chip-row">
-        <span>Billing rules not configured</span>
-        <span>Claim holds not connected</span>
-        <span>Rates must come from real billing settings</span>
-      </div>
-    </section>
-
-    <section class="admin-section" id="system-reports">
-      <div class="admin-section-head">
-        <div><h2>System Reports</h2><p>Manager view of sessions, providers, missing notes, active clients, and revenue.</p></div>
+        <div><h2>Reports</h2><p>Scoped administration and operations metrics without bypassing role or client access.</p></div>
       </div>
       <div class="admin-report-grid">
         <div><span>Sessions Today</span><strong id="reportSessionsToday">—</strong></div>
         <div><span>Sessions This Week</span><strong id="reportSessionsWeek">—</strong></div>
-        <div><span>Missing Notes</span><strong id="reportMissingNotes">—</strong></div>
+        <div><span>Missing Notes</span><strong id="reportMissingNotes">Not connected</strong></div>
         <div><span>Active Clients</span><strong id="reportActiveClients">—</strong></div>
-        <div><span>Revenue This Month</span><strong>Not connected</strong></div>
-        <div><span>Pending Claims</span><strong>Not connected</strong></div>
+        <div><span>Unsigned Notes</span><strong>Not connected</strong></div>
+        <div><span>Claim Holds</span><strong>Not connected</strong></div>
       </div>
       <div class="admin-chip-row">
-        <span>Report exports not connected</span>
-        <span>Utilization requires session data</span>
-        <span>Provider productivity not connected</span>
-        <span>Compliance exceptions not connected</span>
-      </div>
-    </section>
-
-    <section class="admin-section" id="client-access-controls">
-      <div class="admin-section-head">
-        <div><h2>Client Access Controls</h2><p>Assign clients to providers and supervisors so staff only sees assigned clients.</p></div>
-      </div>
-      <div class="table-wrapper">
-        <table class="data-table">
-          <thead><tr><th>Client</th><th>Primary Provider</th><th>Secondary Provider</th><th>Supervisor</th><th>Actions</th></tr></thead>
-          <tbody id="clientAccessBody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;color:#6b8c7a;">No client access assignments configured yet. Real assignments should be generated from provider-client access records.</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="admin-access-flow">
-        <div><strong>Access records</strong><span>Waiting for real provider-client assignments.</span></div>
-        <div><strong>Access rule</strong><span>Not configured</span></div>
-        <div><strong>Review cadence</strong><span>Not configured</span></div>
+        <span>Security metrics not connected</span>
+        <span>Workforce metrics not connected</span>
+        <span>Clinical ops requires session/note data</span>
+        <span>Billing ops not connected</span>
       </div>
     </section>
   </main>
@@ -245,9 +281,9 @@
     if (!rows.length) return;
     body.innerHTML = rows.map(function (r) {
       const date = r.createdAt ? new Date(r.createdAt).toLocaleString() : (r.date || '—');
-      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td></tr>';
+      return '<tr><td>' + adminEsc(date) + '</td><td>' + adminEsc(r.user || 'System') + '</td><td>' + adminEsc(r.action || 'Recorded event') + '</td><td>' + adminEsc(r.area || 'System') + '</td><td>' + riskBadge(r.risk) + '</td><td><button class="tbl-btn" type="button" disabled>Details</button></td></tr>';
     }).join('');
-    const permissionChanges = rows.filter(function (r) { return /permission|role/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
+    const permissionChanges = rows.filter(function (r) { return /permission|role|scope/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
     const clinicalEdits = rows.filter(function (r) { return /session|note|clinical|data collection|behavior data/i.test(String(r.area || '') + ' ' + String(r.action || '')); }).length;
     const exports = rows.filter(function (r) { return /export/i.test(String(r.action || '')); }).length;
     const failedLogins = rows.filter(function (r) { return /failed login/i.test(String(r.action || '')); }).length;
@@ -289,7 +325,6 @@
     const weekStart = start.toISOString().slice(0, 10);
     document.getElementById('reportSessionsToday').textContent = sessions.filter(function (s) { return s.session_date === today; }).length;
     document.getElementById('reportSessionsWeek').textContent = sessions.filter(function (s) { return s.session_date >= weekStart; }).length;
-    document.getElementById('reportMissingNotes').textContent = 'Not connected';
     document.getElementById('reportActiveClients').textContent = activeClients == null ? '—' : activeClients;
     renderOrganizationSettings();
   }

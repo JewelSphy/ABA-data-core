@@ -19,8 +19,8 @@
     <button class="nav-item" onclick="goToPage('calendar.html')">Calendar</button>
     <button class="nav-item" onclick="goToPage('sessions.html')">Sessions</button>
     <button class="nav-item" onclick="goToPage('session-notes.html')">Session Notes</button>
-    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions <span>126</span></button>
-    <button class="nav-item active" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures <span>12</span></button>
+    <button class="nav-item" onclick="goToPage('revisions.html')">Revisions</button>
+    <button class="nav-item active" onclick="goToPage('caregiver-signatures.html')">Caregiver Signatures</button>
     <p class="section-title">People</p>
     <button class="nav-item" onclick="goToPage('clients.html')">Clients</button>
     <button class="nav-item" onclick="goToPage('staff.html')">Staff</button>
@@ -65,7 +65,7 @@
     </div>
 
     <div class="notice notice-warn">
-      Caregiver signatures are required within 48 hours of session completion for compliance.
+      Signature requests shown here come from real session and session-note records only.
     </div>
 
     <div class="table-wrapper">
@@ -195,6 +195,61 @@
     return [active.first_name || '', active.last_name || ''].join(' ').trim() || 'Unassigned caregiver';
   }
 
+  function responseLike(data, ok) {
+    return {
+      ok: ok !== false,
+      json: async function () { return data || []; },
+      text: async function () { return JSON.stringify(data || []); }
+    };
+  }
+
+  async function fetchSignatureSessions(orgId) {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled() && typeof jvmFetchSessionsTable === 'function') {
+      return jvmFetchSessionsTable(orgId, 300);
+    }
+    if (!window.supabaseClient) return responseLike([]);
+    var q = window.supabaseClient
+      .from('sessions')
+      .select('id,org_id,client_id,service_type,session_date,status,clients(first_name,last_name),staff(first_name,last_name)')
+      .order('session_date', { ascending: false })
+      .limit(300);
+    if (orgId) q = q.eq('org_id', orgId);
+    var res = await q;
+    if (res.error) throw res.error;
+    return responseLike(res.data || []);
+  }
+
+  async function fetchSignatureCaregivers(orgId) {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled() && typeof jvmFetchCaregivers === 'function') {
+      return jvmFetchCaregivers(orgId, 'active');
+    }
+    if (!window.supabaseClient) return responseLike([]);
+    var q = window.supabaseClient
+      .from('caregivers')
+      .select('id,client_id,first_name,last_name,relationship,status')
+      .order('last_name', { ascending: true });
+    if (orgId) q = q.eq('org_id', orgId);
+    q = q.eq('status', 'active');
+    var res = await q;
+    if (res.error) throw res.error;
+    return responseLike(res.data || []);
+  }
+
+  async function fetchSignatureNotes(orgId) {
+    if (typeof jvmSupabaseRelayEnabled === 'function' && jvmSupabaseRelayEnabled()) {
+      return jvmFetch('/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : ''), { method: 'GET' });
+    }
+    if (typeof gilbertoSupabaseFetchSessionNotes === 'function') {
+      return gilbertoSupabaseFetchSessionNotes({ orgId: orgId });
+    }
+    if (!window.supabaseClient) return responseLike([]);
+    var q = window.supabaseClient.from('session_notes').select('*');
+    if (orgId) q = q.eq('org_id', orgId);
+    var res = await q;
+    if (res.error) throw res.error;
+    return responseLike(res.data || []);
+  }
+
   function buildRows(sessions, notesBySessionId, caregiversByClientId) {
     return (sessions || []).map(function (s) {
       var note = notesBySessionId[s.id] || null;
@@ -248,9 +303,9 @@
     try {
       await loadGilbertoOrganization();
       var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id ? window.gilbertoCurrentOrg.id : '';
-      var sessionsResp = await jvmFetchSessionsTable(orgId, 300);
-      var caregiversResp = await jvmFetchCaregivers(orgId, 'active');
-      var notesResp = await jvmFetch('/api/session-notes' + (orgId ? ('?org_id=eq.' + encodeURIComponent(orgId)) : ''), { method: 'GET' });
+      var sessionsResp = await fetchSignatureSessions(orgId);
+      var caregiversResp = await fetchSignatureCaregivers(orgId);
+      var notesResp = await fetchSignatureNotes(orgId);
       if (!sessionsResp.ok) throw new Error(await readJvmErrorResponse(sessionsResp));
       if (!caregiversResp.ok) throw new Error(await readJvmErrorResponse(caregiversResp));
       if (!notesResp.ok) throw new Error(await readJvmErrorResponse(notesResp));

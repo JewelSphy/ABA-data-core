@@ -544,17 +544,19 @@ function gilbertoInjectAdministrationNav() {
   title.textContent = "Administration";
 
   const links = [
-    ["User Management", "admin-panel.html#user-management"],
+    ["Administration Dashboard", "admin-panel.html#administration-dashboard"],
+    ["Users", "admin-panel.html#users"],
     ["Roles & Permissions", "admin-panel.html#roles-permissions"],
-    ["Security & Audit Logs", "admin-panel.html#audit-logs"],
+    ["Access Scopes", "admin-panel.html#access-scopes"],
+    ["Identity & Authentication", "admin-panel.html#identity-authentication"],
+    ["Providers & Licenses", "admin-panel.html#providers-licenses"],
     ["Organization Settings", "admin-panel.html#organization-settings"],
-    ["Provider Management", "admin-panel.html#provider-management"],
-    ["Billing Settings", "admin-panel.html#billing-settings"],
-    ["System Reports", "admin-panel.html#system-reports"],
-    ["Client Access Controls", "admin-panel.html#client-access-controls"],
+    ["Billing Configuration", "admin-panel.html#billing-configuration"],
+    ["Audit Center", "admin-panel.html#audit-center"],
+    ["Reports", "admin-panel.html#reports"],
   ];
   const current = gilbertoCurrentPageFile();
-  const adminHash = window.location.hash || "#user-management";
+  const adminHash = window.location.hash || "#administration-dashboard";
   const nodes = [title].concat(links.map(function (item) {
     const btn = document.createElement("button");
     btn.className = "nav-item";
