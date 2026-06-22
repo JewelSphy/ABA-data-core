@@ -1,5 +1,6 @@
 -- Shared workspace session tracking for Online Users + Administration identity.
 -- Run after supabase-organizations.sql and supabase-workspace-presence.sql.
+-- If clients/dashboard break after migrations, run supabase-fix-broken-access.sql.
 -- Safe to run multiple times.
 
 create or replace function public.gilberto_is_org_admin(p_org_id uuid)

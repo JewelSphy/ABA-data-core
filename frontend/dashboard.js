@@ -1161,8 +1161,61 @@ async function loadGilbertoOrganization() {
   }
 }
 
+async function gilbertoRepairOrgAccess(orgId) {
+  if (!window.supabaseClient) return null;
+  let repairedOrgId = orgId || window.gilbertoCurrentOrg?.id || null;
+  try {
+    const rpc = await window.supabaseClient.rpc("ensure_my_org_membership");
+    if (!rpc.error && rpc.data) repairedOrgId = rpc.data;
+  } catch (_) {
+    /* optional RPC */
+  }
+  if (!repairedOrgId) return null;
+  try {
+    const { data: sess } = await window.supabaseClient.auth.getSession();
+    const uid = sess?.session?.user?.id;
+    if (!uid) return repairedOrgId;
+    const { data: mem, error: memErr } = await window.supabaseClient
+      .from("organization_members")
+      .select("organization_id, role")
+      .eq("organization_id", repairedOrgId)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (!memErr && mem) {
+      if (window.gilbertoCurrentOrg?.id === repairedOrgId && mem.role) {
+        window.gilbertoCurrentOrg.role = mem.role;
+      }
+      return repairedOrgId;
+    }
+    const { data: orgRow } = await window.supabaseClient
+      .from("organizations")
+      .select("id, created_by, company_display_name")
+      .eq("id", repairedOrgId)
+      .maybeSingle();
+    if (orgRow?.created_by === uid) {
+      await window.supabaseClient.from("organization_members").upsert(
+        { organization_id: repairedOrgId, user_id: uid, role: "owner" },
+        { onConflict: "organization_id,user_id" }
+      );
+      if (window.gilbertoCurrentOrg?.id === repairedOrgId) {
+        window.gilbertoCurrentOrg.role = "owner";
+      }
+    }
+  } catch (_) {
+    /* best effort */
+  }
+  return repairedOrgId;
+}
+
+window.gilbertoRepairOrgAccess = gilbertoRepairOrgAccess;
+window.repairOrgMembershipIfNeeded = gilbertoRepairOrgAccess;
+
 async function applyWorkspaceWithOrg() {
   await loadGilbertoOrganization();
+  await gilbertoRepairOrgAccess(window.gilbertoCurrentOrg?.id);
+  if (typeof loadGilbertoOrganization === "function") {
+    await loadGilbertoOrganization();
+  }
 
   // Preserve scroll position: async org injection can shift layout above,
   // which feels like a "refresh" when you're far down on chart-heavy pages.
@@ -1685,19 +1738,25 @@ async function loadDashboardStats() {
   // ── Fallback: direct Supabase JS client ──────────────────────────────────
   if (!window.supabaseClient) return;
   try {
+    await gilbertoRepairOrgAccess(orgId);
     const [clients, sessionsToday, pendingNotes, sessionsWeek] = await Promise.all([
       window.supabaseClient.from("clients").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "active"),
       window.supabaseClient.from("sessions").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("session_date", today),
       window.supabaseClient.from("session_notes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("status", "pending_review"),
       window.supabaseClient.from("sessions").select("id", { count: "exact", head: true }).eq("org_id", orgId).gte("session_date", weekStart).lte("session_date", weekEnd),
     ]);
-    set("statActiveClients",    clients.count);
-    set("statSessionsToday",    sessionsToday.count);
-    set("statPendingRevisions", pendingNotes.count);
-    set("statSessionsWeek",     sessionsWeek.count);
+    if (clients.error) throw clients.error;
+    set("statActiveClients",    clients.count ?? 0);
+    set("statSessionsToday",    sessionsToday.count ?? 0);
+    set("statPendingRevisions", pendingNotes.count ?? 0);
+    set("statSessionsWeek",     sessionsWeek.count ?? 0);
     syncDashboardSummaryFromStats();
   } catch (e) {
     console.warn("loadDashboardStats fallback error:", e);
+    set("statActiveClients", "—");
+    set("statSessionsToday", "—");
+    set("statPendingRevisions", "—");
+    set("statSessionsWeek", "—");
   }
 }
 
