@@ -228,16 +228,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
-<script src="dashboard.js?v=20260622b"></script>
+<script src="dashboard.js?v=20260623c"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script>
 // =============================================================================
 // calendar.html — inline controller
-// Live session data via loadCalendarSessions() (dashboard.js?v=20260622b → Supabase)
-// Write operations routed through Java bridge (jvmSupabaseBridge.js)
-// =============================================================================
-
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+// Live session data via loadCalendarSessions() (dashboard.js?v=20260623c'January','February','March','April','May','June','July','August','September','October','November','December'];
 const DNAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 // Live session cache keyed by YYYY-MM-DD → array of session objects

@@ -720,6 +720,23 @@
     return null;
   };
 
+  AdminCenter.prototype.verifyMemberWorkspaceRole = async function (user) {
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (!orgId || !window.supabaseClient || !user) return null;
+    await this.resolveWorkspaceUserId(user);
+    if (!user.userId) return null;
+    try {
+      var rpc = await window.supabaseClient.rpc("admin_list_org_members", { p_org_id: orgId });
+      if (!rpc.error && Array.isArray(rpc.data)) {
+        var hit = rpc.data.find(function (m) {
+          return m && m.user_id === user.userId;
+        });
+        if (hit && hit.role) return String(hit.role).toLowerCase();
+      }
+    } catch (_) {}
+    return null;
+  };
+
   AdminCenter.prototype.syncUserOrgMembershipRole = async function (user, roleId) {
     if (!user || !window.supabaseClient) {
       return { ok: false, reason: "Sign-in required to update workspace access." };
@@ -2084,8 +2101,18 @@
           syncMsg += " Run security/supabase-fix-broken-access.sql in Supabase SQL Editor, then save again.";
         }
         this.toastError("Workspace access was not updated: " + syncMsg);
-      } else if (syncResult && syncResult.ok && this.roleGrantsAdminPanelAccess(roleId)) {
-        this.toastSuccess("User saved. They may need to refresh the page to see Administration.");
+      } else if (syncResult && syncResult.ok) {
+        var verifiedRole = await this.verifyMemberWorkspaceRole(existing);
+        var expectedRole = this.mapRoleIdToOrgMembership(roleId);
+        if (verifiedRole && verifiedRole !== expectedRole) {
+          this.toastError("User saved, but workspace access is still " + verifiedRole + " (expected " + expectedRole + ").");
+        } else if (this.roleGrantsAdminPanelAccess(roleId)) {
+          this.toastSuccess("Admin access applied in workspace. They should see Administration within a minute (or after refresh).");
+        } else {
+          this.toastSuccess("User saved. Workspace access: " + (verifiedRole || expectedRole) + ".");
+        }
+      } else if (this.roleGrantsAdminPanelAccess(roleId)) {
+        this.toastError("User saved locally only. They must join this workspace before Admin access can apply.");
       } else {
         this.toastSuccess("User saved.");
       }

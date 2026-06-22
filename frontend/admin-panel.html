@@ -278,8 +278,8 @@
 <script src="supabaseConfig.js"></script>
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
-<script src="dashboard.js?v=20260623b"></script>
-<script src="admin-center.js?v=20260623e"></script>
+<script src="dashboard.js?v=20260623c"></script>
+<script src="admin-center.js?v=20260623f"></script>
 <script>
   function withBootTimeout(promise, ms) {
     if (!promise || typeof promise.then !== 'function') return Promise.resolve(promise);
@@ -318,6 +318,9 @@
         if (typeof window.GilbertoAdmin.init === 'function') {
           window.GilbertoAdmin.init();
         }
+      }
+      if (typeof window.gilbertoStartAdminNavRefresh === 'function') {
+        window.gilbertoStartAdminNavRefresh();
       }
     } catch (err) {
       console.error('Admin panel boot error:', err);

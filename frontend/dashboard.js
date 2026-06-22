@@ -357,6 +357,35 @@ function gilbertoIsOrgPickerPage() {
 async function gilbertoFetchOrgMembershipsForUser(client, uid) {
   if (!client || !uid) return [];
   try {
+    const { data: rpcRows, error: rpcErr } = await client.rpc("get_my_org_memberships");
+    if (!rpcErr && Array.isArray(rpcRows) && rpcRows.length) {
+      const ids = [...new Set(rpcRows.map((x) => x.organization_id).filter(Boolean))];
+      let omap = {};
+      if (ids.length) {
+        try {
+          const { data: orgRows } = await client
+            .from("organizations")
+            .select("id, company_display_name, company_legal_name, join_code")
+            .in("id", ids);
+          (orgRows || []).forEach(function (o) {
+            if (o && o.id) omap[o.id] = o;
+          });
+        } catch (_) {
+          /* org names optional */
+        }
+      }
+      return rpcRows.map(function (m) {
+        return {
+          organization_id: m.organization_id,
+          role: m.role,
+          organizations: omap[m.organization_id] || null,
+        };
+      });
+    }
+  } catch (_) {
+    /* fall back */
+  }
+  try {
     const { data, error } = await client
       .from("organization_members")
       .select(
@@ -860,6 +889,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!layout || !sidebar) {
       await applyWorkspaceWithOrg();
       gilbertoInjectAdministrationNav();
+      gilbertoStartAdminNavRefresh();
       gilbertoStartWorkspacePresence();
       gilbertoInjectSwitchCompanyMenuItem();
       gilbertoInjectTopBarWorkspaceNavIfNeeded();
@@ -898,6 +928,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     await applyWorkspaceWithOrg();
     gilbertoInjectAdministrationNav();
+    gilbertoStartAdminNavRefresh();
     gilbertoStartWorkspacePresence();
     gilbertoInjectSwitchCompanyMenuItem();
     gilbertoInjectTopBarWorkspaceNavIfNeeded();
@@ -936,14 +967,28 @@ async function gilbertoRefreshCurrentOrgRole() {
     const uid = sess?.session?.user?.id || window.gilbertoCurrentUserId || "";
     if (!uid) return null;
     const orgId = window.gilbertoCurrentOrg.id;
-    const { data, error } = await window.supabaseClient
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", orgId)
-      .eq("user_id", uid)
-      .maybeSingle();
-    if (error || !data?.role) return null;
-    const role = String(data.role).toLowerCase();
+    let role = null;
+
+    try {
+      const { data: rpcRole, error: rpcErr } = await window.supabaseClient.rpc("get_my_org_role", {
+        p_org_id: orgId,
+      });
+      if (!rpcErr && rpcRole) role = String(rpcRole).toLowerCase();
+    } catch (_) {
+      /* optional RPC */
+    }
+
+    if (!role) {
+      const { data, error } = await window.supabaseClient
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", orgId)
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (error || !data?.role) return null;
+      role = String(data.role).toLowerCase();
+    }
+
     window.gilbertoCurrentOrg.role = role;
     try {
       localStorage.setItem("gilberto_active_org:" + uid, JSON.stringify(window.gilbertoCurrentOrg));
@@ -958,6 +1003,31 @@ async function gilbertoRefreshCurrentOrgRole() {
 }
 
 window.gilbertoRefreshCurrentOrgRole = gilbertoRefreshCurrentOrgRole;
+
+function gilbertoStartAdminNavRefresh() {
+  if (window.__gilbertoAdminNavRefreshStarted) return;
+  window.__gilbertoAdminNavRefreshStarted = true;
+
+  async function tick() {
+    if (document.hidden || !window.supabaseClient) return;
+    await gilbertoRefreshCurrentOrgRole();
+  }
+
+  window.addEventListener("focus", function () {
+    void tick();
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) void tick();
+  });
+  setInterval(function () {
+    void tick();
+  }, 60000);
+  setTimeout(function () {
+    void tick();
+  }, 2500);
+}
+
+window.gilbertoStartAdminNavRefresh = gilbertoStartAdminNavRefresh;
 
 /**
  * Resolves the signed-in user’s current company (blank dashboard = no rows yet, but this scopes data by org).
@@ -1145,6 +1215,16 @@ async function loadGilbertoOrganization() {
     } else if (provisional?.role && provisional.id === orgId) {
       role = provisional.role;
     }
+
+    try {
+      const { data: liveRole, error: liveErr } = await window.supabaseClient.rpc("get_my_org_role", {
+        p_org_id: orgId,
+      });
+      if (!liveErr && liveRole) role = String(liveRole).toLowerCase();
+    } catch (_) {
+      /* optional RPC */
+    }
+
     role = await gilbertoResolveEffectiveOrgRole(window.supabaseClient, uid, orgId, role);
 
     let org =

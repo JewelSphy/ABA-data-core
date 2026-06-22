@@ -46,6 +46,11 @@ create policy "org_members_select_org_admins"
   on public.organization_members for select to authenticated
   using (public.gilberto_is_org_admin(organization_id));
 
+drop policy if exists "org_members_select_self" on public.organization_members;
+create policy "org_members_select_self"
+  on public.organization_members for select to authenticated
+  using (user_id = auth.uid());
+
 -- organizations
 drop policy if exists "organizations_select_member" on public.organizations;
 create policy "organizations_select_member"
@@ -408,5 +413,40 @@ $$;
 
 revoke all on function public.admin_set_org_member_role_by_email(uuid, text, text) from public;
 grant execute on function public.admin_set_org_member_role_by_email(uuid, text, text) to authenticated;
+
+-- Reliable role reads for the signed-in user (avoids stale localStorage / RLS gaps).
+create or replace function public.get_my_org_role(p_org_id uuid)
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select m.role
+  from public.organization_members m
+  where m.organization_id = p_org_id
+    and m.user_id = auth.uid()
+  limit 1;
+$$;
+
+create or replace function public.get_my_org_memberships()
+returns table (
+  organization_id uuid,
+  role text
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select m.organization_id, m.role
+  from public.organization_members m
+  where m.user_id = auth.uid();
+$$;
+
+revoke all on function public.get_my_org_role(uuid) from public;
+grant execute on function public.get_my_org_role(uuid) to authenticated;
+revoke all on function public.get_my_org_memberships() from public;
+grant execute on function public.get_my_org_memberships() to authenticated;
 
 do $$ begin notify pgrst, 'reload schema'; exception when others then null; end $$;
