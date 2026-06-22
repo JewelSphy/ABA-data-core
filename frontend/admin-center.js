@@ -91,6 +91,16 @@
     return Math.max(0, Math.round((Date.now() - t) / 60000));
   }
 
+  function withTimeout(promise, ms) {
+    if (!promise || typeof promise.then !== "function") return Promise.resolve(promise);
+    return Promise.race([
+      promise,
+      new Promise(function (resolve) {
+        setTimeout(function () { resolve(undefined); }, ms);
+      }),
+    ]);
+  }
+
   function formatDateTime(iso) {
     if (!iso) return "—";
     try {
@@ -648,6 +658,42 @@
     if (changed) this.persistUsers();
   };
 
+  AdminCenter.prototype.mapRoleIdToOrgMembership = function (roleId) {
+    var r = String(roleId || "").toLowerCase();
+    if (r === "owner") return "owner";
+    if (r === "admin") return "admin";
+    return "member";
+  };
+
+  AdminCenter.prototype.roleGrantsAdminPanelAccess = function (roleId) {
+    var r = String(roleId || "").toLowerCase();
+    return r === "owner" || r === "admin";
+  };
+
+  AdminCenter.prototype.syncUserOrgMembershipRole = async function (user, roleId) {
+    if (!user || !user.userId || !window.supabaseClient) {
+      return { ok: false, reason: "User must sign in to this workspace before roles can apply." };
+    }
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (!orgId) return { ok: false, reason: "No active workspace." };
+
+    var orgRole = this.mapRoleIdToOrgMembership(roleId);
+    try {
+      var rpc = await window.supabaseClient.rpc("admin_set_org_member_role", {
+        p_org_id: orgId,
+        p_user_id: user.userId,
+        p_role: orgRole,
+      });
+      if (rpc.error) {
+        console.warn("syncUserOrgMembershipRole:", rpc.error);
+        return { ok: false, reason: rpc.error.message || "Could not update workspace membership." };
+      }
+      return { ok: true, orgRole: orgRole };
+    } catch (err) {
+      return { ok: false, reason: String(err && err.message ? err.message : err) };
+    }
+  };
+
   AdminCenter.prototype.hasPermission = function (key) {
     var orgRole = String(window.gilbertoCurrentOrg?.role || "").toLowerCase();
     if (orgRole === "owner") return true;
@@ -1041,21 +1087,10 @@
     if (!Array.isArray(this.auditEvents)) this.auditEvents = [];
   };
 
-  AdminCenter.prototype.init = async function () {
-    var self = this;
+  AdminCenter.prototype.mountAdminUi = function () {
+    if (this._uiMounted) return;
+    this._uiMounted = true;
     try {
-      if (typeof window.ensureGilbertoOrgReady === "function") {
-        await window.ensureGilbertoOrgReady();
-      } else if (typeof window.loadGilbertoOrganization === "function") {
-        await window.loadGilbertoOrganization();
-      }
-      if (typeof window.gilbertoRepairOrgAccess === "function") {
-        await window.gilbertoRepairOrgAccess(window.gilbertoCurrentOrg?.id);
-      }
-      if (typeof window.resolveCurrentUserIdentity === "function") {
-        await window.resolveCurrentUserIdentity();
-      }
-
       this.loadAllData();
       this.purgeLegacyPlaceholderUsers();
       this.sanitizeStoredUsers();
@@ -1065,36 +1100,55 @@
       this.wireSectionActions();
       this.renderAll();
       this.applyPermissionGating();
-      this.startUsersOnlineRefresh();
-
-      var hash = window.location.hash.replace("#", "");
-      if (hash) this.navigateToSection(hash);
-
-      void this.bootstrapAdminData();
     } catch (err) {
-      console.error("GilbertoAdmin.init error:", err);
+      console.error("GilbertoAdmin.mountAdminUi error:", err);
       try {
         this.loadAllData();
         this.seedDefaultsIfEmpty();
         this.renderAll();
       } catch (_) {}
-      this.toastError("Admin loaded with limited data. Refresh if sections look empty.");
     }
+  };
+
+  AdminCenter.prototype.init = function () {
+    this.mountAdminUi();
+    this.startUsersOnlineRefresh();
+    var hash = window.location.hash.replace("#", "");
+    if (hash) this.navigateToSection(hash);
+    void this.bootstrapAdminData();
   };
 
   AdminCenter.prototype.bootstrapAdminData = async function () {
     try {
-      if (typeof window.gilbertoWriteWorkspacePresence === "function") {
-        await window.gilbertoWriteWorkspacePresence();
+      if (typeof window.ensureGilbertoOrgReady === "function") {
+        await withTimeout(window.ensureGilbertoOrgReady(), 10000);
+      } else if (typeof window.loadGilbertoOrganization === "function") {
+        await withTimeout(window.loadGilbertoOrganization(), 10000);
       }
-      await this.syncUsersFromSupabase();
-      await this.seedCurrentUserAsOwner();
-      await this.loadProviders();
-      await this.refreshPresence();
+      if (typeof window.gilbertoRepairOrgAccess === "function") {
+        await withTimeout(window.gilbertoRepairOrgAccess(window.gilbertoCurrentOrg?.id), 8000);
+      }
+      if (typeof window.resolveCurrentUserIdentity === "function") {
+        await withTimeout(window.resolveCurrentUserIdentity(), 8000);
+      }
+
+      this.loadAllData();
+      this.purgeLegacyPlaceholderUsers();
+      this.sanitizeStoredUsers();
+      this.seedDefaultsIfEmpty();
+
+      if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+        await withTimeout(window.gilbertoWriteWorkspacePresence(), 8000);
+      }
+      await withTimeout(this.syncUsersFromSupabase(), 15000);
+      await withTimeout(this.seedCurrentUserAsOwner(), 8000);
+      await withTimeout(this.loadProviders(), 8000);
+      await withTimeout(this.refreshPresence(), 8000);
       this.recordSessionLoginAudit();
       this.renderAll();
     } catch (err) {
       console.warn("GilbertoAdmin.bootstrapAdminData:", err);
+      this.renderAll();
     }
   };
 
@@ -1418,6 +1472,7 @@
     this.renderOrgSettings();
     this.renderBilling();
     this.renderAudit();
+    this.renderOnlineUsersTable();
     void this.renderReports();
     this.renderComplianceStrip();
   };
@@ -1879,9 +1934,23 @@
       existing.site = site;
       existing.status = status;
       existing.mfaEnabled = mfaEnabled;
+      var syncResult = null;
+      if (existing.userId && oldRole !== roleId) {
+        syncResult = await this.syncUserOrgMembershipRole(existing, roleId);
+      }
       if (existing.userId && existing.userId === window.gilbertoCurrentUserId) {
         window.gilbertoCurrentUserName = name;
         window.gilbertoCurrentUserEmail = email;
+        if (syncResult && syncResult.ok && window.gilbertoCurrentOrg) {
+          window.gilbertoCurrentOrg.role = syncResult.orgRole;
+          try {
+            var orgCacheKey = "gilberto_active_org:" + existing.userId;
+            localStorage.setItem(orgCacheKey, JSON.stringify(window.gilbertoCurrentOrg));
+          } catch (_) {}
+          if (typeof window.gilbertoInjectAdministrationNav === "function") {
+            window.gilbertoInjectAdministrationNav();
+          }
+        }
         if (typeof window.gilbertoSaveAuthProfile === "function" && window.supabaseClient) {
           try {
             await window.gilbertoSaveAuthProfile(window.supabaseClient, existing.userId, {
@@ -1896,7 +1965,13 @@
       }
       this.persistUsers();
       this.recordAudit({ action: "User updated", area: "Users", affectedUser: email, oldValue: oldRole, newValue: roleId, risk: "Medium" });
-      this.toastSuccess("User saved.");
+      if (syncResult && !syncResult.ok) {
+        this.toastError("Saved locally, but workspace access was not updated: " + syncResult.reason);
+      } else if (syncResult && syncResult.ok && this.roleGrantsAdminPanelAccess(roleId)) {
+        this.toastSuccess("User saved. They may need to refresh the page to see Administration.");
+      } else {
+        this.toastSuccess("User saved.");
+      }
     } else {
       this.users.push({
         id: uid(), userId: null, name: name, email: email, roleId: roleId, site: site,
@@ -2029,16 +2104,26 @@
     this.toastSuccess("Password reset initiated.");
   };
 
-  AdminCenter.prototype.assignUserRole = function (userId, roleId) {
+  AdminCenter.prototype.assignUserRole = async function (userId, roleId) {
     if (!this.hasPermission("roles.assign")) return this.toastError("Insufficient permissions.");
     var u = this.users.find(function (x) { return x.id === userId; });
     if (!u) return;
     var old = u.roleId;
     u.roleId = roleId;
+    var syncResult = null;
+    if (u.userId && old !== roleId) {
+      syncResult = await this.syncUserOrgMembershipRole(u, roleId);
+    }
     this.persistUsers();
     this.recordAudit({ action: "Role assigned", area: "Roles", affectedUser: u.email, oldValue: old, newValue: roleId, risk: "High" });
     this.renderUsers();
-    this.toastSuccess("Role assigned.");
+    if (syncResult && !syncResult.ok) {
+      this.toastError("Role saved locally, but workspace access was not updated: " + syncResult.reason);
+    } else if (syncResult && syncResult.ok && this.roleGrantsAdminPanelAccess(roleId)) {
+      this.toastSuccess("Role assigned. They may need to refresh the page to see Administration.");
+    } else {
+      this.toastSuccess("Role assigned.");
+    }
   };
 
   AdminCenter.prototype.assignUserScopes = function (userId, scopeIds) {

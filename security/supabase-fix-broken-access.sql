@@ -300,4 +300,65 @@ $$;
 revoke all on function public.ensure_my_org_membership() from public;
 grant execute on function public.ensure_my_org_membership() to authenticated;
 
+-- Role changes from Administration → Users must update organization_members (not local storage only).
+create or replace function public.admin_set_org_member_role(
+  p_org_id uuid,
+  p_user_id uuid,
+  p_role text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_role text;
+  v_caller_role text;
+begin
+  if p_org_id is null or p_user_id is null then
+    raise exception 'org_id and user_id are required';
+  end if;
+
+  v_role := lower(trim(coalesce(p_role, '')));
+  if v_role not in ('owner', 'admin', 'member') then
+    raise exception 'invalid role %', v_role;
+  end if;
+
+  if not public.gilberto_is_org_admin(p_org_id) then
+    raise exception 'not authorized';
+  end if;
+
+  select m.role into v_caller_role
+  from public.organization_members m
+  where m.organization_id = p_org_id
+    and m.user_id = auth.uid();
+
+  if coalesce(v_caller_role, '') <> 'owner' and v_role = 'owner' then
+    raise exception 'only the workspace owner can assign the owner role';
+  end if;
+
+  if exists (
+    select 1
+    from public.organization_members m
+    where m.organization_id = p_org_id
+      and m.user_id = p_user_id
+      and m.role = 'owner'
+  ) and v_role <> 'owner' and coalesce(v_caller_role, '') <> 'owner' then
+    raise exception 'only the workspace owner can change the owner role';
+  end if;
+
+  update public.organization_members
+  set role = v_role
+  where organization_id = p_org_id
+    and user_id = p_user_id;
+
+  if not found then
+    raise exception 'workspace member not found';
+  end if;
+end;
+$$;
+
+revoke all on function public.admin_set_org_member_role(uuid, uuid, text) from public;
+grant execute on function public.admin_set_org_member_role(uuid, uuid, text) to authenticated;
+
 do $$ begin notify pgrst, 'reload schema'; exception when others then null; end $$;

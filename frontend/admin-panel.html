@@ -81,7 +81,7 @@
 
     <section class="admin-section" id="users">
       <div class="admin-section-head">
-        <div><h2>Users</h2><p>Manage workspace members. The Online column shows who is signed in right now (updates every 30 seconds).</p></div>
+        <div><h2>Users</h2><p>Manage workspace members. <strong>Owner</strong> and <strong>Admin</strong> roles unlock the Administration menu for that person after they refresh. Other roles (Manager, Viewer, etc.) control permissions inside Administration only.</p></div>
         <button class="add-btn" type="button" id="adminInviteUserBtn">Invite User</button>
       </div>
       <div class="admin-toolbar">
@@ -279,16 +279,25 @@
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260623a"></script>
-<script src="admin-center.js?v=20260623b"></script>
+<script src="admin-center.js?v=20260623d"></script>
 <script>
+  function withBootTimeout(promise, ms) {
+    if (!promise || typeof promise.then !== 'function') return Promise.resolve(promise);
+    return Promise.race([
+      promise,
+      new Promise(function (resolve) { setTimeout(resolve, ms); }),
+    ]);
+  }
+
   async function ensureAdminAccessReady() {
-    if (typeof enforceAuthGuard === 'function') await enforceAuthGuard();
-    if (typeof window.ensureGilbertoOrgReady === 'function') await window.ensureGilbertoOrgReady();
-    else if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
-    if (typeof window.repairOrgMembershipIfNeeded === 'function' && window.gilbertoCurrentOrg?.id) {
-      await window.repairOrgMembershipIfNeeded(window.gilbertoCurrentOrg.id);
+    if (typeof enforceAuthGuard === 'function') {
+      await withBootTimeout(enforceAuthGuard(), 15000);
     }
-    if (typeof loadGilbertoOrganization === 'function') await loadGilbertoOrganization();
+    if (typeof window.ensureGilbertoOrgReady === 'function') {
+      await withBootTimeout(window.ensureGilbertoOrgReady(), 12000);
+    } else if (typeof loadGilbertoOrganization === 'function') {
+      await withBootTimeout(loadGilbertoOrganization(), 12000);
+    }
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
@@ -299,16 +308,32 @@
         return;
       }
       document.body.classList.add('admin-role-ready');
-      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.init === 'function') {
-        await window.GilbertoAdmin.init();
+      if (window.GilbertoAdmin) {
+        if (typeof window.GilbertoAdmin.mountAdminUi === 'function') {
+          window.GilbertoAdmin.mountAdminUi();
+        }
+        if (typeof window.GilbertoAdmin.init === 'function') {
+          window.GilbertoAdmin.init();
+        }
       }
     } catch (err) {
       console.error('Admin panel boot error:', err);
       document.body.classList.add('admin-role-ready');
-      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.renderAll === 'function') {
+      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.mountAdminUi === 'function') {
+        window.GilbertoAdmin.mountAdminUi();
+      } else if (window.GilbertoAdmin && typeof window.GilbertoAdmin.renderAll === 'function') {
         window.GilbertoAdmin.renderAll();
       }
     }
+
+    setTimeout(function () {
+      var usersBody = document.getElementById('adminUsersBody');
+      if (!usersBody || usersBody.textContent.indexOf('Loading users') < 0) return;
+      if (window.GilbertoAdmin && typeof window.GilbertoAdmin.mountAdminUi === 'function') {
+        window.GilbertoAdmin._uiMounted = false;
+        window.GilbertoAdmin.mountAdminUi();
+      }
+    }, 2500);
   });
 </script>
 </body>
