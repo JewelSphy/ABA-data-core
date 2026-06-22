@@ -1,0 +1,1257 @@
+/**
+ * Gilberto Admin Center — healthcare CRM administration module.
+ * Self-contained IIFE; exposes window.GilbertoAdmin and window.gilbertoRecordAdminAudit.
+ */
+(function () {
+  "use strict";
+
+  function adminEsc(v) {
+    return String(v == null ? "" : v)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function loadScoped(key) {
+    if (typeof window.gilbertoLoadScopedRows === "function") {
+      return window.gilbertoLoadScopedRows(key);
+    }
+    try {
+      const sk =
+        typeof window.gilbertoScopedStorageKey === "function"
+          ? window.gilbertoScopedStorageKey(key)
+          : key + ":no-org";
+      const rows = JSON.parse(localStorage.getItem(sk) || "[]");
+      return Array.isArray(rows) ? rows : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveScoped(key, rows) {
+    if (typeof window.gilbertoSaveScopedRows === "function") {
+      window.gilbertoSaveScopedRows(key, rows);
+      return;
+    }
+    const sk =
+      typeof window.gilbertoScopedStorageKey === "function"
+        ? window.gilbertoScopedStorageKey(key)
+        : key + ":no-org";
+    localStorage.setItem(sk, JSON.stringify(rows || []));
+  }
+
+  function loadObject(key, fallback) {
+    try {
+      const sk =
+        typeof window.gilbertoScopedStorageKey === "function"
+          ? window.gilbertoScopedStorageKey(key)
+          : key + ":no-org";
+      const raw = localStorage.getItem(sk);
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function saveObject(key, obj) {
+    const sk =
+      typeof window.gilbertoScopedStorageKey === "function"
+        ? window.gilbertoScopedStorageKey(key)
+        : key + ":no-org";
+    localStorage.setItem(sk, JSON.stringify(obj || {}));
+  }
+
+  function uid() {
+    return "ga_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function todayIso() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function daysSince(iso) {
+    if (!iso) return 9999;
+    const t = new Date(iso).getTime();
+    if (!t) return 9999;
+    return Math.floor((Date.now() - t) / 86400000);
+  }
+
+  function minutesSince(iso) {
+    if (!iso) return 9999;
+    const t = new Date(iso).getTime();
+    if (!t) return 9999;
+    return Math.max(0, Math.round((Date.now() - t) / 60000));
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString();
+    } catch (_) {
+      return String(iso);
+    }
+  }
+
+  function pageLabel(page) {
+    const p = String(page || "").replace(".html", "").replace(/-/g, " ");
+    return p ? p.replace(/\b\w/g, function (m) { return m.toUpperCase(); }) : "Gilberto CRM";
+  }
+
+  var STORAGE = {
+    users: "gilberto_admin_users",
+    roles: "gilberto_admin_roles",
+    scopes: "gilberto_admin_scopes",
+    settings: "gilberto_admin_settings",
+    billing: "gilberto_admin_billing",
+    identity: "gilberto_admin_identity",
+    locked: "gilberto_admin_locked",
+    revoked: "gilberto_admin_revoked",
+    audit: "gilberto_audit_events",
+  };
+
+  var USER_STATUSES = [
+    "Active",
+    "Pending Invite",
+    "Locked",
+    "Disabled",
+    "Dormant",
+    "Terminated",
+  ];
+
+  var SCOPE_TYPES = [
+    "Global",
+    "Region",
+    "Site",
+    "Team",
+    "Client",
+    "Provider",
+    "Relationship",
+  ];
+
+  var PERMISSION_CATALOG = [
+    { key: "users.view", domain: "users", action: "view", label: "View users", auditRequired: false },
+    { key: "users.invite", domain: "users", action: "invite", label: "Invite users", auditRequired: true },
+    { key: "users.edit", domain: "users", action: "edit", label: "Edit users", auditRequired: true },
+    { key: "users.disable", domain: "users", action: "disable", label: "Disable users", auditRequired: true },
+    { key: "users.terminate", domain: "users", action: "terminate", label: "Terminate users", auditRequired: true },
+    { key: "users.reset_password", domain: "users", action: "reset_password", label: "Reset passwords", auditRequired: true },
+    { key: "users.force_logout", domain: "users", action: "force_logout", label: "Force logout users", auditRequired: true },
+    { key: "users.lock", domain: "users", action: "lock", label: "Lock accounts", auditRequired: true },
+    { key: "roles.view", domain: "roles", action: "view", label: "View roles", auditRequired: false },
+    { key: "roles.create", domain: "roles", action: "create", label: "Create roles", auditRequired: true },
+    { key: "roles.edit", domain: "roles", action: "edit", label: "Edit roles", auditRequired: true },
+    { key: "roles.delete", domain: "roles", action: "delete", label: "Delete roles", auditRequired: true },
+    { key: "roles.assign", domain: "roles", action: "assign", label: "Assign roles", auditRequired: true },
+    { key: "scopes.view", domain: "scopes", action: "view", label: "View scopes", auditRequired: false },
+    { key: "scopes.create", domain: "scopes", action: "create", label: "Create scopes", auditRequired: true },
+    { key: "scopes.edit", domain: "scopes", action: "edit", label: "Edit scopes", auditRequired: true },
+    { key: "scopes.delete", domain: "scopes", action: "delete", label: "Delete scopes", auditRequired: true },
+    { key: "scopes.assign", domain: "scopes", action: "assign", label: "Assign scopes", auditRequired: true },
+    { key: "identity.view", domain: "identity", action: "view", label: "View identity settings", auditRequired: false },
+    { key: "identity.edit", domain: "identity", action: "edit", label: "Edit identity settings", auditRequired: true },
+    { key: "providers.view", domain: "providers", action: "view", label: "View providers", auditRequired: false },
+    { key: "providers.manage", domain: "providers", action: "manage", label: "Manage providers", auditRequired: true },
+    { key: "billing.view", domain: "billing", action: "view", label: "View billing configuration", auditRequired: false },
+    { key: "billing.create", domain: "billing", action: "create", label: "Create billing items", auditRequired: true },
+    { key: "billing.edit", domain: "billing", action: "edit", label: "Edit billing items", auditRequired: true },
+    { key: "billing.delete", domain: "billing", action: "delete", label: "Delete billing items", auditRequired: true },
+    { key: "audit.view", domain: "audit", action: "view", label: "View audit logs", auditRequired: false },
+    { key: "audit.export", domain: "audit", action: "export", label: "Export audit logs", auditRequired: true },
+    { key: "reports.view", domain: "reports", action: "view", label: "View reports", auditRequired: false },
+    { key: "reports.export", domain: "reports", action: "export", label: "Export reports", auditRequired: true },
+    { key: "online.view", domain: "online", action: "view", label: "View online users", auditRequired: false },
+    { key: "online.force_logout", domain: "online", action: "force_logout", label: "Force logout online users", auditRequired: true },
+    { key: "online.lock", domain: "online", action: "lock", label: "Lock online accounts", auditRequired: true },
+  ];
+
+  function permMap(all) {
+    var map = {};
+    PERMISSION_CATALOG.forEach(function (p) {
+      map[p.key] = !!all;
+    });
+    return map;
+  }
+
+  function permSubset(keys) {
+    var map = {};
+    PERMISSION_CATALOG.forEach(function (p) {
+      map[p.key] = keys.indexOf(p.key) >= 0;
+    });
+    return map;
+  }
+
+  var DEFAULT_ROLES = [
+    { id: "owner", name: "Owner", priority: 100, system: true, permissions: permMap(true) },
+    {
+      id: "admin",
+      name: "Admin",
+      priority: 90,
+      system: true,
+      permissions: (function () {
+        var m = permMap(true);
+        return m;
+      })(),
+    },
+    {
+      id: "manager",
+      name: "Manager",
+      priority: 70,
+      system: true,
+      permissions: permSubset([
+        "users.view", "users.invite", "users.edit", "users.disable", "users.reset_password",
+        "roles.view", "roles.assign", "scopes.view", "scopes.assign",
+        "identity.view", "providers.view", "reports.view", "online.view",
+      ]),
+    },
+    {
+      id: "billing_manager",
+      name: "Billing Manager",
+      priority: 60,
+      system: true,
+      permissions: permSubset([
+        "billing.view", "billing.create", "billing.edit", "billing.delete",
+        "reports.view", "reports.export", "audit.view", "users.view",
+      ]),
+    },
+    {
+      id: "auditor",
+      name: "Auditor",
+      priority: 50,
+      system: true,
+      permissions: permSubset([
+        "audit.view", "audit.export", "reports.view", "reports.export",
+        "users.view", "roles.view", "scopes.view", "identity.view",
+      ]),
+    },
+    {
+      id: "provider_manager",
+      name: "Provider Manager",
+      priority: 55,
+      system: true,
+      permissions: permSubset([
+        "providers.view", "providers.manage", "scopes.view", "users.view", "reports.view",
+      ]),
+    },
+    {
+      id: "viewer",
+      name: "Viewer",
+      priority: 10,
+      system: true,
+      permissions: permSubset([
+        "users.view", "roles.view", "scopes.view", "identity.view",
+        "providers.view", "billing.view", "audit.view", "reports.view", "online.view",
+      ]),
+    },
+    {
+      id: "support_staff",
+      name: "Support Staff",
+      priority: 40,
+      system: true,
+      permissions: permSubset([
+        "users.view", "users.edit", "users.reset_password", "users.force_logout",
+        "online.view", "online.force_logout", "audit.view",
+      ]),
+    },
+  ];
+
+  var DEFAULT_IDENTITY = {
+    mfaPolicy: "Recommended",
+    ssoEnabled: false,
+    adminIdleTimeoutMinutes: 30,
+    passwordMinLength: 12,
+    passwordRequireSpecial: true,
+    sessionMaxHours: 12,
+    reauthForSensitive: true,
+  };
+
+  var DEFAULT_SETTINGS = {
+    legalName: "",
+    displayName: "",
+    address: "",
+    timezone: "America/New_York",
+    privacyContact: "",
+    securityContact: "",
+    retentionPolicy: "7 years",
+    clinicalDefaults: "ABA standard",
+    sites: [],
+  };
+
+  function AdminCenter() {
+    this.users = [];
+    this.roles = [];
+    this.scopes = [];
+    this.settings = {};
+    this.billing = [];
+    this.identity = {};
+    this.lockedIds = [];
+    this.revokedIds = [];
+    this.auditEvents = [];
+    this.providers = [];
+    this.presenceRows = [];
+    this.userFilter = "all";
+    this.auditFilters = { actor: "", action: "", dateFrom: "", dateTo: "" };
+    this._confirmResolve = null;
+    this._presenceInterval = null;
+    this._navObserver = null;
+    this._sessions = [];
+  }
+
+  AdminCenter.prototype.toast = function (message, type) {
+    var t = document.createElement("div");
+    var bg = type === "error" ? "#b33a3a" : "#2d4a3e";
+    t.style.cssText =
+      "position:fixed;bottom:24px;right:24px;max-width:380px;background:" + bg +
+      ";color:white;padding:12px 16px;border-radius:10px;font-size:13px;line-height:1.45;z-index:99999;box-shadow:0 12px 28px rgba(20,32,27,.22);";
+    t.textContent = message;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, type === "error" ? 5200 : 3200);
+  };
+
+  AdminCenter.prototype.toastSuccess = function (msg) { this.toast(msg, "success"); };
+  AdminCenter.prototype.toastError = function (msg) { this.toast(msg, "error"); };
+
+  AdminCenter.prototype.confirmAction = function (message) {
+    var self = this;
+    return new Promise(function (resolve) {
+      self._confirmResolve = resolve;
+      var msgEl = document.getElementById("adminConfirmMessage");
+      if (msgEl) msgEl.textContent = message;
+      self.openModal("adminConfirmModal");
+    });
+  };
+
+  AdminCenter.prototype.resolveConfirm = function (accepted) {
+    this.closeModal("adminConfirmModal");
+    if (this._confirmResolve) {
+      var fn = this._confirmResolve;
+      this._confirmResolve = null;
+      fn(!!accepted);
+    }
+  };
+
+  AdminCenter.prototype.getCurrentActor = function () {
+    var email = "";
+    var name = window.gilbertoCurrentUserName || "Current User";
+    try {
+      if (window.supabaseClient) {
+        /* sync read from cached session metadata when available */
+      }
+    } catch (_) {}
+    if (window.gilbertoCurrentUserEmail) email = window.gilbertoCurrentUserEmail;
+    return { name: name, email: email };
+  };
+
+  AdminCenter.prototype.getCurrentUserRecord = function () {
+    var actor = this.getCurrentActor();
+    return this.users.find(function (u) {
+      return (actor.email && u.email === actor.email) || u.name === actor.name;
+    }) || null;
+  };
+
+  AdminCenter.prototype.hasPermission = function (key) {
+    var orgRole = String(window.gilbertoCurrentOrg?.role || "").toLowerCase();
+    if (orgRole === "owner") return true;
+    var me = this.getCurrentUserRecord();
+    if (me && me.roleId === "owner") return true;
+    if (typeof window.gilbertoIsAdminRole === "function" && window.gilbertoIsAdminRole() && key !== "roles.delete") {
+      if (orgRole === "admin") return true;
+    }
+    var roleId = me ? me.roleId : orgRole;
+    var role = this.roles.find(function (r) { return r.id === roleId; });
+    if (!role) {
+      role = this.roles.find(function (r) { return r.id === "admin"; });
+    }
+    if (!role || !role.permissions) return false;
+    return !!role.permissions[key];
+  };
+
+  AdminCenter.prototype.persistUsers = function () {
+    saveScoped(STORAGE.users, this.users);
+  };
+
+  AdminCenter.prototype.persistRoles = function () {
+    saveScoped(STORAGE.roles, this.roles);
+  };
+
+  AdminCenter.prototype.persistScopes = function () {
+    saveScoped(STORAGE.scopes, this.scopes);
+  };
+
+  AdminCenter.prototype.persistBilling = function () {
+    saveScoped(STORAGE.billing, this.billing);
+  };
+
+  AdminCenter.prototype.persistLocked = function () {
+    saveScoped(STORAGE.locked, this.lockedIds);
+  };
+
+  AdminCenter.prototype.persistRevoked = function () {
+    saveScoped(STORAGE.revoked, this.revokedIds);
+  };
+
+  AdminCenter.prototype.persistSettings = function () {
+    saveObject(STORAGE.settings, this.settings);
+  };
+
+  AdminCenter.prototype.persistIdentity = function () {
+    saveObject(STORAGE.identity, this.identity);
+  };
+
+  AdminCenter.prototype.persistAudit = function () {
+    saveScoped(STORAGE.audit, this.auditEvents.slice(0, 500));
+  };
+
+  AdminCenter.prototype.recordAudit = function (event) {
+    var actor = this.getCurrentActor();
+    var entry = {
+      id: uid(),
+      createdAt: nowIso(),
+      user: actor.name,
+      actorEmail: actor.email || "",
+      action: event.action || "Recorded event",
+      area: event.area || event.module || "Administration",
+      affectedUser: event.affectedUser || "",
+      oldValue: event.oldValue != null ? String(event.oldValue) : "",
+      newValue: event.newValue != null ? String(event.newValue) : "",
+      status: event.status || "Success",
+      risk: event.risk || "Medium",
+      details: event.details || "",
+      module: event.module || "Admin Center",
+    };
+    this.auditEvents.unshift(entry);
+    this.persistAudit();
+    this.syncAuditToSupabase(entry);
+    if (this.hasPermission("audit.view")) {
+      this.renderAudit();
+      this.renderComplianceStrip();
+    }
+    return entry;
+  };
+
+  AdminCenter.prototype.syncAuditToSupabase = async function (entry) {
+    if (!window.supabaseClient || !window.gilbertoCurrentOrg?.id) return;
+    try {
+      await window.supabaseClient.from("admin_audit_logs").insert({
+        org_id: window.gilbertoCurrentOrg.id,
+        actor_name: entry.user,
+        actor_email: entry.actorEmail,
+        action: entry.action,
+        area: entry.area,
+        affected_user: entry.affectedUser,
+        old_value: entry.oldValue,
+        new_value: entry.newValue,
+        status: entry.status,
+        risk: entry.risk,
+        details: entry.details,
+        module: entry.module,
+        created_at: entry.createdAt,
+      });
+    } catch (_) {
+      /* silent fail when table missing */
+    }
+  };
+
+  AdminCenter.prototype.seedDefaultsIfEmpty = function () {
+    if (!this.roles.length) {
+      this.roles = JSON.parse(JSON.stringify(DEFAULT_ROLES));
+      this.persistRoles();
+    }
+    if (!Object.keys(this.identity).length) {
+      this.identity = Object.assign({}, DEFAULT_IDENTITY);
+      this.persistIdentity();
+    }
+    if (!Object.keys(this.settings).length) {
+      var org = window.gilbertoCurrentOrg || {};
+      this.settings = Object.assign({}, DEFAULT_SETTINGS, {
+        legalName: org.company_legal_name || org.name || "",
+        displayName: org.company_display_name || org.name || "",
+        address: org.address || org.company_address || "",
+      });
+      this.persistSettings();
+    }
+  };
+
+  AdminCenter.prototype.seedCurrentUserAsOwner = async function () {
+    var actor = this.getCurrentActor();
+    var sessionUserId = null;
+    var email = actor.email;
+    try {
+      if (window.supabaseClient) {
+        var sess = await window.supabaseClient.auth.getSession();
+        var user = sess?.data?.session?.user;
+        if (user) {
+          sessionUserId = user.id;
+          email = user.email || email;
+          if (!actor.name || actor.name === "Current User") {
+            actor.name = user.user_metadata?.full_name || user.email || actor.name;
+          }
+        }
+      }
+    } catch (_) {}
+
+    var existing = this.users.find(function (u) {
+      return (sessionUserId && u.userId === sessionUserId) || (email && u.email === email);
+    });
+    if (existing) {
+      if (existing.roleId !== "owner" && String(window.gilbertoCurrentOrg?.role || "").toLowerCase() === "owner") {
+        existing.roleId = "owner";
+        existing.status = "Active";
+        this.persistUsers();
+      }
+      return;
+    }
+
+    if (!this.users.length || String(window.gilbertoCurrentOrg?.role || "").toLowerCase() === "owner") {
+      this.users.unshift({
+        id: uid(),
+        userId: sessionUserId || null,
+        name: actor.name,
+        email: email || "owner@workspace.local",
+        roleId: "owner",
+        site: "HQ",
+        scopeIds: [],
+        mfaEnabled: false,
+        status: "Active",
+        lastLogin: nowIso(),
+        invitedAt: nowIso(),
+        loginAt: nowIso(),
+        device: navigator.userAgent ? navigator.userAgent.slice(0, 80) : "",
+        ip: "",
+        currentPage: "",
+      });
+      this.persistUsers();
+    }
+  };
+
+  AdminCenter.prototype.syncUsersFromSupabase = async function () {
+    var orgId = window.gilbertoCurrentOrg?.id;
+    if (!window.supabaseClient || !orgId) return;
+
+    var remoteMembers = [];
+    try {
+      var rpc = await window.supabaseClient.rpc("admin_list_org_members", { p_org_id: orgId });
+      if (!rpc.error && Array.isArray(rpc.data)) {
+        remoteMembers = rpc.data;
+      }
+    } catch (_) {}
+
+    if (!remoteMembers.length) {
+      try {
+        var memQ = await window.supabaseClient
+          .from("organization_members")
+          .select("user_id, role")
+          .eq("organization_id", orgId);
+        if (!memQ.error && memQ.data) {
+          remoteMembers = memQ.data.map(function (m) {
+            return { user_id: m.user_id, role: m.role, email: "", full_name: "" };
+          });
+        }
+      } catch (_) {}
+    }
+
+    var profileMap = {};
+    var userIds = remoteMembers.map(function (m) { return m.user_id; }).filter(Boolean);
+    if (userIds.length) {
+      try {
+        var profQ = await window.supabaseClient
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds);
+        if (!profQ.error && profQ.data) {
+          profQ.data.forEach(function (p) { profileMap[p.id] = p; });
+        }
+      } catch (_) {}
+    }
+
+    var presenceMap = {};
+    try {
+      var since = new Date(Date.now() - 24 * 3600000).toISOString();
+      var presQ = await window.supabaseClient
+        .from("workspace_user_presence")
+        .select("user_id, email, full_name, current_page, last_seen_at")
+        .eq("org_id", orgId)
+        .gte("last_seen_at", since);
+      if (!presQ.error && presQ.data) {
+        presQ.data.forEach(function (p) { presenceMap[p.user_id || p.email] = p; });
+      }
+    } catch (_) {}
+
+    var self = this;
+    var changed = false;
+    remoteMembers.forEach(function (m) {
+      var prof = profileMap[m.user_id] || {};
+      var email = m.email || prof.email || "";
+      var name = m.full_name || prof.full_name || email || "Workspace member";
+      var pres = presenceMap[m.user_id] || presenceMap[email] || null;
+      var roleId = String(m.role || "member").toLowerCase();
+      if (roleId !== "owner" && roleId !== "admin" && roleId === "member") {
+        roleId = "viewer";
+      }
+
+      var found = self.users.find(function (u) {
+        return (m.user_id && u.userId === m.user_id) || (email && u.email === email);
+      });
+
+      if (found) {
+        if (name && found.name !== name) { found.name = name; changed = true; }
+        if (email && found.email !== email) { found.email = email; changed = true; }
+        if (m.user_id && !found.userId) { found.userId = m.user_id; changed = true; }
+        if (pres) {
+          found.currentPage = pres.current_page || found.currentPage;
+          found.lastLogin = pres.last_seen_at || found.lastLogin;
+        }
+        if (roleId === "owner" && found.roleId !== "owner") { found.roleId = "owner"; changed = true; }
+      } else {
+        self.users.push({
+          id: uid(),
+          userId: m.user_id || null,
+          name: name,
+          email: email || ("member+" + (m.user_id || uid()).slice(0, 8) + "@workspace.local"),
+          roleId: roleId === "owner" ? "owner" : roleId === "admin" ? "admin" : "viewer",
+          site: "—",
+          scopeIds: [],
+          mfaEnabled: false,
+          status: "Active",
+          lastLogin: pres?.last_seen_at || "",
+          invitedAt: nowIso(),
+          loginAt: pres?.last_seen_at || "",
+          device: "",
+          ip: "",
+          currentPage: pres?.current_page || "",
+        });
+        changed = true;
+      }
+    });
+
+    this.applyDerivedUserStatuses();
+    if (changed) this.persistUsers();
+  };
+
+  AdminCenter.prototype.applyDerivedUserStatuses = function () {
+    var self = this;
+    this.users.forEach(function (u) {
+      if (u.status === "Terminated" || u.status === "Disabled") return;
+      if (self.revokedIds.indexOf(u.id) >= 0 || (u.userId && self.revokedIds.indexOf(u.userId) >= 0)) {
+        u.status = "Terminated";
+        return;
+      }
+      if (self.lockedIds.indexOf(u.id) >= 0 || (u.userId && self.lockedIds.indexOf(u.userId) >= 0)) {
+        u.status = "Locked";
+        return;
+      }
+      if (u.status === "Pending Invite") return;
+      if (daysSince(u.lastLogin || u.loginAt) >= 90) {
+        u.status = "Dormant";
+      } else if (u.status === "Dormant") {
+        u.status = "Active";
+      }
+    });
+  };
+
+  AdminCenter.prototype.loadProviders = async function () {
+    this.providers = [];
+    var orgId = window.gilbertoCurrentOrg?.id;
+    if (!window.supabaseClient || !orgId) return;
+    try {
+      var q = await window.supabaseClient
+        .from("providers")
+        .select("id, name, provider_type, npi, taxonomy, license_number, license_expires, status")
+        .eq("org_id", orgId)
+        .order("name", { ascending: true });
+      if (!q.error && q.data) this.providers = q.data;
+    } catch (_) {}
+  };
+
+  AdminCenter.prototype.loadAllData = function () {
+    this.users = loadScoped(STORAGE.users);
+    this.roles = loadScoped(STORAGE.roles);
+    this.scopes = loadScoped(STORAGE.scopes);
+    this.billing = loadScoped(STORAGE.billing);
+    this.settings = loadObject(STORAGE.settings, {});
+    this.identity = loadObject(STORAGE.identity, {});
+    this.lockedIds = loadScoped(STORAGE.locked);
+    this.revokedIds = loadScoped(STORAGE.revoked);
+    this.auditEvents = loadScoped(STORAGE.audit);
+    if (!Array.isArray(this.users)) this.users = [];
+    if (!Array.isArray(this.roles)) this.roles = [];
+    if (!Array.isArray(this.scopes)) this.scopes = [];
+    if (!Array.isArray(this.billing)) this.billing = [];
+    if (!Array.isArray(this.lockedIds)) this.lockedIds = [];
+    if (!Array.isArray(this.revokedIds)) this.revokedIds = [];
+    if (!Array.isArray(this.auditEvents)) this.auditEvents = [];
+  };
+
+  AdminCenter.prototype.init = async function () {
+    if (typeof window.ensureGilbertoOrgReady === "function") {
+      await window.ensureGilbertoOrgReady();
+    } else if (typeof window.loadGilbertoOrganization === "function") {
+      await window.loadGilbertoOrganization();
+    }
+    if (typeof window.resolveCurrentUserIdentity === "function") {
+      await window.resolveCurrentUserIdentity();
+    }
+
+    this.loadAllData();
+    this.seedDefaultsIfEmpty();
+    await this.syncUsersFromSupabase();
+    await this.seedCurrentUserAsOwner();
+    await this.loadProviders();
+
+    this.initModals();
+    this.initNavigation();
+    this.wireSectionActions();
+    this.renderAll();
+    this.applyPermissionGating();
+
+    var hash = window.location.hash.replace("#", "");
+    if (hash) this.navigateToSection(hash);
+  };
+
+  AdminCenter.prototype.openModal = function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add("open");
+  };
+
+  AdminCenter.prototype.closeModal = function (id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove("open");
+  };
+
+  AdminCenter.prototype.initModals = function () {
+    if (document.getElementById("adminModalRoot")) return;
+    var root = document.createElement("div");
+    root.id = "adminModalRoot";
+    root.innerHTML =
+      '<div class="modal-overlay" id="adminConfirmModal" onclick="if(event.target===this)GilbertoAdmin.resolveConfirm(false)">' +
+      '<div class="modal-box"><div class="modal-header"><h3>Confirm action</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.resolveConfirm(false)">&times;</button></div>' +
+      '<div class="modal-body"><p id="adminConfirmMessage">Are you sure?</p></div>' +
+      '<div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.resolveConfirm(false)">Cancel</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.resolveConfirm(true)">Confirm</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminUserModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminUserModal\')">' +
+      '<div class="modal-box wide"><div class="modal-header"><h3 id="adminUserModalTitle">User</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminUserModal\')">&times;</button></div>' +
+      '<div class="modal-body admin-settings-grid" style="grid-template-columns:1fr 1fr;">' +
+      '<label>Name<input id="adminUserName" type="text"/></label><label>Email<input id="adminUserEmail" type="email"/></label>' +
+      '<label>Role<select id="adminUserRole"></select></label><label>Site<input id="adminUserSite" type="text"/></label>' +
+      '<label>Status<select id="adminUserStatus"></select></label><label>MFA<select id="adminUserMfa"><option value="false">Off</option><option value="true">On</option></select></label>' +
+      '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminUserModal\')">Cancel</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveUserEditor()">Save</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminRoleModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminRoleModal\')">' +
+      '<div class="modal-box wide"><div class="modal-header"><h3 id="adminRoleModalTitle">Role</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminRoleModal\')">&times;</button></div>' +
+      '<div class="modal-body"><label>Name<input id="adminRoleName" type="text"/></label><div id="adminRolePermGrid" class="admin-chip-row" style="margin-top:12px;"></div></div>' +
+      '<div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminRoleModal\')">Cancel</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveRoleEditor()">Save</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminScopeModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminScopeModal\')">' +
+      '<div class="modal-box wide"><div class="modal-header"><h3 id="adminScopeModalTitle">Access Scope</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminScopeModal\')">&times;</button></div>' +
+      '<div class="modal-body admin-settings-grid" style="grid-template-columns:1fr 1fr;">' +
+      '<label>Name<input id="adminScopeName" type="text"/></label><label>Type<select id="adminScopeType"></select></label>' +
+      '<label>Records<input id="adminScopeRecords" type="text" placeholder="e.g. Site A, Team North"/></label>' +
+      '<label>Status<select id="adminScopeStatus"><option>Active</option><option>Inactive</option></select></label>' +
+      '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminScopeModal\')">Cancel</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveScopeEditor()">Save</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminOnlineModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminOnlineModal\')">' +
+      '<div class="modal-box wide"><div class="modal-header"><h3>Online Users</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">&times;</button></div>' +
+      '<div class="modal-body"><div class="table-wrapper"><table class="data-table"><thead><tr><th>Status</th><th>Name</th><th>Email</th><th>Role</th><th>Session</th><th>Page</th><th>Actions</th></tr></thead>' +
+      '<tbody id="adminOnlineBody"></tbody></table></div></div>' +
+      '<div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.refreshPresence()">Refresh</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminOnlineModal\')">Close</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminAccessModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminAccessModal\')">' +
+      '<div class="modal-box wide"><div class="modal-header"><h3>Effective Access Preview</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminAccessModal\')">&times;</button></div>' +
+      '<div class="modal-body" id="adminAccessPreviewBody"></div>' +
+      '<div class="modal-footer"><button class="add-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminAccessModal\')">Close</button></div></div></div>' +
+
+      '<div class="modal-overlay" id="adminBillingModal" onclick="if(event.target===this)GilbertoAdmin.closeModal(\'adminBillingModal\')">' +
+      '<div class="modal-box"><div class="modal-header"><h3 id="adminBillingModalTitle">Billing Item</h3><button class="modal-close" type="button" onclick="GilbertoAdmin.closeModal(\'adminBillingModal\')">&times;</button></div>' +
+      '<div class="modal-body admin-settings-grid" style="grid-template-columns:1fr 1fr;">' +
+      '<label>Service<input id="adminBillingService" type="text"/></label><label>CPT / HCPCS<input id="adminBillingCpt" type="text"/></label>' +
+      '<label>POS<input id="adminBillingPos" type="text"/></label><label>Fee<input id="adminBillingFee" type="number" step="0.01"/></label>' +
+      '<label>Auth Required<select id="adminBillingAuth"><option value="true">Yes</option><option value="false">No</option></select></label>' +
+      '<label>Active<select id="adminBillingActive"><option value="true">Yes</option><option value="false">No</option></select></label>' +
+      '</div><div class="modal-footer"><button class="small-btn" type="button" onclick="GilbertoAdmin.closeModal(\'adminBillingModal\')">Cancel</button>' +
+      '<button class="add-btn" type="button" onclick="GilbertoAdmin.saveBillingEditor()">Save</button></div></div></div>';
+    document.body.appendChild(root);
+    this._editingUserId = null;
+    this._editingRoleId = null;
+    this._editingScopeId = null;
+    this._editingBillingId = null;
+  };
+
+  AdminCenter.prototype.initNavigation = function () {
+    var self = this;
+    document.querySelectorAll(".admin-overview-card").forEach(function (card) {
+      card.addEventListener("click", function (e) {
+        e.preventDefault();
+        var href = card.getAttribute("href") || "";
+        var id = href.replace("#", "");
+        if (id) self.navigateToSection(id);
+      });
+    });
+    if (this._navObserver) this._navObserver.disconnect();
+    var sections = document.querySelectorAll(".admin-section");
+    if (!sections.length) return;
+    this._navObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var id = entry.target.id;
+          document.querySelectorAll(".admin-overview-card").forEach(function (c) {
+            var active = (c.getAttribute("href") || "") === "#" + id;
+            c.classList.toggle("is-active", active);
+            if (active) c.style.outline = "3px solid rgba(91,125,245,.35)";
+            else c.style.outline = "";
+          });
+        });
+      },
+      { rootMargin: "-20% 0px -55% 0px", threshold: 0.1 }
+    );
+    sections.forEach(function (s) { self._navObserver.observe(s); });
+  };
+
+  AdminCenter.prototype.navigateToSection = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.querySelectorAll(".admin-overview-card").forEach(function (c) {
+      var active = (c.getAttribute("href") || "") === "#" + id;
+      c.classList.toggle("is-active", active);
+      c.style.outline = active ? "3px solid rgba(91,125,245,.35)" : "";
+    });
+  };
+
+  AdminCenter.prototype.wireSectionActions = function () {
+    var self = this;
+    var topOnline = document.querySelector(".top-actions .small-btn");
+    if (topOnline) topOnline.onclick = function () { self.openOnlineUsersModal(); };
+
+    var usersSec = document.getElementById("users");
+    if (usersSec) {
+      var inviteBtn = usersSec.querySelector(".add-btn");
+      if (inviteBtn) inviteBtn.onclick = function () { self.openUserEditor(null); };
+      var filters = usersSec.querySelectorAll(".admin-toolbar .small-btn");
+      if (filters[0]) filters[0].onclick = function () { self.filterUsers("pending"); };
+      if (filters[1]) filters[1].onclick = function () { self.filterUsers("locked"); };
+      if (filters[2]) filters[2].onclick = function () { self.filterUsers("dormant"); };
+    }
+
+    var rolesSec = document.getElementById("roles-permissions");
+    if (rolesSec) {
+      var createRole = rolesSec.querySelector(".admin-section-head .small-btn");
+      if (createRole) createRole.onclick = function () { self.openRoleEditor(null); };
+    }
+
+    var scopesSec = document.getElementById("access-scopes");
+    if (scopesSec) {
+      var previewBtn = scopesSec.querySelector(".admin-section-head .small-btn");
+      if (previewBtn) previewBtn.onclick = function () {
+        var sel = self.users[0];
+        if (sel) self.previewEffectiveAccess(sel.id);
+        else self.toastError("Add a user before previewing effective access.");
+      };
+    }
+
+    var auditSec = document.getElementById("audit-center");
+    if (auditSec) {
+      var exportBtn = auditSec.querySelector(".admin-section-head .small-btn");
+      if (exportBtn) exportBtn.onclick = function () { self.exportAuditReport(); };
+      var auditFilters = auditSec.querySelectorAll(".admin-toolbar .small-btn");
+      if (auditFilters[0]) auditFilters[0].onclick = function () { self.promptAuditDateFilter(); };
+      if (auditFilters[1]) auditFilters[1].onclick = function () { self.promptAuditActorFilter(); };
+      if (auditFilters[2]) auditFilters[2].onclick = function () { self.promptAuditActionFilter(); };
+    }
+  };
+
+  AdminCenter.prototype.applyPermissionGating = function () {
+    var map = [
+      { sel: "#users .add-btn", perm: "users.invite" },
+      { sel: "#roles-permissions .admin-section-head .small-btn", perm: "roles.create" },
+      { sel: "#audit-center .admin-section-head .small-btn", perm: "audit.export" },
+    ];
+    map.forEach(function (item) {
+      var el = document.querySelector(item.sel);
+      if (!el) return;
+      if (!GilbertoAdmin.hasPermission(item.perm)) {
+        el.disabled = true;
+        el.style.opacity = "0.45";
+        el.title = "Insufficient permissions";
+      }
+    });
+  };
+
+  AdminCenter.prototype.getRoleName = function (roleId) {
+    var r = this.roles.find(function (x) { return x.id === roleId; });
+    return r ? r.name : roleId || "—";
+  };
+
+  AdminCenter.prototype.statusBadge = function (status) {
+    var s = String(status || "Active");
+    var cls = "badge-active";
+    if (s === "Pending Invite") cls = "badge-pending";
+    else if (s === "Locked" || s === "Disabled" || s === "Terminated") cls = "badge-expiring";
+    else if (s === "Dormant") cls = "badge-pending";
+    return '<span class="badge ' + cls + '">' + adminEsc(s) + "</span>";
+  };
+
+  AdminCenter.prototype.riskBadge = function (risk) {
+    var v = String(risk || "Low");
+    var cls = v.toLowerCase() === "high" ? "badge-expiring" : v.toLowerCase() === "medium" ? "badge-pending" : "badge-active";
+    return '<span class="badge ' + cls + '">' + adminEsc(v) + "</span>";
+  };
+
+  AdminCenter.prototype.renderAll = function () {
+    this.renderUsers();
+    this.renderRoles();
+    this.renderPermissionsTable();
+    this.renderScopes();
+    this.renderIdentity();
+    this.renderProviders();
+    this.renderOrgSettings();
+    this.renderBilling();
+    this.renderAudit();
+    this.renderReports();
+    this.renderComplianceStrip();
+  };
+
+  AdminCenter.prototype.getFilteredUsers = function () {
+    var f = this.userFilter;
+    return this.users.filter(function (u) {
+      if (f === "all") return true;
+      if (f === "pending") return u.status === "Pending Invite";
+      if (f === "locked") return u.status === "Locked";
+      if (f === "dormant") return u.status === "Dormant";
+      return true;
+    });
+  };
+
+  AdminCenter.prototype.filterUsers = function (filterType) {
+    this.userFilter = filterType || "all";
+    this.renderUsers();
+    this.toastSuccess("Showing " + filterType + " users.");
+  };
+
+  AdminCenter.prototype.renderUsers = function () {
+    var body = document.getElementById("adminUsersBody");
+    if (!body) return;
+    var rows = this.getFilteredUsers();
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#6b8c7a;">No users match this filter.</td></tr>';
+      return;
+    }
+    var self = this;
+    body.innerHTML = rows.map(function (u) {
+      return "<tr><td>" + adminEsc(u.name) + "</td><td>" + adminEsc(u.email) + "</td><td>" +
+        adminEsc(self.getRoleName(u.roleId)) + "</td><td>" + adminEsc(u.site || "—") + "</td><td>" +
+        (u.mfaEnabled ? '<span class="badge badge-active">On</span>' : '<span class="badge badge-pending">Off</span>') +
+        "</td><td>" + self.statusBadge(u.status) + "</td><td>" + adminEsc(formatDateTime(u.lastLogin)) +
+        '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(u.id) +
+        "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
+        adminEsc(u.id) + "')\">Access</button></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.renderRoles = function () {
+    var grid = document.getElementById("adminRolesGrid");
+    if (!grid) return;
+    var self = this;
+    if (!this.roles.length) {
+      grid.innerHTML = '<div class="admin-role-card"><strong>No roles configured</strong><span>Add a role to begin.</span></div>';
+      return;
+    }
+    grid.innerHTML = this.roles.map(function (r) {
+      var permCount = Object.keys(r.permissions || {}).filter(function (k) { return r.permissions[k]; }).length;
+      var actions = '<button class="tbl-btn" type="button" onclick="GilbertoAdmin.openRoleEditor(\'' + adminEsc(r.id) +
+        "')\">Edit</button>";
+      if (!r.system && self.hasPermission("roles.delete")) {
+        actions += ' <button class="tbl-btn danger" type="button" onclick="GilbertoAdmin.deleteRole(\'' + adminEsc(r.id) + "')\">Delete</button>";
+      }
+      if (self.hasPermission("roles.create")) {
+        actions += ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.duplicateRole(\'' + adminEsc(r.id) + "')\">Duplicate</button>";
+      }
+      return '<div class="admin-role-card"><strong>' + adminEsc(r.name) + '</strong><span>' + permCount +
+        " permissions · priority " + adminEsc(r.priority) + (r.system ? " · system" : "") + '</span><div style="margin-top:10px;">' + actions + "</div></div>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.renderPermissionsTable = function () {
+    var body = document.getElementById("adminPermissionBody");
+    if (!body) return;
+    var self = this;
+    var rows = [];
+    PERMISSION_CATALOG.forEach(function (p) {
+      self.roles.forEach(function (r) {
+        if (!r.permissions || !r.permissions[p.key]) return;
+        rows.push("<tr><td>" + adminEsc(p.domain) + "</td><td>" + adminEsc(p.action) + "</td><td>" +
+          adminEsc(r.name) + "</td><td>" + (p.domain === "scopes" ? "Yes" : "—") + "</td><td>—</td><td>" +
+          (p.auditRequired ? "Yes" : "No") + "</td></tr>");
+      });
+    });
+    body.innerHTML = rows.length ? rows.join("") :
+      '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No role permission records configured yet.</td></tr>';
+  };
+
+  AdminCenter.prototype.renderScopes = function () {
+    var body = document.getElementById("accessScopesBody");
+    if (!body) return;
+    var self = this;
+    if (!this.scopes.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No access scope records yet. <button class="tbl-btn" type="button" onclick="GilbertoAdmin.openScopeEditor(null)">Create scope</button></td></tr>';
+      return;
+    }
+    body.innerHTML = this.scopes.map(function (s) {
+      var userCount = (s.assignedUserIds || []).length;
+      var roleCount = (s.assignedRoleIds || []).length;
+      return "<tr><td>" + userCount + " users / " + roleCount + " roles</td><td>" + adminEsc(s.type) +
+        "</td><td>" + adminEsc(s.name) + " · " + adminEsc(s.records || "—") + "</td><td>—</td><td>—</td><td>Admin</td><td>" +
+        '<button class="tbl-btn" type="button" onclick="GilbertoAdmin.openScopeEditor(\'' + adminEsc(s.id) +
+        "')\">Edit</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.deleteScope('" +
+        adminEsc(s.id) + "')\">Delete</button></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.renderIdentity = function () {
+    var strip = document.querySelector("#identity-authentication .admin-mini-grid");
+    if (strip) {
+      strip.innerHTML =
+        "<div><span>MFA policy</span><strong>" + adminEsc(this.identity.mfaPolicy || "Not configured") + "</strong></div>" +
+        "<div><span>SSO status</span><strong>" + (this.identity.ssoEnabled ? "Connected" : "Not connected") + "</strong></div>" +
+        "<div><span>Admin idle timeout</span><strong>" + adminEsc(String(this.identity.adminIdleTimeoutMinutes || "—")) + " min</strong></div>" +
+        "<div><span>Active sessions</span><strong>" + this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length + " online</strong></div>";
+    }
+    var body = document.getElementById("identitySessionsBody");
+    if (!body) return;
+    var rows = this.presenceRows.slice(0, 20);
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No active sessions in the last 10 minutes.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (p) {
+      return "<tr><td>" + adminEsc(p.full_name || p.email) + "</td><td>Web</td><td>" +
+        adminEsc(formatDateTime(p.last_seen_at)) + "</td><td>" + adminEsc(formatDateTime(p.last_seen_at)) +
+        "</td><td>Standard</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" +
+        adminEsc(p.user_id || p.email) + "')\">Force logout</button></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.renderProviders = function () {
+    var body = document.getElementById("adminProvidersBody");
+    if (!body) return;
+    if (!this.providers.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No provider credential records loaded. Open Providers to manage data or connect the providers table.</td></tr>';
+      return;
+    }
+    body.innerHTML = this.providers.map(function (p) {
+      var exp = p.license_expires ? new Date(p.license_expires).toLocaleDateString() : "—";
+      var st = p.status || "Active";
+      var cls = st.toLowerCase() === "active" ? "badge-active" : "badge-expiring";
+      return "<tr><td>" + adminEsc(p.name) + "</td><td>" + adminEsc(p.provider_type || "—") + "</td><td>" +
+        adminEsc(p.npi || "—") + "</td><td>" + adminEsc(p.taxonomy || "—") + "</td><td>" +
+        adminEsc(p.license_number || "—") + "</td><td>" + adminEsc(exp) + '</td><td><span class="badge ' + cls + '">' +
+        adminEsc(st) + "</span></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.renderOrgSettings = function () {
+    var org = window.gilbertoCurrentOrg || {};
+    var s = this.settings;
+    var nameEl = document.getElementById("adminOrgName");
+    var addrEl = document.getElementById("adminOrgAddress");
+    var tzEl = document.getElementById("adminOrgTimezone");
+    if (nameEl) { nameEl.value = s.displayName || org.name || ""; nameEl.readOnly = !this.hasPermission("identity.edit"); }
+    if (addrEl) { addrEl.value = s.address || org.address || ""; addrEl.readOnly = !this.hasPermission("identity.edit"); }
+    if (tzEl) {
+      var tz = s.timezone || "America/New_York";
+      tzEl.innerHTML = "<option>" + adminEsc(tz) + "</option>";
+      tzEl.disabled = !this.hasPermission("identity.edit");
+    }
+    var grid = document.querySelector("#organization-settings .admin-settings-grid");
+    if (grid && !document.getElementById("adminSaveSettingsBtn")) {
+      var btn = document.createElement("button");
+      btn.id = "adminSaveSettingsBtn";
+      btn.className = "add-btn";
+      btn.type = "button";
+      btn.textContent = "Save Settings";
+      btn.style.gridColumn = "1 / -1";
+      btn.onclick = function () { GilbertoAdmin.saveOrgSettings(); };
+      grid.appendChild(btn);
+    }
+  };
+
+  AdminCenter.prototype.renderBilling = function () {
+    var body = document.getElementById("billingConfigBody");
+    if (!body) return;
+    var sec = document.getElementById("billing-configuration");
+    if (sec && !sec.querySelector(".add-btn[data-billing-add]")) {
+      var head = sec.querySelector(".admin-section-head");
+      if (head) {
+        var add = document.createElement("button");
+        add.className = "add-btn";
+        add.type = "button";
+        add.dataset.billingAdd = "1";
+        add.textContent = "+ Add Service";
+        add.onclick = function () { GilbertoAdmin.openBillingEditor(null); };
+        head.appendChild(add);
+      }
+    }
+    if (!this.billing.length) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No billing configuration records yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = this.billing.map(function (b) {
+      return "<tr><td>" + adminEsc(b.service) + "</td><td>" + adminEsc(b.cpt) + "</td><td>" + adminEsc(b.pos) +
+        "</td><td>$" + adminEsc(String(b.fee)) + "</td><td>" + (b.authRequired ? "Yes" : "No") + "</td><td>" +
+        (b.active ? '<span class="badge badge-active">Yes</span>' : '<span class="badge badge-expiring">No</span>') +
+        ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.openBillingEditor(\'' + adminEsc(b.id) +
+        "')\">Edit</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.deleteBillingItem('" +
+        adminEsc(b.id) + "')\">Delete</button></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.getFilteredAudit = function () {
+    var f = this.auditFilters;
+    return this.auditEvents.filter(function (e) {
+      if (f.actor && String(e.user || "").toLowerCase().indexOf(f.actor.toLowerCase()) < 0) return false;
+      if (f.action && String(e.action || "").toLowerCase().indexOf(f.action.toLowerCase()) < 0) return false;
+      if (f.dateFrom && String(e.createdAt || "").slice(0, 10) < f.dateFrom) return false;
+      if (f.dateTo && String(e.createdAt || "").slice(0, 10) > f.dateTo) return false;
+      return true;
+    });
+  };
+
+  AdminCenter.prototype.filterAudit = function (filters) {
+    this.auditFilters = Object.assign({}, this.auditFilters, filters || {});
+    this.renderAudit();
+  };
+
+  AdminCenter.prototype.promptAuditDateFilter = function () {
+    var from = window.prompt("From date (YYYY-MM-DD)", this.auditFilters.dateFrom || "");
+    if (from === null) return;
+    var to = window.prompt("To date (YYYY-MM-DD)", this.auditFilters.dateTo || todayIso());
+    if (to === null) return;
+    this.filterAudit({ dateFrom: from, dateTo: to });
+    this.toastSuccess("Audit date filter applied.");
+  };
+
+  AdminCenter.prototype.promptAuditActorFilter = function () {
+    var actor = window.prompt("Filter by actor name", this.auditFilters.actor || "");
+    if (actor === null) return;
+    this.filterAudit({ actor: actor });
+    this.toastSuccess("Audit actor filter applied.");
+  };
+
+  AdminCenter.prototype.promptAuditActionFilter = function () {
+    var action = window.prompt("Filter by action keyword", this.auditFilters.action || "");
+    if (action === null) return;
+    this.filterAudit({ action: action });
+    this.toastSuccess("Audit action filter applied.");
+  };
+
+  AdminCenter.prototype.renderAudit = function () {
+    var body = document.getElementById("auditLogsBody");
+    if (!body) return;
+    var rows = this.getFilteredAudit().sort(function (a, b) {
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6b8c7a;">No audit events recorded yet.</td></tr>';
+    } else {
+      var self = this;
+      body.innerHTML = rows.map(function (r, i) {
+        return "<tr><td>" + adminEsc(formatDateTime(r.createdAt)) + "</td><td>" + adminEsc(r.user || "System") +
+          "</td><td>" + adminEsc(r.action) + "</td><td>" + adminEsc(r.area || r.module) + "</td><td>" +
+          self.riskBadge(r.risk) + "</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.showAuditDetails(" +
+          i + ')\">Details</button></td></tr>';
+      }).join("");
+    }
+    var all = this.auditEvents;
+    var permChanges = all.filter(function (r) { return /permission|role|scope/i.test(String(r.area) + " " + String(r.action)); }).length;
+    var clinical = all.filter(function (r) { return /session|note|clinical|data collection|behavior data/i.test(String(r.area) + " " + String(r.action)); }).length;
+    var exports = all.filter(function (r) { return /export/i.test(String(r.action)); }).length;
+    var failed = all.filter(function (r) { return /failed login/i.test(String(r.action)); }).length;
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    set("auditPermissionChanges", permChanges + " recorded");
+    set("adminPermissionChanges", permChanges + " recorded");
+    set("auditClinicalEdits", clinical + " recorded");
+    set("auditExports", exports + " recorded");
+    set("auditFailedLogins", failed + " recorded");
+  };
+
+  AdminCenter.prototype.showAuditDetails = function (index) {
+    var row = this.getFilteredAudit().sort(function (a, b) {
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    })[index];
+    if (!row) return;
+    this.toast(row.details || (row.action + " · " + (row.affectedUser || row.area)), "success");
+  };
+
+  AdminCenter.prototype.renderReports = async function () {
+    var sessions = [];
+    var activeClients = null;
+    var orgId = window.gilbertoCurrentOrg?.id || "";
+    try {
+      if (window.supabaseClient && orgId) {
+        var cq = await window.supabaseClient.from("clients").select("id,status,auth_status").eq("org_id", orgId);
+        if (!cq.error) {
+          activeClients = (cq.data || []).filter(function (c) {
+            return ["active", "authorized", "approved"].includes(String(c.status || c.auth_status || "").toLowerCase());
+          }).length;
+        }
+      }
+      if (typeof window.jvmFetchSessionsTable === "function") {
+        var res = await window.jvmFetchSessionsTable(orgId, 500);
+        if (res && res.ok) sessions = await res.json();
+      }
+    } catch (_) {}
+    this._sessions = sessions;
+    var today = todayIso();
+    var start = new Date();
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    var weekStart = start.toISOString().slice(0, 10);
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    set("reportSessionsToday", sessions.filter(function (s) { return s.session_date === today; }).length);
+    set("reportSessionsWeek", sessions.filter(function (s) { return s.session_date >= weekStart; }).length);
+    set("reportActiveClients", activeClients == null ? "—" : activeClients);
+    set("reportMissingNotes", sessions.filter(function (s) { return !s.note_status || s.note_status === "missing"; }).length || "0");
+    var reportsSec = document.getElementById("reports");
+    if (reportsSec && !reportsSec.querySelector("[data-export-reports]")) {
+      var btn = document.createElement("button");
+      btn.className = "small-btn";
+      btn.dataset.exportReports = "1";
+      btn.type = "button";
+      btn.textContent = "Export Reports";
+      btn.onclick = function () { GilbertoAdmin.exportReports(); };
+      var head = reportsSec.querySelector(".admin-section-head");
+      if (head) head.appendChild(btn);
+    }
+  };
+
+  AdminCenter.prototype.renderComplianceStrip = function () {
+    var strip = document.querySelector(".admin-compliance-strip");
+    if (!strip) return;
+    var mfaOn = this.users.filter(function (u) { return u.mfaEnabled && u.status === "Active"; }).length;
+    var mfaTotal = this.users.filter(function (u) { return u.status === "Active"; }).length;
+    var permChanges = this.auditEvents.filter(function (r) { return /permission|role|scope/i.test(String(r.area) + " " + String(r.action)); }).length;
+    var expiring = this.providers.filter(function (p) {
+      if (!p.license_expires) return false;
+      return daysSince(p.license_expires) <= 60;
+    }).length;
+    strip.innerHTML =
+      "<div><span>Security posture</span><strong>" + (this.identity.reauthForSensitive ? "Hardened" : "Standard") + "</strong></div>" +
+      "<div><span>MFA coverage</span><strong>" + mfaOn + " / " + mfaTotal + " active users</strong></div>" +
+      "<div><span>Permission changes</span><strong id=\"adminPermissionChanges\">" + permChanges + " recorded</strong></div>" +
+      "<div><span>Provider credential alerts</span><strong>" + (expiring ? expiring + " expiring soon" : "None") + "</strong></div>";
+  };
+
+  /* CRUD + editors — part 3 follows */
+  window.__AdminCenterStub = AdminCenter;
+})();
