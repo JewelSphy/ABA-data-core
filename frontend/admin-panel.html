@@ -253,6 +253,7 @@
 <script src="supabaseClient.js"></script>
 <script src="jvmSupabaseBridge.js"></script>
 <script src="dashboard.js?v=20260622b"></script>
+<script src="admin-center.js?v=20260622a"></script>
 <script>
   function adminEsc(v) {
     return String(v == null ? '' : v)
@@ -415,6 +416,10 @@
       return;
     }
     document.body.classList.add('admin-role-ready');
+    if (window.GilbertoAdmin && typeof window.GilbertoAdmin.init === 'function') {
+      await window.GilbertoAdmin.init();
+      return;
+    }
     renderAuditLogs();
     renderOrganizationSettings();
     void renderAdminReports();

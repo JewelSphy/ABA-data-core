@@ -338,14 +338,8 @@
   };
 
   AdminCenter.prototype.getCurrentActor = function () {
-    var email = "";
     var name = window.gilbertoCurrentUserName || "Current User";
-    try {
-      if (window.supabaseClient) {
-        /* sync read from cached session metadata when available */
-      }
-    } catch (_) {}
-    if (window.gilbertoCurrentUserEmail) email = window.gilbertoCurrentUserEmail;
+    var email = window.gilbertoCurrentUserEmail || "";
     return { name: name, email: email };
   };
 
@@ -698,6 +692,13 @@
     if (typeof window.resolveCurrentUserIdentity === "function") {
       await window.resolveCurrentUserIdentity();
     }
+    try {
+      if (window.supabaseClient) {
+        var sess = await window.supabaseClient.auth.getSession();
+        var user = sess?.data?.session?.user;
+        if (user && user.email) window.gilbertoCurrentUserEmail = user.email;
+      }
+    } catch (_) {}
 
     this.loadAllData();
     this.seedDefaultsIfEmpty();
@@ -859,6 +860,16 @@
         if (sel) self.previewEffectiveAccess(sel.id);
         else self.toastError("Add a user before previewing effective access.");
       };
+      if (!scopesSec.querySelector("[data-scope-create]")) {
+        var createScope = document.createElement("button");
+        createScope.className = "add-btn";
+        createScope.type = "button";
+        createScope.dataset.scopeCreate = "1";
+        createScope.textContent = "+ Create Scope";
+        createScope.onclick = function () { self.openScopeEditor(null); };
+        var head = scopesSec.querySelector(".admin-section-head");
+        if (head) head.appendChild(createScope);
+      }
     }
 
     var auditSec = document.getElementById("audit-center");
@@ -956,7 +967,10 @@
         "</td><td>" + self.statusBadge(u.status) + "</td><td>" + adminEsc(formatDateTime(u.lastLogin)) +
         '</td><td><button class="tbl-btn" type="button" onclick="GilbertoAdmin.openUserEditor(\'' + adminEsc(u.id) +
         "')\">Edit</button> <button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.previewEffectiveAccess('" +
-        adminEsc(u.id) + "')\">Access</button></td></tr>";
+        adminEsc(u.id) + "')\">Access</button>" +
+        (u.status !== "Disabled" && u.roleId !== "owner" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.disableUser(\'' + adminEsc(u.id) + "')\">Disable</button>" : "") +
+        (u.status === "Locked" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.reactivateUser(\'' + adminEsc(u.id) + "')\">Unlock</button>" : ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.lockUser(\'' + adminEsc(u.id) + "')\">Lock</button>") +
+        ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.resetUserPassword(\'' + adminEsc(u.id) + "')\">Reset PW</button></td></tr>";
     }).join("");
   };
 
@@ -1028,6 +1042,36 @@
         "<div><span>Admin idle timeout</span><strong>" + adminEsc(String(this.identity.adminIdleTimeoutMinutes || "—")) + " min</strong></div>" +
         "<div><span>Active sessions</span><strong>" + this.presenceRows.filter(function (p) { return minutesSince(p.last_seen_at) <= 2; }).length + " online</strong></div>";
     }
+    var sec = document.getElementById("identity-authentication");
+    if (sec && !document.getElementById("adminIdentityForm")) {
+      var form = document.createElement("div");
+      form.id = "adminIdentityForm";
+      form.className = "admin-settings-grid";
+      form.style.marginBottom = "14px";
+      form.innerHTML =
+        '<label>MFA Policy<select id="adminIdentityMfa"><option>Recommended</option><option>Required</option><option>Off</option></select></label>' +
+        '<label>Idle Timeout (min)<input id="adminIdentityIdle" type="number" min="5" max="240"/></label>' +
+        '<label>Password Min Length<input id="adminIdentityPwLen" type="number" min="8" max="32"/></label>' +
+        '<label>Session Max (hours)<input id="adminIdentitySessionMax" type="number" min="1" max="24"/></label>' +
+        '<button class="add-btn" type="button" id="adminSaveIdentityBtn" style="grid-column:1/-1;">Save Identity Settings</button>';
+      sec.insertBefore(form, sec.querySelector(".table-wrapper"));
+      document.getElementById("adminSaveIdentityBtn").onclick = function () {
+        GilbertoAdmin.saveIdentitySettings({
+          mfaPolicy: document.getElementById("adminIdentityMfa").value,
+          adminIdleTimeoutMinutes: Number(document.getElementById("adminIdentityIdle").value) || 30,
+          passwordMinLength: Number(document.getElementById("adminIdentityPwLen").value) || 12,
+          sessionMaxHours: Number(document.getElementById("adminIdentitySessionMax").value) || 12,
+        });
+      };
+    }
+    var mfaEl = document.getElementById("adminIdentityMfa");
+    if (mfaEl) mfaEl.value = this.identity.mfaPolicy || "Recommended";
+    var idleEl = document.getElementById("adminIdentityIdle");
+    if (idleEl) idleEl.value = this.identity.adminIdleTimeoutMinutes || 30;
+    var pwEl = document.getElementById("adminIdentityPwLen");
+    if (pwEl) pwEl.value = this.identity.passwordMinLength || 12;
+    var sessEl = document.getElementById("adminIdentitySessionMax");
+    if (sessEl) sessEl.value = this.identity.sessionMaxHours || 12;
     var body = document.getElementById("identitySessionsBody");
     if (!body) return;
     var rows = this.presenceRows.slice(0, 20);
@@ -1252,6 +1296,550 @@
       "<div><span>Provider credential alerts</span><strong>" + (expiring ? expiring + " expiring soon" : "None") + "</strong></div>";
   };
 
-  /* CRUD + editors — part 3 follows */
-  window.__AdminCenterStub = AdminCenter;
+  AdminCenter.prototype.openUserEditor = function (userId) {
+    if (!this.hasPermission(userId ? "users.edit" : "users.invite")) {
+      this.toastError("You do not have permission to manage users.");
+      return;
+    }
+    this._editingUserId = userId;
+    var title = document.getElementById("adminUserModalTitle");
+    var roleSel = document.getElementById("adminUserRole");
+    var statusSel = document.getElementById("adminUserStatus");
+    if (roleSel) {
+      roleSel.innerHTML = this.roles.map(function (r) {
+        return '<option value="' + adminEsc(r.id) + '">' + adminEsc(r.name) + "</option>";
+      }).join("");
+    }
+    if (statusSel) {
+      statusSel.innerHTML = USER_STATUSES.map(function (s) {
+        return "<option>" + adminEsc(s) + "</option>";
+      }).join("");
+    }
+    var u = userId ? this.users.find(function (x) { return x.id === userId; }) : null;
+    if (title) title.textContent = u ? "Edit User" : "Invite User";
+    document.getElementById("adminUserName").value = u ? u.name : "";
+    document.getElementById("adminUserEmail").value = u ? u.email : "";
+    document.getElementById("adminUserRole").value = u ? u.roleId : "viewer";
+    document.getElementById("adminUserSite").value = u ? u.site || "" : "";
+    document.getElementById("adminUserStatus").value = u ? u.status : "Pending Invite";
+    document.getElementById("adminUserMfa").value = u && u.mfaEnabled ? "true" : "false";
+    this.openModal("adminUserModal");
+  };
+
+  AdminCenter.prototype.saveUserEditor = async function () {
+    var name = document.getElementById("adminUserName").value.trim();
+    var email = document.getElementById("adminUserEmail").value.trim();
+    if (!name || !email) { this.toastError("Name and email are required."); return; }
+    var roleId = document.getElementById("adminUserRole").value;
+    var site = document.getElementById("adminUserSite").value.trim();
+    var status = document.getElementById("adminUserStatus").value;
+    var mfaEnabled = document.getElementById("adminUserMfa").value === "true";
+    var existing = this._editingUserId ? this.users.find(function (u) { return u.id === this._editingUserId; }, this) : null;
+    if (existing) {
+      var oldRole = existing.roleId;
+      existing.name = name;
+      existing.email = email;
+      existing.roleId = roleId;
+      existing.site = site;
+      existing.status = status;
+      existing.mfaEnabled = mfaEnabled;
+      this.persistUsers();
+      this.recordAudit({ action: "User updated", area: "Users", affectedUser: email, oldValue: oldRole, newValue: roleId, risk: "Medium" });
+      this.toastSuccess("User saved.");
+    } else {
+      this.users.push({
+        id: uid(), userId: null, name: name, email: email, roleId: roleId, site: site,
+        scopeIds: [], mfaEnabled: mfaEnabled, status: "Pending Invite", lastLogin: "",
+        invitedAt: nowIso(), loginAt: "", device: "", ip: "", currentPage: "",
+      });
+      this.persistUsers();
+      this.recordAudit({ action: "User invited", area: "Users", affectedUser: email, newValue: roleId, risk: "Medium" });
+      this.toastSuccess("User invited.");
+    }
+    this.closeModal("adminUserModal");
+    this.applyDerivedUserStatuses();
+    this.renderUsers();
+    this.renderComplianceStrip();
+  };
+
+  AdminCenter.prototype.disableUser = async function (userId) {
+    if (!this.hasPermission("users.disable")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u || u.roleId === "owner") return this.toastError("Cannot disable this user.");
+    if (!(await this.confirmAction("Disable " + u.email + "?"))) return;
+    u.status = "Disabled";
+    this.persistUsers();
+    this.recordAudit({ action: "User disabled", area: "Users", affectedUser: u.email, risk: "High" });
+    this.renderUsers();
+    this.toastSuccess("User disabled.");
+  };
+
+  AdminCenter.prototype.terminateUser = async function (userId) {
+    if (!this.hasPermission("users.terminate")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u || u.roleId === "owner") return this.toastError("Cannot terminate owner.");
+    if (!(await this.confirmAction("Terminate " + u.email + "? This revokes access."))) return;
+    u.status = "Terminated";
+    if (this.revokedIds.indexOf(u.id) < 0) this.revokedIds.push(u.id);
+    if (u.userId && this.revokedIds.indexOf(u.userId) < 0) this.revokedIds.push(u.userId);
+    this.persistUsers();
+    this.persistRevoked();
+    this.recordAudit({ action: "User terminated", area: "Users", affectedUser: u.email, risk: "High" });
+    this.renderUsers();
+    this.toastSuccess("User terminated.");
+  };
+
+  AdminCenter.prototype.lockUser = async function (userId) {
+    if (!this.hasPermission("users.lock")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    if (!(await this.confirmAction("Lock account for " + u.email + "?"))) return;
+    if (this.lockedIds.indexOf(u.id) < 0) this.lockedIds.push(u.id);
+    if (u.userId && this.lockedIds.indexOf(u.userId) < 0) this.lockedIds.push(u.userId);
+    u.status = "Locked";
+    this.persistLocked();
+    this.persistUsers();
+    this.recordAudit({ action: "Account locked", area: "Users", affectedUser: u.email, risk: "High" });
+    this.renderUsers();
+    this.toastSuccess("Account locked.");
+  };
+
+  AdminCenter.prototype.reactivateUser = async function (userId) {
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    this.lockedIds = this.lockedIds.filter(function (id) { return id !== u.id && id !== u.userId; });
+    this.revokedIds = this.revokedIds.filter(function (id) { return id !== u.id && id !== u.userId; });
+    u.status = "Active";
+    this.persistLocked();
+    this.persistRevoked();
+    this.persistUsers();
+    this.recordAudit({ action: "User reactivated", area: "Users", affectedUser: u.email, risk: "Medium" });
+    this.renderUsers();
+    this.toastSuccess("User reactivated.");
+  };
+
+  AdminCenter.prototype.resetUserPassword = async function (userId) {
+    if (!this.hasPermission("users.reset_password")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    if (!(await this.confirmAction("Send password reset for " + u.email + "?"))) return;
+    try {
+      if (window.supabaseClient && u.email) {
+        await window.supabaseClient.auth.resetPasswordForEmail(u.email, { redirectTo: window.location.origin });
+      }
+    } catch (_) {}
+    this.recordAudit({ action: "Password reset requested", area: "Identity", affectedUser: u.email, risk: "High" });
+    this.toastSuccess("Password reset initiated.");
+  };
+
+  AdminCenter.prototype.assignUserRole = function (userId, roleId) {
+    if (!this.hasPermission("roles.assign")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    var old = u.roleId;
+    u.roleId = roleId;
+    this.persistUsers();
+    this.recordAudit({ action: "Role assigned", area: "Roles", affectedUser: u.email, oldValue: old, newValue: roleId, risk: "High" });
+    this.renderUsers();
+    this.toastSuccess("Role assigned.");
+  };
+
+  AdminCenter.prototype.assignUserScopes = function (userId, scopeIds) {
+    if (!this.hasPermission("scopes.assign")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    u.scopeIds = scopeIds || [];
+    this.persistUsers();
+    this.recordAudit({ action: "Scopes assigned", area: "Scopes", affectedUser: u.email, newValue: u.scopeIds.join(", "), risk: "Medium" });
+    this.renderUsers();
+    this.toastSuccess("Scopes assigned.");
+  };
+
+  AdminCenter.prototype.openRoleEditor = function (roleId) {
+    var creating = !roleId;
+    if (creating && !this.hasPermission("roles.create")) return this.toastError("Insufficient permissions.");
+    if (!creating && !this.hasPermission("roles.edit")) return this.toastError("Insufficient permissions.");
+    this._editingRoleId = roleId;
+    var role = roleId ? this.roles.find(function (r) { return r.id === roleId; }) : { name: "", permissions: {} };
+    document.getElementById("adminRoleModalTitle").textContent = roleId ? "Edit Role" : "Create Role";
+    document.getElementById("adminRoleName").value = role ? role.name : "";
+    document.getElementById("adminRoleName").readOnly = !!(role && role.system && role.id === "owner");
+    var grid = document.getElementById("adminRolePermGrid");
+    var self = this;
+    grid.innerHTML = PERMISSION_CATALOG.map(function (p) {
+      var checked = role && role.permissions && role.permissions[p.key] ? " checked" : "";
+      return '<label style="display:inline-flex;align-items:center;gap:6px;margin:4px;"><input type="checkbox" data-perm="' +
+        adminEsc(p.key) + '"' + checked + ' onchange="GilbertoAdmin.togglePermissionCheckbox(this)"/> ' + adminEsc(p.label) + "</label>";
+    }).join("");
+    this.openModal("adminRoleModal");
+  };
+
+  AdminCenter.prototype.togglePermissionCheckbox = function (input) {
+    /* live toggle in editor — saved on saveRoleEditor */
+    if (input && input.dataset && input.dataset.perm) input.dataset.touched = "1";
+  };
+
+  AdminCenter.prototype.saveRoleEditor = function () {
+    var name = document.getElementById("adminRoleName").value.trim();
+    if (!name) return this.toastError("Role name required.");
+    var perms = {};
+    document.querySelectorAll("#adminRolePermGrid input[type=checkbox]").forEach(function (cb) {
+      perms[cb.dataset.perm] = cb.checked;
+    });
+    if (this._editingRoleId) {
+      var role = this.roles.find(function (r) { return r.id === this._editingRoleId; }, this);
+      if (!role) return;
+      if (role.system && role.id === "owner") return this.toastError("Owner role cannot be modified.");
+      role.name = name;
+      role.permissions = perms;
+      this.recordAudit({ action: "Role updated", area: "Roles", affectedUser: name, risk: "High" });
+    } else {
+      var id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || uid();
+      this.roles.push({ id: id, name: name, priority: 30, system: false, permissions: perms });
+      this.recordAudit({ action: "Role created", area: "Roles", affectedUser: name, risk: "High" });
+    }
+    this.persistRoles();
+    this.closeModal("adminRoleModal");
+    this.renderRoles();
+    this.renderPermissionsTable();
+    this.toastSuccess("Role saved.");
+  };
+
+  AdminCenter.prototype.deleteRole = async function (roleId) {
+    if (!this.hasPermission("roles.delete")) return this.toastError("Insufficient permissions.");
+    var role = this.roles.find(function (r) { return r.id === roleId; });
+    if (!role) return;
+    if (role.system) return this.toastError("System roles cannot be deleted.");
+    if (roleId === "owner") return this.toastError("Owner role cannot be deleted.");
+    if (!(await this.confirmAction("Delete role " + role.name + "?"))) return;
+    this.roles = this.roles.filter(function (r) { return r.id !== roleId; });
+    this.users.forEach(function (u) { if (u.roleId === roleId) u.roleId = "viewer"; });
+    this.persistRoles();
+    this.persistUsers();
+    this.recordAudit({ action: "Role deleted", area: "Roles", affectedUser: role.name, risk: "High" });
+    this.renderRoles();
+    this.renderPermissionsTable();
+    this.renderUsers();
+    this.toastSuccess("Role deleted.");
+  };
+
+  AdminCenter.prototype.duplicateRole = function (roleId) {
+    if (!this.hasPermission("roles.create")) return this.toastError("Insufficient permissions.");
+    var role = this.roles.find(function (r) { return r.id === roleId; });
+    if (!role) return;
+    var copy = JSON.parse(JSON.stringify(role));
+    copy.id = role.id + "_copy_" + Date.now().toString(36);
+    copy.name = role.name + " Copy";
+    copy.system = false;
+    this.roles.push(copy);
+    this.persistRoles();
+    this.recordAudit({ action: "Role duplicated", area: "Roles", affectedUser: copy.name, risk: "Medium" });
+    this.renderRoles();
+    this.renderPermissionsTable();
+    this.toastSuccess("Role duplicated.");
+  };
+
+  AdminCenter.prototype.toggleRolePermission = function (roleId, permKey, enabled) {
+    var role = this.roles.find(function (r) { return r.id === roleId; });
+    if (!role || role.system && role.id === "owner") return;
+    if (!role.permissions) role.permissions = {};
+    role.permissions[permKey] = !!enabled;
+    this.persistRoles();
+    this.recordAudit({ action: "Permission toggled", area: "Roles", affectedUser: role.name, newValue: permKey + "=" + enabled, risk: "High" });
+    this.renderPermissionsTable();
+  };
+
+  AdminCenter.prototype.openScopeEditor = function (scopeId) {
+    if (scopeId && !this.hasPermission("scopes.edit")) return this.toastError("Insufficient permissions.");
+    if (!scopeId && !this.hasPermission("scopes.create")) return this.toastError("Insufficient permissions.");
+    this._editingScopeId = scopeId;
+    var typeSel = document.getElementById("adminScopeType");
+    if (typeSel) typeSel.innerHTML = SCOPE_TYPES.map(function (t) { return "<option>" + adminEsc(t) + "</option>"; }).join("");
+    var s = scopeId ? this.scopes.find(function (x) { return x.id === scopeId; }) : null;
+    document.getElementById("adminScopeModalTitle").textContent = s ? "Edit Scope" : "Create Scope";
+    document.getElementById("adminScopeName").value = s ? s.name : "";
+    document.getElementById("adminScopeType").value = s ? s.type : "Site";
+    document.getElementById("adminScopeRecords").value = s ? s.records || "" : "";
+    document.getElementById("adminScopeStatus").value = s ? s.status || "Active" : "Active";
+    this.openModal("adminScopeModal");
+  };
+
+  AdminCenter.prototype.saveScopeEditor = function () {
+    var name = document.getElementById("adminScopeName").value.trim();
+    if (!name) return this.toastError("Scope name required.");
+    var payload = {
+      name: name,
+      type: document.getElementById("adminScopeType").value,
+      records: document.getElementById("adminScopeRecords").value.trim(),
+      status: document.getElementById("adminScopeStatus").value,
+      assignedUserIds: [],
+      assignedRoleIds: [],
+    };
+    if (this._editingScopeId) {
+      var s = this.scopes.find(function (x) { return x.id === this._editingScopeId; }, this);
+      if (!s) return;
+      payload.assignedUserIds = s.assignedUserIds || [];
+      payload.assignedRoleIds = s.assignedRoleIds || [];
+      Object.assign(s, payload);
+      this.recordAudit({ action: "Scope updated", area: "Scopes", affectedUser: name, risk: "Medium" });
+    } else {
+      payload.id = uid();
+      this.scopes.push(payload);
+      this.recordAudit({ action: "Scope created", area: "Scopes", affectedUser: name, risk: "Medium" });
+    }
+    this.persistScopes();
+    this.closeModal("adminScopeModal");
+    this.renderScopes();
+    this.toastSuccess("Scope saved.");
+  };
+
+  AdminCenter.prototype.deleteScope = async function (scopeId) {
+    if (!this.hasPermission("scopes.delete")) return this.toastError("Insufficient permissions.");
+    if (!(await this.confirmAction("Delete this access scope?"))) return;
+    this.scopes = this.scopes.filter(function (s) { return s.id !== scopeId; });
+    this.persistScopes();
+    this.recordAudit({ action: "Scope deleted", area: "Scopes", risk: "Medium" });
+    this.renderScopes();
+    this.toastSuccess("Scope deleted.");
+  };
+
+  AdminCenter.prototype.saveOrgSettings = function () {
+    if (!this.hasPermission("identity.edit")) return this.toastError("Insufficient permissions.");
+    var nameEl = document.getElementById("adminOrgName");
+    var addrEl = document.getElementById("adminOrgAddress");
+    this.settings.displayName = nameEl ? nameEl.value.trim() : this.settings.displayName;
+    this.settings.address = addrEl ? addrEl.value.trim() : this.settings.address;
+    this.persistSettings();
+    this.recordAudit({ action: "Organization settings saved", area: "Settings", risk: "Low" });
+    this.toastSuccess("Organization settings saved.");
+    this.renderComplianceStrip();
+  };
+
+  AdminCenter.prototype.saveIdentitySettings = function (patch) {
+    if (!this.hasPermission("identity.edit")) return this.toastError("Insufficient permissions.");
+    this.identity = Object.assign({}, this.identity, patch || {});
+    this.persistIdentity();
+    this.recordAudit({ action: "Identity settings saved", area: "Identity", risk: "Medium" });
+    this.renderIdentity();
+    this.renderComplianceStrip();
+    this.toastSuccess("Identity settings saved.");
+  };
+
+  AdminCenter.prototype.openBillingEditor = function (billingId) {
+    if (billingId && !this.hasPermission("billing.edit")) return this.toastError("Insufficient permissions.");
+    if (!billingId && !this.hasPermission("billing.create")) return this.toastError("Insufficient permissions.");
+    this._editingBillingId = billingId;
+    var b = billingId ? this.billing.find(function (x) { return x.id === billingId; }) : null;
+    document.getElementById("adminBillingModalTitle").textContent = b ? "Edit Billing Item" : "Add Billing Item";
+    document.getElementById("adminBillingService").value = b ? b.service : "";
+    document.getElementById("adminBillingCpt").value = b ? b.cpt : "";
+    document.getElementById("adminBillingPos").value = b ? b.pos : "11";
+    document.getElementById("adminBillingFee").value = b ? b.fee : "";
+    document.getElementById("adminBillingAuth").value = b ? String(!!b.authRequired) : "true";
+    document.getElementById("adminBillingActive").value = b ? String(!!b.active) : "true";
+    this.openModal("adminBillingModal");
+  };
+
+  AdminCenter.prototype.saveBillingEditor = function () {
+    var item = {
+      service: document.getElementById("adminBillingService").value.trim(),
+      cpt: document.getElementById("adminBillingCpt").value.trim(),
+      pos: document.getElementById("adminBillingPos").value.trim(),
+      fee: Number(document.getElementById("adminBillingFee").value) || 0,
+      authRequired: document.getElementById("adminBillingAuth").value === "true",
+      active: document.getElementById("adminBillingActive").value === "true",
+    };
+    if (!item.service) return this.toastError("Service name required.");
+    if (this._editingBillingId) {
+      var b = this.billing.find(function (x) { return x.id === this._editingBillingId; }, this);
+      if (!b) return;
+      Object.assign(b, item);
+      this.recordAudit({ action: "Billing item updated", area: "Billing", affectedUser: item.service, risk: "Medium" });
+    } else {
+      item.id = uid();
+      this.billing.push(item);
+      this.recordAudit({ action: "Billing item created", area: "Billing", affectedUser: item.service, risk: "Medium" });
+    }
+    this.persistBilling();
+    this.closeModal("adminBillingModal");
+    this.renderBilling();
+    this.toastSuccess("Billing item saved.");
+  };
+
+  AdminCenter.prototype.deleteBillingItem = async function (billingId) {
+    if (!this.hasPermission("billing.delete")) return this.toastError("Insufficient permissions.");
+    if (!(await this.confirmAction("Delete this billing item?"))) return;
+    this.billing = this.billing.filter(function (b) { return b.id !== billingId; });
+    this.persistBilling();
+    this.recordAudit({ action: "Billing item deleted", area: "Billing", risk: "Medium" });
+    this.renderBilling();
+    this.toastSuccess("Billing item deleted.");
+  };
+
+  AdminCenter.prototype.previewEffectiveAccess = function (userId) {
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return this.toastError("User not found.");
+    var role = this.roles.find(function (r) { return r.id === u.roleId; });
+    var perms = role && role.permissions ? Object.keys(role.permissions).filter(function (k) { return role.permissions[k]; }) : [];
+    var scopes = (u.scopeIds || []).map(function (sid) {
+      var s = this.scopes.find(function (x) { return x.id === sid; });
+      return s ? s.name + " (" + s.type + ")" : sid;
+    }, this);
+    var body = document.getElementById("adminAccessPreviewBody");
+    if (body) {
+      body.innerHTML = "<p><strong>" + adminEsc(u.name) + "</strong> · " + adminEsc(u.email) + "</p>" +
+        "<p>Role: <strong>" + adminEsc(this.getRoleName(u.roleId)) + "</strong></p>" +
+        "<p>Permissions (" + perms.length + "):</p><ul>" + perms.map(function (p) { return "<li>" + adminEsc(p) + "</li>"; }).join("") + "</ul>" +
+        "<p>Assigned scopes:</p><ul>" + (scopes.length ? scopes.map(function (s) { return "<li>" + adminEsc(s) + "</li>"; }).join("") : "<li>None</li>") + "</ul>";
+    }
+    this.openModal("adminAccessModal");
+  };
+
+  AdminCenter.prototype.refreshPresence = async function () {
+    if (typeof window.gilbertoWriteWorkspacePresence === "function") {
+      await window.gilbertoWriteWorkspacePresence();
+    }
+    var orgId = window.gilbertoCurrentOrg?.id;
+    if (!window.supabaseClient || !orgId) return;
+    try {
+      var since = new Date(Date.now() - 10 * 60000).toISOString();
+      var q = await window.supabaseClient.from("workspace_user_presence")
+        .select("user_id,email,full_name,current_page,last_seen_at")
+        .eq("org_id", orgId).gte("last_seen_at", since).order("last_seen_at", { ascending: false });
+      if (!q.error) this.presenceRows = q.data || [];
+    } catch (_) {}
+    this.renderOnlineModalTable();
+    this.renderIdentity();
+  };
+
+  AdminCenter.prototype.presenceStatus = function (row) {
+    var mins = minutesSince(row.last_seen_at);
+    if (mins <= 2) return { key: "online", label: "Online" };
+    if (mins <= 10) return { key: "idle", label: "Idle" };
+    return { key: "offline", label: "Offline" };
+  };
+
+  AdminCenter.prototype.sessionDurationLabel = function (row) {
+    var mins = minutesSince(row.last_seen_at);
+    if (mins <= 2) return mins + " min";
+    return "—";
+  };
+
+  AdminCenter.prototype.renderOnlineModalTable = function () {
+    var body = document.getElementById("adminOnlineBody");
+    if (!body) return;
+    var self = this;
+    if (!this.presenceRows.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#6b8c7a;">No active users in the last 10 minutes.</td></tr>';
+      return;
+    }
+    body.innerHTML = this.presenceRows.map(function (p) {
+      var st = self.presenceStatus(p);
+      var cls = st.key === "online" ? "badge-active" : st.key === "idle" ? "badge-pending" : "badge-expiring";
+      var user = self.users.find(function (u) { return u.userId === p.user_id || u.email === p.email; });
+      var roleName = user ? self.getRoleName(user.roleId) : "—";
+      var key = p.user_id || p.email;
+      return "<tr><td><span class=\"badge " + cls + "\">" + adminEsc(st.label) + "</span></td><td>" +
+        adminEsc(p.full_name || "User") + "</td><td>" + adminEsc(p.email || "—") + "</td><td>" + adminEsc(roleName) +
+        "</td><td>" + adminEsc(self.sessionDurationLabel(p)) + "</td><td>" + adminEsc(pageLabel(p.current_page)) +
+        "</td><td><button class=\"tbl-btn\" type=\"button\" onclick=\"GilbertoAdmin.forceLogoutPresence('" + adminEsc(key) +
+        "')\">Force logout</button> <button class=\"tbl-btn danger\" type=\"button\" onclick=\"GilbertoAdmin.lockPresenceUser('" +
+        adminEsc(key) + "')\">Lock</button></td></tr>";
+    }).join("");
+  };
+
+  AdminCenter.prototype.openOnlineUsersModal = async function () {
+    if (!this.hasPermission("online.view")) return this.toastError("Insufficient permissions.");
+    await this.refreshPresence();
+    this.openModal("adminOnlineModal");
+    this.startPresenceRefresh();
+  };
+
+  AdminCenter.prototype.startPresenceRefresh = function () {
+    var self = this;
+    if (this._presenceInterval) clearInterval(this._presenceInterval);
+    this._presenceInterval = setInterval(function () {
+      if (!document.getElementById("adminOnlineModal")?.classList.contains("open")) {
+        clearInterval(self._presenceInterval);
+        self._presenceInterval = null;
+        return;
+      }
+      self.refreshPresence();
+    }, 30000);
+  };
+
+  AdminCenter.prototype.forceLogoutPresence = async function (key) {
+    if (!this.hasPermission("online.force_logout")) return this.toastError("Insufficient permissions.");
+    if (!(await this.confirmAction("Force logout this session?"))) return;
+    var user = this.users.find(function (u) { return u.userId === key || u.email === key || u.id === key; });
+    if (user && user.userId && this.revokedIds.indexOf(user.userId) < 0) this.revokedIds.push(user.userId);
+    this.persistRevoked();
+    this.recordAudit({ action: "Force logout", area: "Online", affectedUser: user ? user.email : key, risk: "High" });
+    this.toastSuccess("Session marked for logout.");
+    this.refreshPresence();
+  };
+
+  AdminCenter.prototype.lockPresenceUser = async function (key) {
+    if (!this.hasPermission("online.lock")) return this.toastError("Insufficient permissions.");
+    var user = this.users.find(function (u) { return u.userId === key || u.email === key || u.id === key; });
+    if (user) await this.lockUser(user.id);
+    else this.toastError("User record not found for lock.");
+  };
+
+  AdminCenter.prototype.exportCsv = function (filename, header, rows) {
+    var csv = [header.join(",")].concat(rows.map(function (r) {
+      return header.map(function (key) {
+        return '"' + String(r[key] == null ? "" : r[key]).replace(/"/g, '""') + '"';
+      }).join(",");
+    })).join("\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  AdminCenter.prototype.exportAuditReport = function () {
+    if (!this.hasPermission("audit.export")) return this.toastError("Insufficient permissions.");
+    var rows = this.getFilteredAudit();
+    if (!rows.length) return this.toastError("No audit events to export.");
+    this.exportCsv("gilberto-audit-events.csv",
+      ["createdAt", "user", "action", "area", "affectedUser", "status", "risk", "details"],
+      rows);
+    this.recordAudit({ action: "Audit export", area: "Audit", risk: "Medium" });
+    this.toastSuccess("Audit report exported.");
+  };
+
+  AdminCenter.prototype.exportReports = function () {
+    if (!this.hasPermission("reports.export")) return this.toastError("Insufficient permissions.");
+    var payload = {
+      generatedAt: nowIso(),
+      sessionsToday: document.getElementById("reportSessionsToday")?.textContent || "",
+      sessionsWeek: document.getElementById("reportSessionsWeek")?.textContent || "",
+      activeClients: document.getElementById("reportActiveClients")?.textContent || "",
+      missingNotes: document.getElementById("reportMissingNotes")?.textContent || "",
+      userCount: this.users.length,
+      roleCount: this.roles.length,
+    };
+    this.exportCsv("gilberto-admin-reports.csv",
+      ["generatedAt", "sessionsToday", "sessionsWeek", "activeClients", "missingNotes", "userCount", "roleCount"],
+      [payload]);
+    this.recordAudit({ action: "Reports export", area: "Reports", risk: "Low" });
+    this.toastSuccess("Reports exported.");
+  };
+
+  var adminCenter = new AdminCenter();
+  window.GilbertoAdmin = adminCenter;
+  window.gilbertoRecordAdminAudit = function (e) { adminCenter.recordAudit(e || {}); };
+  window.adminEsc = adminEsc;
+  window.PERMISSION_CATALOG = PERMISSION_CATALOG;
+  window.DEFAULT_ROLES = DEFAULT_ROLES;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    /* init is invoked from admin-panel.html after auth guard */
+  });
 })();
