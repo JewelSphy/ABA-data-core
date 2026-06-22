@@ -114,6 +114,7 @@
     identity: "gilberto_admin_identity",
     locked: "gilberto_admin_locked",
     revoked: "gilberto_admin_revoked",
+    removed: "gilberto_admin_removed_users",
     audit: "gilberto_audit_events",
   };
 
@@ -142,6 +143,7 @@
     { key: "users.edit", domain: "users", action: "edit", label: "Edit users", auditRequired: true },
     { key: "users.disable", domain: "users", action: "disable", label: "Disable users", auditRequired: true },
     { key: "users.terminate", domain: "users", action: "terminate", label: "Terminate users", auditRequired: true },
+    { key: "users.delete", domain: "users", action: "delete", label: "Remove users from list", auditRequired: true },
     { key: "users.reset_password", domain: "users", action: "reset_password", label: "Reset passwords", auditRequired: true },
     { key: "users.force_logout", domain: "users", action: "force_logout", label: "Force logout users", auditRequired: true },
     { key: "users.lock", domain: "users", action: "lock", label: "Lock accounts", auditRequired: true },
@@ -293,6 +295,7 @@
     this.identity = {};
     this.lockedIds = [];
     this.revokedIds = [];
+    this.removedUserIds = [];
     this.auditEvents = [];
     this.providers = [];
     this.presenceRows = [];
@@ -417,6 +420,16 @@
     if (changed) this.persistUsers();
   };
 
+  AdminCenter.prototype.isUserRemoved = function (userOrId) {
+    var id = typeof userOrId === "string" ? userOrId : (userOrId && (userOrId.userId || userOrId.id));
+    if (!id) return false;
+    return this.removedUserIds.indexOf(id) >= 0;
+  };
+
+  AdminCenter.prototype.persistRemoved = function () {
+    saveScoped(STORAGE.removed, this.removedUserIds);
+  };
+
   AdminCenter.prototype.findStoredUserForMember = function (member, email) {
     var self = this;
     if (!member || !member.user_id) return null;
@@ -439,6 +452,7 @@
     });
 
     this.users = this.users.filter(function (u) {
+      if (self.isUserRemoved(u)) return false;
       if (u.userId && remoteIds[u.userId]) return true;
       if (u.status === "Pending Invite" && u.email && !self.isPlaceholderEmail(u.email)) return true;
       if (self.isPlaceholderEmail(u.email) || self.isPlaceholderName(u.name)) return false;
@@ -858,7 +872,7 @@
     }
 
     Object.keys(identityMap).forEach(function (userId) {
-      if (!userId) return;
+      if (!userId || self.isUserRemoved(userId)) return;
       var row = identityMap[userId];
       if (!row || (!row.email && !row.full_name)) return;
       var exists = remoteMembers.some(function (m) { return m && m.user_id === userId; });
@@ -875,6 +889,7 @@
     var changed = false;
     remoteMembers.forEach(function (m) {
       if (!m || !m.user_id) return;
+      if (self.isUserRemoved(m.user_id)) return;
       var idRow = identityMap[m.user_id] || {};
       var email = self.pickBestEmail(m.email, idRow.email);
       var name = self.pickBestName(m.full_name, idRow.full_name, email);
@@ -1014,6 +1029,7 @@
     this.identity = loadObject(STORAGE.identity, {});
     this.lockedIds = loadScoped(STORAGE.locked);
     this.revokedIds = loadScoped(STORAGE.revoked);
+    this.removedUserIds = loadScoped(STORAGE.removed);
     this.auditEvents = loadScoped(STORAGE.audit);
     if (!Array.isArray(this.users)) this.users = [];
     if (!Array.isArray(this.roles)) this.roles = [];
@@ -1021,6 +1037,7 @@
     if (!Array.isArray(this.billing)) this.billing = [];
     if (!Array.isArray(this.lockedIds)) this.lockedIds = [];
     if (!Array.isArray(this.revokedIds)) this.revokedIds = [];
+    if (!Array.isArray(this.removedUserIds)) this.removedUserIds = [];
     if (!Array.isArray(this.auditEvents)) this.auditEvents = [];
   };
 
@@ -1429,6 +1446,7 @@
         adminEsc(u.id) + "')\">Access</button>" +
         (u.status !== "Disabled" && u.roleId !== "owner" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.disableUser(\'' + adminEsc(u.id) + "')\">Disable</button>" : "") +
         (u.status !== "Terminated" && u.roleId !== "owner" ? ' <button class="tbl-btn danger" type="button" onclick="GilbertoAdmin.terminateUser(\'' + adminEsc(u.id) + "')\">Terminate</button>" : "") +
+        (u.roleId !== "owner" && self.hasPermission("users.delete") ? ' <button class="tbl-btn danger" type="button" onclick="GilbertoAdmin.removeUserFromList(\'' + adminEsc(u.id) + "')\">Delete</button>" : "") +
         (u.status === "Locked" ? ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.reactivateUser(\'' + adminEsc(u.id) + "')\">Unlock</button>" : ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.lockUser(\'' + adminEsc(u.id) + "')\">Lock</button>") +
         ' <button class="tbl-btn" type="button" onclick="GilbertoAdmin.resetUserPassword(\'' + adminEsc(u.id) + "')\">Reset PW</button></td></tr>";
     }).join("");
@@ -1890,6 +1908,52 @@
     this.recordAudit({ action: "User terminated", area: "Users", affectedUser: u.email, risk: "High" });
     this.renderUsers();
     this.toastSuccess("User terminated.");
+  };
+
+  AdminCenter.prototype.removeUserFromList = async function (userId) {
+    if (!this.hasPermission("users.delete")) return this.toastError("Insufficient permissions.");
+    var u = this.users.find(function (x) { return x.id === userId; });
+    if (!u) return;
+    if (u.roleId === "owner") return this.toastError("Cannot remove the workspace owner.");
+    var label = this.displayEmailForUser(u);
+    if (label === "—") label = this.displayNameForUser(u);
+    if (!(await this.confirmAction("Remove " + label + " from the users list?"))) return;
+
+    var orgId = window.gilbertoCurrentOrg && window.gilbertoCurrentOrg.id;
+    if (window.supabaseClient && orgId && u.userId) {
+      try {
+        await window.supabaseClient
+          .from("organization_members")
+          .delete()
+          .eq("organization_id", orgId)
+          .eq("user_id", u.userId);
+      } catch (_) {}
+      try {
+        await window.supabaseClient
+          .from("workspace_user_sessions")
+          .update({ logout_time: new Date().toISOString(), status: "offline" })
+          .eq("org_id", orgId)
+          .eq("user_id", u.userId)
+          .is("logout_time", null);
+      } catch (_) {}
+    }
+
+    if (this.removedUserIds.indexOf(u.id) < 0) this.removedUserIds.push(u.id);
+    if (u.userId && this.removedUserIds.indexOf(u.userId) < 0) this.removedUserIds.push(u.userId);
+    this.persistRemoved();
+    this.users = this.users.filter(function (x) { return x.id !== u.id; });
+    this.persistUsers();
+    this.recordAudit({
+      action: "User removed from list",
+      area: "Users",
+      affectedUser: u.email || label,
+      risk: "High",
+    });
+    await this.refreshPresence();
+    this.renderUsers();
+    this.renderOnlineUsersTable();
+    this.renderComplianceStrip();
+    this.toastSuccess("User removed from list.");
   };
 
   AdminCenter.prototype.lockUser = async function (userId) {
